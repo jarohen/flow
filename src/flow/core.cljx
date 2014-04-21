@@ -30,6 +30,31 @@
 
     `(stream-return (do ~@body))))
 
+(comment
+  
+  #+clj
+  (defmacro for<< [bindings & body]
+    (if-let [[sym bind-or-value value-or-more & more] (seq bindings)]
+      (cond
+       (= '<< bind-or-value) (let [stream value-or-more]
+                               `(stream-bind (->stream ~stream)
+                                             (fn [~sym]
+                                               (let<< [~@more]
+                                                 ~@body))))
+
+       (= :when sym)
+     
+
+       :else (let [value bind-or-value
+                   more (cons value-or-more more)]
+               `(let [~sym ~value]
+                  (let<< [~@more]
+                    ~@body))))
+
+
+      ;; TODO we're in the body here
+      `(stream-return (do ~@body)))))
+
 #+cljs
 (defn- new-container []
   (node [:div {:style {:display "inline"}}]))
@@ -52,10 +77,6 @@
           (recur))))
     
     $container))
-
-#+clj
-(defmacro el<< [& args]
-  `(el<< ~@args))
 
 (comment
   (do
