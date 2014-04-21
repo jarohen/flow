@@ -53,6 +53,10 @@
     
     $container))
 
+#+clj
+(defmacro el<< [& args]
+  `(el<< ~@args))
+
 (comment
   (do
     (def !foo-atom (atom 0))
