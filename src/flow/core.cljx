@@ -5,7 +5,7 @@
   #+cljs
   (:require [dommy.core :as d]
             [cljs.core.async :as a]
-            [flow.stream :refer [nil-sentinel stream-bind stream-return]])
+            [flow.stream :refer [nil-sentinel stream-ch stream-bind stream-return]])
 
   #+cljs
   (:require-macros [dommy.macros :refer [node sel1]]
@@ -37,7 +37,7 @@
 #+cljs
 (defn el<< [el-stream]
   (let [$container (new-container)
-        el-ch (value-ch el-stream (a/chan))
+        el-ch (stream-ch el-stream (a/chan))
         buffered-el-ch (a/chan (a/sliding-buffer 1))]
     
     (a/pipe el-ch buffered-el-ch)

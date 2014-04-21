@@ -18,12 +18,12 @@
   ::nil)
 
 (defprotocol Stream
-  (value-ch [_ cancel-ch]))
+  (stream-ch [_ cancel-ch]))
 
 (defn ch->stream [ch]
   (let [mult-ch (a/mult ch)]
     (reify Stream
-      (value-ch [_ cancel-ch]
+      (stream-ch [_ cancel-ch]
         (let [out-ch (a/chan)
               cancel-ch (a/chan)]
           (go-loop [old-val ::initial]
@@ -48,7 +48,7 @@
 
 (extend-protocol Stream
   Atom
-  (value-ch [!atom cancel-ch]
+  (stream-ch [!atom cancel-ch]
     (let [out-ch (a/chan)
           watch-key (gensym "atom-stream")]
 
@@ -66,7 +66,7 @@
       out-ch)))
 
 #+cljs
-(defn html-element-value-ch [$el cancel-ch value-fn]
+(defn html-element-stream-ch [$el cancel-ch value-fn]
   
   (let [out-ch (a/chan (a/sliding-buffer 1))
         listener (fn [e]
@@ -87,24 +87,24 @@
 #+cljs
 (extend-protocol Stream
   js/HTMLInputElement
-  (value-ch [$el cancel-ch]
-    (html-element-value-ch $el
+  (stream-ch [$el cancel-ch]
+    (html-element-stream-ch $el
                            cancel-ch
                            (case (.-type $el)
                              "checkbox" #(.-checked %)
                              #(.-value %))))
 
   js/HTMLTextAreaElement
-  (value-ch [$el cancel-ch]
-    (html-element-value-ch $el cancel-ch #(.-value %)))
+  (stream-ch [$el cancel-ch]
+    (html-element-stream-ch $el cancel-ch #(.-value %)))
 
   js/HTMLSelectElement
-  (value-ch [$el cancel-ch]
-    (html-element-value-ch $el cancel-ch #(.-value %))))
+  (stream-ch [$el cancel-ch]
+    (html-element-stream-ch $el cancel-ch #(.-value %))))
 
 (defn stream-return [v]
   (reify Stream
-    (value-ch [_ _]
+    (stream-ch [_ _]
       (go
         (if-not (nil? v)
           v
@@ -116,14 +116,14 @@
   ;; returns :: Stream b
 
   (reify Stream
-    (value-ch [_ cancel-ch]
+    (stream-ch [_ cancel-ch]
       (let [out-ch (a/chan)
             stream-cancel-ch (a/chan)
-            stream-value-ch (value-ch s stream-cancel-ch)]        
+            stream-stream-ch (stream-ch s stream-cancel-ch)]        
 
         (go-loop [old-stream-value ::initial
                   fn-cancel-ch (a/chan)
-                  fn-value-ch (a/chan)]
+                  fn-stream-ch (a/chan)]
 
           (alt!
             :priority true
@@ -133,28 +133,28 @@
                          (a/close! fn-cancel-ch)
                          (a/close! out-ch))
 
-            stream-value-ch ([new-val]
+            stream-stream-ch ([new-val]
                                (if-not (nil? new-val)
 
                                  (let [new-val (if (= nil-sentinel new-val)
                                                  nil
                                                  new-val)]
                                    (if (= old-stream-value new-val)
-                                     (recur old-stream-value fn-cancel-ch fn-value-ch)
+                                     (recur old-stream-value fn-cancel-ch fn-stream-ch)
                                                               
                                      (let [new-fn-cancel-ch (a/chan)
-                                           new-fn-value-ch (value-ch (f new-val) new-fn-cancel-ch)]
-                                       (recur new-val new-fn-cancel-ch new-fn-value-ch))))
+                                           new-fn-stream-ch (stream-ch (f new-val) new-fn-cancel-ch)]
+                                       (recur new-val new-fn-cancel-ch new-fn-stream-ch))))
 
                                  (do
                                    (a/close! fn-cancel-ch)
                                    (a/close! out-ch))))
 
-            fn-value-ch ([new-val]
+            fn-stream-ch ([new-val]
                            (if-not (nil? new-val)
                              (do
                                (a/>! out-ch new-val)
-                               (recur old-stream-value fn-cancel-ch fn-value-ch))
+                               (recur old-stream-value fn-cancel-ch fn-stream-ch))
                              
                              (recur old-stream-value fn-cancel-ch (a/chan))))))
         
