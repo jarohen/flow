@@ -1,16 +1,16 @@
 (ns flow.core
   #+clj
-  (:require [clojure.core.async :as a :refer [go go-loop]])
+  (:require [clojure.core.async :as a :refer [go go-loop]]
+            [flow.stream :refer [nil-sentinel stream-ch stream-bind stream-return ->stream]])
 
   #+cljs
   (:require [dommy.core :as d]
             [cljs.core.async :as a]
-            [flow.stream :refer [nil-sentinel stream-ch stream-bind stream-return]])
+            [flow.stream :refer [nil-sentinel stream-ch stream-bind stream-return ->stream]])
 
   #+cljs
   (:require-macros [dommy.macros :refer [node sel1]]
-                   [cljs.core.async.macros :refer [go go-loop]]
-                   [flow.core :refer [let<<]]))
+                   [cljs.core.async.macros :refer [go go-loop]]))
 
 #+clj
 (defmacro let<< [bindings & body]

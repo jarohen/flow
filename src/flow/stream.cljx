@@ -119,7 +119,7 @@
     (stream-ch [_ cancel-ch]
       (let [out-ch (a/chan)
             stream-cancel-ch (a/chan)
-            stream-stream-ch (stream-ch s stream-cancel-ch)]        
+            stream-value-ch (stream-ch s stream-cancel-ch)]        
 
         (go-loop [old-stream-value ::initial
                   fn-cancel-ch (a/chan)
@@ -133,7 +133,7 @@
                          (a/close! fn-cancel-ch)
                          (a/close! out-ch))
 
-            stream-stream-ch ([new-val]
+            stream-value-ch ([new-val]
                                (if-not (nil? new-val)
 
                                  (let [new-val (if (= nil-sentinel new-val)
