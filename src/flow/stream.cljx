@@ -21,11 +21,17 @@
   (stream-ch [_ cancel-ch]))
 
 (defn ch->stream [ch]
-  (let [mult-ch (a/mult ch)]
+  (let [!last-value (atom ::initial)]
+
     (reify Stream
       (stream-ch [_ cancel-ch]
         (let [out-ch (a/chan)
-              cancel-ch (a/chan)]
+              cancel-ch (a/chan)
+              last-value @!last-value]
+
+          (when-not (= last-value ::initial)
+            (a/put! out-ch last-value))
+          
           (go-loop [old-val ::initial]
             (alt!
               :priority true
@@ -36,6 +42,7 @@
                     (if-not (nil? new-val)
                       (do
                         (when-not (= old-val new-val)
+                          (reset! !last-value new-val)
                           (a/>! out-ch new-val)
                           (recur new-val)))
                       (a/close! out-ch))))))))))
