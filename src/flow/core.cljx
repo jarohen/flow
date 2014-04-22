@@ -30,6 +30,46 @@
 
     `(stream-return (do ~@body))))
 
+(defn parse-for<<-bindings [bindings]
+  (lazy-seq
+   (when-let [[sym bind-or-value value-or-more & more] (seq bindings)]
+     (cond
+      (= '<< bind-or-value) (cons {:type :stream
+                                   :sym sym
+                                   :form value-or-more}
+                                  (parse-for<<-bindings more))
+
+      (= :when sym) (cons {:type :when
+                           :pred bind-or-value}
+                          (parse-for<<-bindings (cons value-or-more more)))
+
+      (= :sort-by sym) (cons {:type :sort-by
+                              :sort-form bind-or-value}
+                             (parse-for<<-bindings (cons value-or-more more)))
+
+      :else (cons {:type :vanilla
+                   :sym sym
+                   :form bind-or-value}
+                  (parse-for<<-bindings (cons value-or-more more)))))))
+
+(comment
+  (defmulti for-chan-bindings
+    (fn [acc binding]
+      (:type binding)))
+
+  (defmethod for-chan-bindings :stream [{:keys [syms all-tuples-sym bindings] :as acc} {:keys [sym form]}]
+    (update-in acc [:bindings]
+               conj [(vec (concat syms [sym :as all-tuples-sym])) `(conj ~all-tuples-sym ~form)]))
+
+  (defn for-chan-form [parsed-bindings]
+    (reduce for-chan-bindings
+            {:all-tuples-sym (gensym "all_tuples")}
+            parsed-bindings))
+
+  (for-chan-form [{:type :stream
+                   :sym 'x
+                   :form '(range 4)}]))
+
 (comment
   
   #+clj
