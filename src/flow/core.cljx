@@ -30,40 +30,31 @@
 
     `(stream-return (do ~@body))))
 
-(def !recur-count (atom 10))
-
 (defn parse-for<<-bindings [bindings]
   (when (seq bindings)
-    (when-not (zero? (swap! !recur-count dec))
-      (lazy-seq
-       (when-let [[sym bind-or-value value-or-more & more] (seq bindings)]
-         (cond
-          (= '<< bind-or-value) (cons {:type :stream
-                                       :sym sym
-                                       :form value-or-more}
-                                      (parse-for<<-bindings more))
+    (lazy-seq
+     (when-let [[sym bind-or-value value-or-more & more] (seq bindings)]
+       (cond
+        (= '<< bind-or-value) (cons {:type :stream
+                                     :sym sym
+                                     :form value-or-more}
+                                    (parse-for<<-bindings more))
 
-          (= :when sym) (cons {:type :when
-                               :pred bind-or-value}
-                              (when value-or-more
-                                (parse-for<<-bindings (cons value-or-more more))))
+        (= :when sym) (cons {:type :when
+                             :pred bind-or-value}
+                            (when value-or-more
+                              (parse-for<<-bindings (cons value-or-more more))))
 
-          (= :sort-by sym) (cons {:type :sort-by
-                                  :sort-form bind-or-value}
-                                 (when value-or-more
-                                   (parse-for<<-bindings (cons value-or-more more))))
+        (= :sort-by sym) (cons {:type :sort-by
+                                :sort-form bind-or-value}
+                               (when value-or-more
+                                 (parse-for<<-bindings (cons value-or-more more))))
 
-          :else (cons {:type :vanilla
-                       :sym sym
-                       :form bind-or-value}
-                      (when value-or-more
-                        (parse-for<<-bindings (cons value-or-more more))))))))))
-
-(def foo-bindings
-  '({:type :stream, :sym {:keys [x y]}, :form !my-atom}
-    {:type :vanilla, :sym z, :form (range 4)}
-    {:type :when, :pred (even? x)}
-    {:type :sort-by, :sort-form (fn [{:keys [x y]} z] [x (- y)])}))
+        :else (cons {:type :vanilla
+                     :sym sym
+                     :form bind-or-value}
+                    (when value-or-more
+                      (parse-for<<-bindings (cons value-or-more more)))))))))
 
 (defmulti for-chan-bindings
   (fn [acc binding for-chan-opts]
@@ -93,14 +84,13 @@
 
 (defn for-chan-form [parsed-bindings]
   (let [all-tuples-sym (gensym "all_tuples")
-        sym-binding [(vec (mapcat (comp #(remove nil? %)
-                                        vector
-                                        :sym)
-                                  parsed-bindings))
-                                      
-                     :as all-tuples-sym]
+
+        syms [(->> parsed-bindings
+                   (map :sym)
+                   (remove nil?))]
+        
         for-chan-opts {:all-tuples-sym all-tuples-sym
-                       :sym-binding sym-binding}
+                       :sym-binding `[[~@syms] :as ~all-tuples-sym]}
         
         chan-bindings (reduce (fn [bindings binding]
                                 (for-chan-bindings bindings binding for-chan-opts))
@@ -109,7 +99,7 @@
             
                               parsed-bindings)]
     
-    {:sym-binding sym-binding
+    {:syms syms
      :form `(let<< [~@(apply concat chan-bindings)]
               all-tuples-sym)}))
 
@@ -120,8 +110,21 @@
                    #_{:type :sort-by, :sort-form (fn [{:keys [x y]} z] [x (- y)])}]))
 
 (comment
-  (for-chan-form [{:type :sort-by
-                   :sort-form '[x y]}]))
+  ;; first bash at inside of for<<
+  (let [bindings '[{:keys [x y]} << !my-atom
+                   z (range 4)
+                   :when (even? x)
+                   :sort-by (fn [{:keys [x y]} z]
+                              [x (- y)])]]
+  
+    (let [{:keys [syms form]} (-> bindings
+                                  parse-for<<-bindings
+                                  for-chan-form)]
+      `(let [out-ch# (a/chan)]
+         (let<< [tuples# << ~form]
+           (-> (for [[~@sym-binding :as ] tu])
+               (with-meta))
+           )))))
 
 (comment
   (for<< [{:keys [x y]} << !my-atom
@@ -137,30 +140,6 @@
                         :when (even? x)
                         :sort-by (fn [{:keys [x y]} z]
                                    [x (- y)])]))
-
-(comment
-  #+clj
-  (defmacro for<< [bindings & body]
-    (if-let [[sym bind-or-value value-or-more & more] (seq bindings)]
-      (cond
-       (= '<< bind-or-value) (let [stream value-or-more]
-                               `(stream-bind (->stream ~stream)
-                                             (fn [~sym]
-                                               (let<< [~@more]
-                                                 ~@body))))
-
-       (= :when sym)
-     
-
-       :else (let [value bind-or-value
-                   more (cons value-or-more more)]
-               `(let [~sym ~value]
-                  (let<< [~@more]
-                    ~@body))))
-
-
-      ;; TODO we're in the body here
-      `(stream-return (do ~@body)))))
 
 #+cljs
 (defn- new-container []
