@@ -30,48 +30,115 @@
 
     `(stream-return (do ~@body))))
 
+(def !recur-count (atom 10))
+
 (defn parse-for<<-bindings [bindings]
-  (lazy-seq
-   (when-let [[sym bind-or-value value-or-more & more] (seq bindings)]
-     (cond
-      (= '<< bind-or-value) (cons {:type :stream
-                                   :sym sym
-                                   :form value-or-more}
-                                  (parse-for<<-bindings more))
+  (when (seq bindings)
+    (when-not (zero? (swap! !recur-count dec))
+      (lazy-seq
+       (when-let [[sym bind-or-value value-or-more & more] (seq bindings)]
+         (cond
+          (= '<< bind-or-value) (cons {:type :stream
+                                       :sym sym
+                                       :form value-or-more}
+                                      (parse-for<<-bindings more))
 
-      (= :when sym) (cons {:type :when
-                           :pred bind-or-value}
-                          (parse-for<<-bindings (cons value-or-more more)))
+          (= :when sym) (cons {:type :when
+                               :pred bind-or-value}
+                              (when value-or-more
+                                (parse-for<<-bindings (cons value-or-more more))))
 
-      (= :sort-by sym) (cons {:type :sort-by
-                              :sort-form bind-or-value}
-                             (parse-for<<-bindings (cons value-or-more more)))
+          (= :sort-by sym) (cons {:type :sort-by
+                                  :sort-form bind-or-value}
+                                 (when value-or-more
+                                   (parse-for<<-bindings (cons value-or-more more))))
 
-      :else (cons {:type :vanilla
-                   :sym sym
-                   :form bind-or-value}
-                  (parse-for<<-bindings (cons value-or-more more)))))))
+          :else (cons {:type :vanilla
+                       :sym sym
+                       :form bind-or-value}
+                      (when value-or-more
+                        (parse-for<<-bindings (cons value-or-more more))))))))))
+
+(def foo-bindings
+  '({:type :stream, :sym {:keys [x y]}, :form !my-atom}
+    {:type :vanilla, :sym z, :form (range 4)}
+    {:type :when, :pred (even? x)}
+    {:type :sort-by, :sort-form (fn [{:keys [x y]} z] [x (- y)])}))
+
+(defmulti for-chan-bindings
+  (fn [acc binding for-chan-opts]
+    (:type binding)))
+
+(defmethod for-chan-bindings :stream [bindings {:keys [form]} {:keys [sym-binding all-tuples-sym]}]
+  (conj bindings [sym-binding '<< `(let<< [stream-elems# ~'<< ~form]
+                                      (for [tuple# ~all-tuples-sym
+                                            stream-elem# stream-elems#]
+                                        (conj tuple# stream-elem#)))]))
+
+(defmethod for-chan-bindings :vanilla [bindings {:keys [form]} {:keys [sym-binding all-tuples-sym]}]
+  (conj bindings [sym-binding '<< `(let<< [stream-elems# ~form]
+                                      (for [tuple# ~all-tuples-sym
+                                            stream-elem# stream-elems#]
+                                        (conj tuple# stream-elem#)))]))
+
+(defmethod for-chan-bindings :sort-by [bindings {:keys [sort-form]} {:keys [sym-binding all-tuples-sym]}]
+  (conj bindings [sym-binding `(sort-by (fn [~sym-binding]
+                                           ~sort-form)
+                                         ~all-tuples-sym)]))
+
+(defmethod for-chan-bindings :when [bindings {:keys [pred]} {:keys [sym-binding all-tuples-sym]}]
+  (conj bindings [sym-binding `(filter (fn [~sym-binding]
+                                          ~pred)
+                                        ~all-tuples-sym)]))
+
+(defn for-chan-form [parsed-bindings]
+  (let [all-tuples-sym (gensym "all_tuples")
+        sym-binding [(vec (mapcat (comp #(remove nil? %)
+                                        vector
+                                        :sym)
+                                  parsed-bindings))
+                                      
+                     :as all-tuples-sym]
+        for-chan-opts {:all-tuples-sym all-tuples-sym
+                       :sym-binding sym-binding}
+        
+        chan-bindings (reduce (fn [bindings binding]
+                                (for-chan-bindings bindings binding for-chan-opts))
+            
+                              [[all-tuples-sym []]]
+            
+                              parsed-bindings)]
+    
+    {:sym-binding sym-binding
+     :form `(let<< [~@(apply concat chan-bindings)]
+              all-tuples-sym)}))
 
 (comment
-  (defmulti for-chan-bindings
-    (fn [acc binding]
-      (:type binding)))
-
-  (defmethod for-chan-bindings :stream [{:keys [syms all-tuples-sym bindings] :as acc} {:keys [sym form]}]
-    (update-in acc [:bindings]
-               conj [(vec (concat syms [sym :as all-tuples-sym])) `(conj ~all-tuples-sym ~form)]))
-
-  (defn for-chan-form [parsed-bindings]
-    (reduce for-chan-bindings
-            {:all-tuples-sym (gensym "all_tuples")}
-            parsed-bindings))
-
-  (for-chan-form [{:type :stream
-                   :sym 'x
-                   :form '(range 4)}]))
+  (for-chan-form '[{:type :stream, :sym {:keys [x y]}, :form !my-atom}
+                   {:type :vanilla, :sym z, :form (range 4)}
+                   {:type :when, :pred (even? x)}
+                   #_{:type :sort-by, :sort-form (fn [{:keys [x y]} z] [x (- y)])}]))
 
 (comment
-  
+  (for-chan-form [{:type :sort-by
+                   :sort-form '[x y]}]))
+
+(comment
+  (for<< [{:keys [x y]} << !my-atom
+          z (range 4)
+          :when (even? x)
+          :sort-by (fn [{:keys [x y]} z]
+                     [x (- y)])]
+    [x y])
+
+
+  (parse-for<<-bindings '[{:keys [x y]} << !my-atom
+                        z (range 4)
+                        :when (even? x)
+                        :sort-by (fn [{:keys [x y]} z]
+                                   [x (- y)])]))
+
+(comment
   #+clj
   (defmacro for<< [bindings & body]
     (if-let [[sym bind-or-value value-or-more & more] (seq bindings)]
