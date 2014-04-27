@@ -68,10 +68,10 @@
                                        (conj tuple# stream-elem#)))]))
 
 (defmethod for-chan-bindings :vanilla [bindings {:keys [form]} {:keys [sym-binding all-tuples-sym]}]
-  (conj bindings [sym-binding '<< `(let [stream-elems# ~form]
-                                     (for [tuple# (or (seq ~all-tuples-sym) [[]])
-                                           stream-elem# stream-elems#]
-                                       (conj tuple# stream-elem#)))]))
+  (conj bindings [sym-binding `(let [stream-elems# ~form]
+                                 (for [tuple# (or (seq ~all-tuples-sym) [[]])
+                                       stream-elem# stream-elems#]
+                                   (conj tuple# stream-elem#)))]))
 
 (defmethod for-chan-bindings :sort-by [bindings {:keys [sort-form]} {:keys [sym-binding all-tuples-sym]}]
   (conj bindings [sym-binding `(sort-by (fn [~sym-binding]
@@ -115,10 +115,9 @@
                                 parse-for<<-bindings
                                 for-chan-form)]
     `(let [out-ch# (a/chan)
-           for-chan# ~form]
+           stream-chan# (stream-ch ~form (a/chan))]
        (go-loop [cache# {}]
-         (when-let [ids# (a/<! (stream-ch for-chan# (a/chan)))]
-           (prn ids#)
+         (when-let [ids# (a/<! stream-chan#)]
            (let [results# (for [[~@syms :as id#] ids#]
                             (or (get cache# id#)
                                 (do ~@body)))]
@@ -129,17 +128,21 @@
        out-ch#)))
 
 (comment
-  (def !foo-atom (atom [{:x 2 :y 4}]))
+  (def !foo-atom (atom [{:x 2 :y 4} {:x 3 :y -3} {:x 2 :y 1}]))
 
-  (reset! !foo-atom [{:x 3 :y 98}])
+  (swap! !foo-atom #(update-in % [0 :x] inc))
 
   (def foo-chan
     (for<< [{:keys [x y]} << !foo-atom
-            ;; z (range 4)
-            ;; :when (even? x)
-            ;; :sort-by [x (- y)]
-            ]
-      [y x])))
+            z (range 4)
+            :when (even? z)
+            :sort-by [x (- y)]]
+      [y (inc z) x]))
+
+  (go
+    (prn (a/<! foo-chan) "ch value:"))
+  
+  )
 
 (comment
   (for<< [{:keys [x y]} << !my-atom
