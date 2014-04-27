@@ -23,7 +23,8 @@
                           ~@body))))
 
       (let [value bind-or-value
-            more (cons value-or-more more)]
+            more (->> (cons value-or-more more)
+                      (remove nil?))]
         `(let [~sym ~value]
            (let<< [~@more]
              ~@body))))
@@ -62,15 +63,15 @@
 
 (defmethod for-chan-bindings :stream [bindings {:keys [form]} {:keys [sym-binding all-tuples-sym]}]
   (conj bindings [sym-binding '<< `(let<< [stream-elems# ~'<< ~form]
-                                      (for [tuple# ~all-tuples-sym
-                                            stream-elem# stream-elems#]
-                                        (conj tuple# stream-elem#)))]))
+                                     (for [tuple# (or (seq ~all-tuples-sym) [[]])
+                                           stream-elem# stream-elems#]
+                                       (conj tuple# stream-elem#)))]))
 
 (defmethod for-chan-bindings :vanilla [bindings {:keys [form]} {:keys [sym-binding all-tuples-sym]}]
-  (conj bindings [sym-binding '<< `(let<< [stream-elems# ~form]
-                                      (for [tuple# ~all-tuples-sym
-                                            stream-elem# stream-elems#]
-                                        (conj tuple# stream-elem#)))]))
+  (conj bindings [sym-binding '<< `(let [stream-elems# ~form]
+                                     (for [tuple# (or (seq ~all-tuples-sym) [[]])
+                                           stream-elem# stream-elems#]
+                                       (conj tuple# stream-elem#)))]))
 
 (defmethod for-chan-bindings :sort-by [bindings {:keys [sort-form]} {:keys [sym-binding all-tuples-sym]}]
   (conj bindings [sym-binding `(sort-by (fn [~sym-binding]
@@ -85,12 +86,12 @@
 (defn for-chan-form [parsed-bindings]
   (let [all-tuples-sym (gensym "all_tuples")
 
-        syms [(->> parsed-bindings
-                   (map :sym)
-                   (remove nil?))]
+        syms (->> parsed-bindings
+                  (map :sym)
+                  (remove nil?))
         
         for-chan-opts {:all-tuples-sym all-tuples-sym
-                       :sym-binding `[[~@syms] :as ~all-tuples-sym]}
+                       :sym-binding `[~@syms :as ~all-tuples-sym]}
         
         chan-bindings (reduce (fn [bindings binding]
                                 (for-chan-bindings bindings binding for-chan-opts))
@@ -101,7 +102,7 @@
     
     {:syms syms
      :form `(let<< [~@(apply concat chan-bindings)]
-              all-tuples-sym)}))
+              ~all-tuples-sym)}))
 
 (comment
   (for-chan-form '[{:type :stream, :sym {:keys [x y]}, :form !my-atom}
@@ -109,22 +110,36 @@
                    {:type :when, :pred (even? x)}
                    #_{:type :sort-by, :sort-form (fn [{:keys [x y]} z] [x (- y)])}]))
 
+(defmacro for<< [bindings & body]
+  (let [{:keys [syms form]} (-> bindings
+                                parse-for<<-bindings
+                                for-chan-form)]
+    `(let [out-ch# (a/chan)
+           for-chan# ~form]
+       (go-loop [cache# {}]
+         (when-let [ids# (a/<! (stream-ch for-chan# (a/chan)))]
+           (prn ids#)
+           (let [results# (for [[~@syms :as id#] ids#]
+                            (or (get cache# id#)
+                                (do ~@body)))]
+             (a/>! out-ch# (-> results#
+                               (with-meta {:ids ids#})))
+             (recur (zipmap ids# results#)))))
+         
+       out-ch#)))
+
 (comment
-  ;; first bash at inside of for<<
-  (let [bindings '[{:keys [x y]} << !my-atom
-                   z (range 4)
-                   :when (even? x)
-                   :sort-by (fn [{:keys [x y]} z]
-                              [x (- y)])]]
-  
-    (let [{:keys [syms form]} (-> bindings
-                                  parse-for<<-bindings
-                                  for-chan-form)]
-      `(let [out-ch# (a/chan)]
-         (let<< [tuples# << ~form]
-           (-> (for [[~@sym-binding :as ] tu])
-               (with-meta))
-           )))))
+  (def !foo-atom (atom [{:x 2 :y 4}]))
+
+  (reset! !foo-atom [{:x 3 :y 98}])
+
+  (def foo-chan
+    (for<< [{:keys [x y]} << !foo-atom
+            ;; z (range 4)
+            ;; :when (even? x)
+            ;; :sort-by [x (- y)]
+            ]
+      [y x])))
 
 (comment
   (for<< [{:keys [x y]} << !my-atom
@@ -140,6 +155,8 @@
                         :when (even? x)
                         :sort-by (fn [{:keys [x y]} z]
                                    [x (- y)])]))
+
+
 
 #+cljs
 (defn- new-container []
