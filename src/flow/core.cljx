@@ -110,22 +110,26 @@
                    {:type :when, :pred (even? x)}
                    #_{:type :sort-by, :sort-form (fn [{:keys [x y]} z] [x (- y)])}]))
 
+(defn process-for<<-body [stream-chan body-fn]
+  ;; TODO this should return a stream-bind instead
+  (let [out-ch (a/chan)]
+    (go-loop [cache {}]
+      (when-let [ids (a/<! stream-chan)]
+        (let [results (for [id ids]
+                        (or (get cache id)
+                            (body-fn id)))]
+          (a/>! out-ch (-> results
+                           (with-meta {:ids ids})))
+          (recur (zipmap ids results)))))))
+
+#+clj
 (defmacro for<< [bindings & body]
   (let [{:keys [syms form]} (-> bindings
                                 parse-for<<-bindings
                                 for-chan-form)]
-    `(let [out-ch# (a/chan)
-           stream-chan# (stream-ch ~form (a/chan))]
-       (go-loop [cache# {}]
-         (when-let [ids# (a/<! stream-chan#)]
-           (let [results# (for [[~@syms :as id#] ids#]
-                            (or (get cache# id#)
-                                (do ~@body)))]
-             (a/>! out-ch# (-> results#
-                               (with-meta {:ids ids#})))
-             (recur (zipmap ids# results#)))))
-         
-       out-ch#)))
+    `(process-for<<-body (stream-ch ~form (a/chan))
+                         (fn [[~@syms]]
+                           (do ~@body)))))
 
 (comment
   (def !foo-atom (atom [{:x 2 :y 4} {:x 3 :y -3} {:x 2 :y 1}]))
