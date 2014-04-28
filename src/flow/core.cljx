@@ -130,7 +130,7 @@
 (comment
   (def !foo-atom (atom [{:x 2 :y 4} {:x 3 :y -3} {:x 2 :y 1}]))
 
-  (swap! !foo-atom #(update-in % [0 :x] inc))
+  (repeatedly 10 (fn [] (swap! !foo-atom #(update-in % [(rand-int (count %)) :x] inc))))
 
   (def foo-chan
     (for<< [{:keys [x y]} << !foo-atom
@@ -139,34 +139,20 @@
             :sort-by [x (- y)]]
       [y (inc z) x]))
 
-  (go
-    (prn (a/<! foo-chan) "ch value:"))
-  
+  (go-loop []
+    (when-let [value (a/<! foo-chan)]
+      (prn value "<- ch value:")
+      (recur)))
+
+
   )
-
-(comment
-  (for<< [{:keys [x y]} << !my-atom
-          z (range 4)
-          :when (even? x)
-          :sort-by (fn [{:keys [x y]} z]
-                     [x (- y)])]
-    [x y])
-
-
-  (parse-for<<-bindings '[{:keys [x y]} << !my-atom
-                        z (range 4)
-                        :when (even? x)
-                        :sort-by (fn [{:keys [x y]} z]
-                                   [x (- y)])]))
-
-
 
 #+cljs
 (defn- new-container []
   (node [:div {:style {:display "inline"}}]))
 
-#+cljs
-(defn el<< [el-stream]
+#+clj
+(defmacro el<< [el-stream]
   (let [$container (new-container)
         el-ch (stream-ch el-stream (a/chan))
         buffered-el-ch (a/chan (a/sliding-buffer 1))]
