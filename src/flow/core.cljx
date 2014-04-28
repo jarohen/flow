@@ -155,8 +155,8 @@
 (defn- new-container []
   (node [:div {:style {:display "inline"}}]))
 
-#+clj
-(defmacro el<< [el-stream]
+#+cljs
+(defn el<<* [el-stream]
   (let [$container (new-container)
         el-ch (stream-ch el-stream (a/chan))
         buffered-el-ch (a/chan (a/sliding-buffer 1))]
@@ -173,6 +173,10 @@
           (recur))))
     
     $container))
+
+#+clj
+(defmacro el<< [el-stream]
+  `(el<<* ~el-stream))
 
 (comment
   (do
