@@ -28,30 +28,42 @@
     `(stream-return (do ~@body))))
 
 (defn parse-for<<-bindings [bindings]
-  (when (seq bindings)
-    (lazy-seq
-     (when-let [[sym bind-or-value value-or-more & more] (seq bindings)]
-       (cond
-        (= '<< bind-or-value) (cons {:type :stream
-                                     :sym sym
-                                     :form value-or-more}
-                                    (parse-for<<-bindings more))
+  (letfn [(cons* [x coll]
+            (cond->> coll
+              x (cons x)))]
+    
+    (when (seq bindings)
+      (lazy-seq
+       (when-let [[sym bind-or-value value-or-more & more] (seq bindings)]
+         (cond
+          (= '<< bind-or-value) (cons {:type :stream
+                                       :sym sym
+                                       :form value-or-more}
+                                      (parse-for<<-bindings more))
 
-        (= :when sym) (cons {:type :when
-                             :pred bind-or-value}
-                            (when value-or-more
-                              (parse-for<<-bindings (cons value-or-more more))))
+          (= :when sym) (cons {:type :filter
+                               :pred bind-or-value}
+                              (parse-for<<-bindings (cons* value-or-more more)))
 
-        (= :sort-val sym) (cons {:type :sort-val
-                                :sort-form bind-or-value}
-                               (when value-or-more
-                                 (parse-for<<-bindings (cons value-or-more more))))
+          (= :sort-value sym) (let [[comparator & more] (case value-or-more
+                                                          :sort-comparator more
+                                                          :sort-reverse? (let [[reverse & more] more]
+                                                                           (cons `(let [reverse?# ~reverse]
+                                                                                    (fn [left# right#]
+                                                                                      (if reverse?#
+                                                                                        (compare right# left#)
+                                                                                        (compare left# right#))))
+                                                                                 more))
+                                                          (cons 'compare (cons* value-or-more more)))]
+                                (cons {:type :sort
+                                       :sort-value bind-or-value
+                                       :sort-comparator comparator}
+                                      (parse-for<<-bindings more)))
 
-        :else (cons {:type :vanilla
-                     :sym sym
-                     :form bind-or-value}
-                    (when value-or-more
-                      (parse-for<<-bindings (cons value-or-more more)))))))))
+          :else (cons {:type :vanilla
+                       :sym sym
+                       :form bind-or-value}
+                      (parse-for<<-bindings (cons* value-or-more more)))))))))
 
 (defmulti for-stream-bindings
   (fn [acc binding for-chan-opts]
@@ -69,12 +81,13 @@
                                        stream-elem# stream-elems#]
                                    (conj tuple# stream-elem#)))]))
 
-(defmethod for-stream-bindings :sort-val [bindings {:keys [sort-form]} {:keys [sym-binding all-tuples-sym]}]
+(defmethod for-stream-bindings :sort [bindings {:keys [sort-value sort-comparator]} {:keys [sym-binding all-tuples-sym]}]
   (conj bindings [sym-binding `(sort-by (fn [~sym-binding]
-                                          ~sort-form)
+                                          ~sort-value)
+                                        ~sort-comparator
                                         ~all-tuples-sym)]))
 
-(defmethod for-stream-bindings :when [bindings {:keys [pred]} {:keys [sym-binding all-tuples-sym]}]
+(defmethod for-stream-bindings :filter [bindings {:keys [pred]} {:keys [sym-binding all-tuples-sym]}]
   (conj bindings [sym-binding `(filter (fn [~sym-binding]
                                           ~pred)
                                         ~all-tuples-sym)]))

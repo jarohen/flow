@@ -29,7 +29,8 @@
     [:ul
      (el<<
       (for<< [contact << !contacts
-              :sort-val (:last contact)]
+              :sort-value (:last contact)
+              :sort-reverse? (zero? (rand-int 2))]
         (contact-widget contact event-ch)))]]))
 
 (defn with-submit-handler! [$new-contact-box event-ch]
