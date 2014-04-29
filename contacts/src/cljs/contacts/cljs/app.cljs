@@ -3,11 +3,10 @@
             [contacts.cljx.formatter :as f]
             [dommy.core :as d]
             [goog.events.KeyCodes :as kc]
-            [flow.core :refer [el<<]]
+            [flow.core :refer-macros [for<< let<< el<<]]
             frodo.brepl)
   (:require-macros [dommy.macros :refer [node sel1]]
-                   [cljs.core.async.macros :refer [go-loop]]
-                   [flow.core :refer [let<<]]))
+                   [cljs.core.async.macros :refer [go-loop]]))
 
 (enable-console-print!)
 
@@ -28,18 +27,10 @@
    [:div
     [:h1 "Contact List:"]
     [:ul
-     (comment
-       (el<<
-        (for<< [contact << (let<< [contacts !contacts]
-                             (sort-by :last contacts))]
-          (contact-widget contact event-ch))))
-     
      (el<<
-      (let<< [contacts << !contacts]
-        (node
-         [:div
-          (for [contact (sort-by :last contacts)]
-            (contact-widget contact event-ch))])))]]))
+      (for<< [contact << !contacts
+              :sort-val (:last contact)]
+        (contact-widget contact event-ch)))]]))
 
 (defn with-submit-handler! [$new-contact-box event-ch]
   (d/listen! $new-contact-box :keyup
