@@ -18,15 +18,14 @@
   ::nil)
 
 (defprotocol Stream
-  (stream-ch [_ cancel-ch]))
+  (stream-ch [_ cancel-ch buffer-fn]))
 
 (defn ch->stream [ch]
   (let [!last-value (atom ::initial)]
 
     (reify Stream
-      (stream-ch [_ cancel-ch]
-        (let [out-ch (a/chan)
-              cancel-ch (a/chan)
+      (stream-ch [_ cancel-ch buffer-fn]
+        (let [out-ch (a/chan (buffer-fn))
               last-value @!last-value]
 
           (when-not (= last-value ::initial)
@@ -45,7 +44,9 @@
                           (reset! !last-value new-val)
                           (a/>! out-ch new-val)
                           (recur new-val)))
-                      (a/close! out-ch))))))))))
+                      (a/close! out-ch)))))
+          
+          out-ch)))))
 
 (defn ->stream [obj]
   (cond
@@ -55,8 +56,8 @@
 
 (extend-protocol Stream
   Atom
-  (stream-ch [!atom cancel-ch]
-    (let [out-ch (a/chan)
+  (stream-ch [!atom cancel-ch buffer-fn]
+    (let [out-ch (a/chan (buffer-fn))
           watch-key (gensym "atom-stream")]
 
       (a/put! out-ch @!atom)
@@ -73,9 +74,9 @@
       out-ch)))
 
 #+cljs
-(defn html-element-stream-ch [$el cancel-ch value-fn]
+(defn html-element-stream-ch [$el cancel-ch buffer-fn value-fn]
   
-  (let [out-ch (a/chan (a/sliding-buffer 1))
+  (let [out-ch (a/chan (buffer-fn))
         listener (fn [e]
                    (a/put! out-ch (value-fn (.-target e))))]
 
@@ -94,24 +95,25 @@
 #+cljs
 (extend-protocol Stream
   js/HTMLInputElement
-  (stream-ch [$el cancel-ch]
+  (stream-ch [$el cancel-ch buffer-fn]
     (html-element-stream-ch $el
-                           cancel-ch
-                           (case (.-type $el)
-                             "checkbox" #(.-checked %)
-                             #(.-value %))))
+                            cancel-ch
+                            buffer-fn
+                            (case (.-type $el)
+                              "checkbox" #(.-checked %)
+                              #(.-value %))))
 
   js/HTMLTextAreaElement
-  (stream-ch [$el cancel-ch]
-    (html-element-stream-ch $el cancel-ch #(.-value %)))
+  (stream-ch [$el cancel-ch buffer-fn]
+    (html-element-stream-ch $el cancel-ch buffer-fn #(.-value %)))
 
   js/HTMLSelectElement
-  (stream-ch [$el cancel-ch]
-    (html-element-stream-ch $el cancel-ch #(.-value %))))
+  (stream-ch [$el cancel-ch buffer-fn]
+    (html-element-stream-ch $el cancel-ch buffer-fn #(.-value %))))
 
 (defn stream-return [v]
   (reify Stream
-    (stream-ch [_ _]
+    (stream-ch [_ _ _]
       (go
         (if-not (nil? v)
           v
@@ -123,10 +125,10 @@
   ;; returns :: Stream b
 
   (reify Stream
-    (stream-ch [_ cancel-ch]
-      (let [out-ch (a/chan)
+    (stream-ch [_ cancel-ch buffer-fn]
+      (let [out-ch (a/chan (buffer-fn))
             stream-cancel-ch (a/chan)
-            stream-value-ch (stream-ch s stream-cancel-ch)]        
+            stream-value-ch (stream-ch s stream-cancel-ch buffer-fn)]        
 
         (go-loop [old-stream-value ::initial
                   fn-cancel-ch (a/chan)
@@ -150,7 +152,7 @@
                                      (recur old-stream-value fn-cancel-ch fn-stream-ch)
                                                               
                                      (let [new-fn-cancel-ch (a/chan)
-                                           new-fn-stream-ch (stream-ch (f new-val) new-fn-cancel-ch)]
+                                           new-fn-stream-ch (stream-ch (f new-val) new-fn-cancel-ch buffer-fn)]
                                        (recur new-val new-fn-cancel-ch new-fn-stream-ch))))
 
                                  (do

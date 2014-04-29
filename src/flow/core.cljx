@@ -108,10 +108,10 @@
 
 (defn process-for<<-body [for-stream body-fn]
   (reify Stream
-    (stream-ch [_ cancel-ch]
-      (let [out-ch (a/chan)
+    (stream-ch [_ cancel-ch buffer-fn]
+      (let [out-ch (a/chan (buffer-fn))
             down-cancel-ch (a/chan)
-            for-ch (stream-ch for-stream down-cancel-ch)]
+            for-ch (stream-ch for-stream down-cancel-ch buffer-fn)]
         (go-loop [cache {}]
           (alt!
             :priority true
@@ -169,13 +169,10 @@
 #+cljs
 (defn el<<* [el-stream]
   (let [$container (new-container)
-        el-ch (stream-ch el-stream (a/chan))
-        buffered-el-ch (a/chan (a/sliding-buffer 1))]
-    
-    (a/pipe el-ch buffered-el-ch)
+        el-ch (stream-ch el-stream (a/chan) #(a/sliding-buffer 1))]
     
     (go-loop []
-      (when-let [$el (a/<! buffered-el-ch)]
+      (when-let [$el (a/<! el-ch)]
         (let [$el (if (= nil-sentinel $el)
                     nil
                     $el)]
