@@ -117,7 +117,7 @@
                                         (or (get cache id)
                                             (body-fn id)))]
                           (a/>! out-ch (-> results
-                                           (with-meta {:ids ids})))
+                                           (vary-meta assoc :flow/ids ids)))
                           (recur (zipmap ids results)))
 
                         (a/close! down-cancel-ch)
