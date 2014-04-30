@@ -28,10 +28,13 @@
     [:h1 "Contact List:"]
     [:ul
      (el<<
+      (comment
+        (for<< [contact (sort-by :last (<< !contacts))]
+          (contact-widget contact event-ch)))
+      
       (for<< [contact << !contacts
-              :sort-value (:last contact)
-              :sort-reverse? (zero? (rand-int 2))]
-        (contact-widget contact event-ch)))]]))
+              :sort-value (:last contact)]
+          (contact-widget contact event-ch)))]]))
 
 (defn with-submit-handler! [$new-contact-box event-ch]
   (d/listen! $new-contact-box :keyup
