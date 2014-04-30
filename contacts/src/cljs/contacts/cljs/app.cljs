@@ -23,7 +23,7 @@
         (with-delete-handler! contact event-ch))]))
 
 (defn contact-list-widget [!contacts event-ch]
-b  (node
+  (node
    [:div
     [:h1 "Contact List:"]
     [:ul
