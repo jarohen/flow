@@ -110,18 +110,13 @@
                          (a/close! out-ch))
 
             for-ch ([ids]
-
-                      ;; TODO not sure what the laziness problem is
-                      ;; here, but we eval body-fn twice per id if
-                      ;; there's no 'doall'
-
                       (if ids
                         (let [results (-> (for [id ids]
                                             (or (get cache id)
                                                 (body-fn id)))
-                                          doall)]
-                          (a/>! out-ch (-> results
-                                           (vary-meta assoc :flow/ids ids)))
+                                          
+                                          (vary-meta assoc :flow/ids ids))]
+                          (a/>! out-ch results)
                           (recur (zipmap ids results)))
 
                         (do
