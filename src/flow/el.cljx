@@ -16,20 +16,17 @@
 
 #+cljs
 (defn- update-els! [$container old-els new-els]
-  (let [old-ids (doto (:flow/ids (meta old-els)) prn)
-        new-ids (doto (:flow/ids (meta new-els)) prn)
+  (let [old-ids (:flow/ids (meta old-els))
+        new-ids (:flow/ids (meta new-els))
         old-id->el (zipmap old-ids old-els)
         new-id->el (zipmap new-ids new-els)
 
         deleted-ids (set/difference (set old-ids) (set new-ids))
         _ (doseq [id deleted-ids]
-            (d/remove! (doto (old-id->el id) prn)))]
+            (d/remove! (old-id->el id)))]
     
     (when-not (seq old-els)
       (d/replace-contents! $container new-els))))
-
-;; TODO there's some doubling up going on here which is causing some
-;; strange effects - think it's the very first time through for<<
 
 #+cljs
 (defn el<< [el-stream]
@@ -40,10 +37,7 @@
       (when-let [$el (a/<! el-ch)]
         (if (:flow/ids (meta $el))
           (let [els $el]
-            (prn (map #(.-randId %) els))
             (update-els! $container old-els els)
-            (when (= 3 (count els))
-              (d/replace-contents! $container "hell no!"))
             (recur els))
           
           (let [$el (if (= nil-sentinel $el)

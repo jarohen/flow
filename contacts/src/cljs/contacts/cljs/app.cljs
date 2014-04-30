@@ -16,18 +16,14 @@
                        :contact contact})))
 
 (defn contact-widget [contact event-ch]
-  (let [rand-id (rand-int 1000)
-        n (node
-           [:li
-            [:span (f/display-name contact) " (" rand-id ")"]
-            (-> (node [:button.btn.btn-link "[delete]"])
-                (with-delete-handler! contact event-ch))])]
-    (println "creating" rand-id)
-    (set! (.-randId n) rand-id)
-    n))
+  (node
+   [:li
+    [:span (f/display-name contact)]
+    (-> (node [:button.btn.btn-link "[delete]"])
+        (with-delete-handler! contact event-ch))]))
 
 (defn contact-list-widget [!contacts event-ch]
-  (node
+b  (node
    [:div
     [:h1 "Contact List:"]
     [:ul

@@ -27,11 +27,9 @@
           (= :sort-value sym) (let [[comparator & more] (case value-or-more
                                                           :sort-comparator more
                                                           :sort-reverse? (let [[reverse & more] more]
-                                                                           (cons `(let [reverse?# ~reverse]
-                                                                                    (fn [left# right#]
-                                                                                      (if reverse?#
-                                                                                        (compare right# left#)
-                                                                                        (compare left# right#))))
+                                                                           (cons `(if ~reverse
+                                                                                    #(compare %2 %1)
+                                                                                    #(compare %1 %2))
                                                                                  more))
                                                           (cons 'compare (cons* value-or-more more)))]
                                 (cons {:type :sort
@@ -112,16 +110,23 @@
                          (a/close! out-ch))
 
             for-ch ([ids]
+
+                      ;; TODO not sure what the laziness problem is
+                      ;; here, but we eval body-fn twice per id if
+                      ;; there's no 'doall'
+
                       (if ids
-                        (let [results (for [id ids]
-                                        (or (get cache id)
-                                            (body-fn id)))]
+                        (let [results (-> (for [id ids]
+                                            (or (get cache id)
+                                                (body-fn id)))
+                                          doall)]
                           (a/>! out-ch (-> results
                                            (vary-meta assoc :flow/ids ids)))
                           (recur (zipmap ids results)))
 
-                        (a/close! down-cancel-ch)
-                        (a/close! out-ch)))))
+                        (do
+                          (a/close! down-cancel-ch)
+                          (a/close! out-ch))))))
 
         out-ch))))
 
