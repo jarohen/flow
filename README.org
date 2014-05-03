@@ -58,7 +58,7 @@ have a contact list atom containing
     :last "Gosling"}]
 #+END_SRC
 
-I can render this as a dynamic widget with the following Flow code:
+You can render this as a dynamic widget with the following Flow code:
 
 #+BEGIN_SRC clojure
   (defn contacts-widget [contacts-atom]
