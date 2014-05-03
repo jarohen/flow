@@ -114,12 +114,7 @@
    :else (atom obj)))
 
 (defn stream-return [v]
-  (reify Stream
-    (stream-ch [_ _ _]
-      (go
-        (if-not (nil? v)
-          v
-          nil-sentinel)))))
+  (atom v))
 
 (defn stream-bind [s f]
   ;; s :: Stream a
