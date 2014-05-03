@@ -1,4 +1,4 @@
-(ns contacts.css
+(ns contacts.clj.css
   (:require [gaka.core :as gaka]))
 
 (def main-css

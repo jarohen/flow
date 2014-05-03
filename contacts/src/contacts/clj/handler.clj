@@ -1,11 +1,11 @@
-(ns contacts.handler
+(ns contacts.clj.handler
   (:require [ring.util.response :refer [response content-type]]
             [compojure.core :refer [routes GET]]
             [compojure.route :refer [resources]]
             [compojure.handler :refer [api]]
             [hiccup.page :refer [html5 include-css include-js]]
             [frodo.brepl :refer [brepl-js]]
-            [contacts.css :as css]))
+            [contacts.clj.css :as css]))
 
 (defn page-frame []
   (html5

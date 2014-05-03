@@ -26,20 +26,20 @@
 
   :frodo/config-resource "contacts-config.edn"
 
-  :source-paths ["src/clojure" "target/generated/clj" "../src"]
+  :source-paths ["src" "target/generated/clj"]
 
   :resource-paths ["resources" "target/resources"]
 
-  :cljx {:builds [{:source-paths ["src/cljx"]
+  :cljx {:builds [{:source-paths ["src"]
                    :output-path "target/generated/clj"
                    :rules :clj}
 
-                  {:source-paths ["src/cljx"]
+                  {:source-paths ["src"]
                    :output-path "target/generated/cljs"
                    :rules :cljs}]}
 
   :cljsbuild {:builds {:dev
-                       {:source-paths ["src/cljs" "target/generated/cljs" "../src" "../target/generated/cljs"]
+                       {:source-paths ["src" "target/generated/cljs" "../src" "../target/generated/cljs"]
                         :compiler {:output-to "target/resources/js/contacts.js"
                                    :output-dir "target/resources/js/"
                                    :optimizations :whitespace
