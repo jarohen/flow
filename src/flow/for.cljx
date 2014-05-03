@@ -33,7 +33,7 @@
     (:type binding)))
 
 (defmethod for-stream-bindings :vanilla [bindings {:keys [form]} {:keys [sym-binding all-tuples-sym]}]
-  (conj bindings [sym-binding `(l/let<< [stream-elems# ~form]
+  (conj bindings [sym-binding `(let [stream-elems# ~form]
                                  (for [tuple# (or (seq ~all-tuples-sym) [[]])
                                        stream-elem# stream-elems#]
                                    (conj tuple# stream-elem#)))]))
