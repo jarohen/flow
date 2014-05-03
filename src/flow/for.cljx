@@ -2,8 +2,7 @@
   (:require #+clj [clojure.core.async :as a :refer [go go-loop alt!]]
             #+clj [flow.let :as l]
             #+cljs [cljs.core.async :as a]
-            [flow.stream :refer [stream-ch Stream]]
-            [flow.ioc :refer [form->binds]])
+            [flow.stream :refer [stream-ch Stream]])
 
   #+cljs (:require-macros [cljs.core.async.macros :refer [go go-loop alt!]]))
 

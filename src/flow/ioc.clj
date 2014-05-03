@@ -1,6 +1,6 @@
 (ns flow.ioc
   (:require [clojure.walk :refer [postwalk macroexpand-all]]
-            [flow.stream :refer [stream-bind ->stream]]))
+            [flow.stream :refer [stream-bind stream-return ->stream]]))
 
 (defn find-streams [form]
   (cond
@@ -24,13 +24,12 @@
    :else form))
 
 (defn form->binds [form]
-  (let [form (postwalk find-streams (macroexpand-all form))
+  (let [form (postwalk find-streams form)
         streams (:streams (meta form))]
     
     (reduce (fn [form {:keys [stream-sym stream]}]
               `(stream-bind (->stream ~stream)
                             (fn [~stream-sym]
                               ~form)))
-            form
+            `(stream-return ~form)
             streams)))
-

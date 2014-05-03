@@ -1,6 +1,6 @@
 (ns flow.let
   (:require [flow.stream :refer [stream-bind stream-return ->stream]]
-            [flow.ioc :refer [form->binds]]))
+            #+clj [flow.ioc :refer [form->binds]]))
 
 #+clj
 (defmacro let<< [bindings & body]
