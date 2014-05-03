@@ -29,7 +29,12 @@
     [:ul
      (el<<
       (for<< [contact (sort-by :last (<< !contacts))]
-        (contact-widget contact event-ch)))]]))
+        (contact-widget contact event-ch)))]
+
+    [:div
+     (el<<
+      (let<< [contact-count (count (<< !contacts))]
+        [:span contact-count " contact" (when (not= 1 contact-count) "s") "."]))]]))
 
 (defn with-submit-handler! [$new-contact-box event-ch]
   (d/listen! $new-contact-box :keyup
