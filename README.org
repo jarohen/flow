@@ -127,6 +127,9 @@ James
 A big thanks to [[https://github.com/henrygarner][Henry Garner]] for his excellent suggestion of the =<<=
 Flow syntax, and for his feedback on early versions of the library.
 
+Also, thanks to [[https://github.com/matlux][Mathieu Gauthron]], [[https://github.com/n8dawgrr][Nathan Matthews]] and [[https://github.com/malcolmsparks][Malcolm Sparks]],
+whose feedback on Clidget helped shape the direction of Flow.
+
 ** License
 
 Copyright © 2014 James Henderson
