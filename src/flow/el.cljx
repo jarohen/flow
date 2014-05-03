@@ -16,17 +16,7 @@
 
 #+cljs
 (defn- update-els! [$container old-els new-els]
-  (let [old-ids (:flow/ids (meta old-els))
-        new-ids (:flow/ids (meta new-els))
-        old-id->el (zipmap old-ids old-els)
-        new-id->el (zipmap new-ids new-els)
-
-        deleted-ids (set/difference (set old-ids) (set new-ids))
-        _ (doseq [id deleted-ids]
-            (d/remove! (old-id->el id)))]
-    
-    (when-not (seq old-els)
-      (d/replace-contents! $container new-els))))
+  (d/replace-contents! $container new-els))
 
 #+cljs
 (defn el<< [el-stream]
