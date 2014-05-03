@@ -14,3 +14,7 @@
 #+clj
 (defmacro el<< [el-stream]
   `(el/el<< ~el-stream))
+
+#+clj
+(defmacro << [stream]
+  (throw (ex-info "'<<' used outside of let<</for<<" {:stream stream})))
