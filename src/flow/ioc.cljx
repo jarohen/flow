@@ -23,7 +23,7 @@
    
    :else form))
 
-(defmacro form->stream [form]
+(defn form->binds [form]
   (let [form (postwalk find-streams (macroexpand-all form))
         streams (:streams (meta form))]
     
