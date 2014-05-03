@@ -1,4 +1,4 @@
-(defproject flow-sample ""
+(defproject jarohen/flow.sample ""
 
   :description "A sample application to demo the Flow library"
   :license {:name "Eclipse Public License"
@@ -15,7 +15,7 @@
                  [org.clojure/core.async "0.1.267.0-0d7780-alpha"]
                  [org.clojure/clojurescript "0.0-2202"]
 
-                 [jarohen/flow "0.1.0-SNAPSHOT"]]
+                 [jarohen/flow "0.1.0-rc1"]]
 
   :plugins [[jarohen/lein-frodo "0.3.0-rc2"]
             [lein-cljsbuild "1.0.3"]

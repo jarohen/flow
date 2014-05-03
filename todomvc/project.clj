@@ -1,4 +1,4 @@
-(defproject jarohen/clidget.todomvc ""
+(defproject jarohen/flow.todomvc ""
 
   :description "A sample ToDoMVC app demonstrating Flow"
   :license {:name "Eclipse Public License"
@@ -17,7 +17,7 @@
 
                  [gaka "0.3.0"]
 
-                 [jarohen/flow "0.1.0-SNAPSHOT"]]
+                 [jarohen/flow "0.1.0-rc1"]]
 
   :plugins [[jarohen/lein-frodo "0.3.0-rc2"]
             [lein-cljsbuild "1.0.3"]
