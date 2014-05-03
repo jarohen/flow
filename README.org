@@ -1,0 +1,105 @@
+* Flow
+
+#+BEGIN_SRC clojure
+  [jarohen/flow "0.1.0-rc1"]
+#+END_SRC
+
+Flow is a lightweight library to help you write dynamic ClojureScript
+webapps in a declarative style, without worrying when/how the DOM
+needs to be updated.
+
+Fundamentally, it does this by extending the behaviour of Clojure's
+=let= and =for= constructs to handle changing inputs, but allowing you
+to write pure, value → value functions as you would if the inputs
+were static.
+
+For example, if you were to design an counter widget based on a static
+counter value, you might write something like:
+
+#+BEGIN_SRC clojure
+  (:require-macros [dommy.macros :refer [node]])
+
+  (defn counter-widget [counter]
+    (node
+     [:p "The counter is currently at " counter]))
+#+END_SRC
+
+(Here I'm using Prismatic's '[[https://github.com/prismatic/dommy][Dommy]]' library to generate the DOM
+elements; you're free to use whatever templating library you prefer.)
+
+To make this dynamic, using Flow, we'd write something like this:
+
+#+BEGIN_SRC clojure
+  (:require [flow.core :refer-macros [el<< let<<]])
+
+  (defn counter-widget [counter-atom]
+    (el<<
+      (let<< [counter (<< counter-atom)]
+        (node
+         [:p "The counter is currently at " counter]))))
+#+END_SRC
+
+I would probably read this function as:
+
+#+BEGIN_QUOTE
+given that =counter= comes from (<<) =counter-atom=, give me a dynamic
+element that reads "The counter is currently at <counter>"
+#+END_QUOTE
+
+Flow also has a =for<<= macro, with predictable semantics. Assuming I
+have a contact list atom containing
+
+#+BEGIN_SRC clojure
+  [{:first "Rich"
+    :last "Hickey"}
+   {:first "Martin"
+    :last "Odersky"}
+   {:first "James"
+    :last "Gosling"}]
+#+END_SRC
+
+I can render this as a dynamic widget with the following Flow code:
+
+#+BEGIN_SRC clojure
+  (defn contacts-widget [contacts-atom]
+    (node
+     [:ul
+      (el<<
+        (for<< [{:keys [first last]} (sort-by :last (<< contacts-atom))]
+          (node
+           [:li last ", " first])))]))
+#+END_SRC
+
+Flow will then update the contact list whenever the contacts atom is
+changed.
+
+** Getting started:
+
+To add Flow to your Leiningen project, add the following to your =project.clj=:
+
+#+BEGIN_SRC clojure
+  [jarohen/flow "0.1.0-rc1"]
+#+END_SRC
+
+*** Requires:
+
+Flow only has one require, as follows:
+
+#+BEGIN_SRC clojure
+  (:require [flow.core :refer-macros [el<< let<< for<<]])
+#+END_SRC
+
+*** Emacs auto-indent
+
+You can get Emacs to auto-indent your Flow code by adding the
+following snippet to your configuration:
+
+#+BEGIN_SRC emacs-lisp
+  (require 'clojure-mode)
+
+  (define-clojure-indent
+    (let<< 1)
+    (for<< 1)
+    (el<< 0))
+#+END_SRC
+
