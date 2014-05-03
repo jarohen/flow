@@ -34,7 +34,11 @@
     [:div
      (el<<
       (let<< [contact-count (count (<< !contacts))]
-        [:span contact-count " contact" (when (not= 1 contact-count) "s") "."]))]]))
+        [:span contact-count " "
+         (if (= contact-count 1)
+           "contact"
+           "contacts")
+         "."]))]]))
 
 (defn with-submit-handler! [$new-contact-box event-ch]
   (d/listen! $new-contact-box :keyup
