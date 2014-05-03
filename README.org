@@ -73,7 +73,7 @@ I can render this as a dynamic widget with the following Flow code:
 Flow will then update the contact list whenever the contacts atom is
 changed.
 
-** Getting started:
+** Getting started
 
 To add Flow to your Leiningen project, add the following to your =project.clj=:
 
@@ -81,7 +81,7 @@ To add Flow to your Leiningen project, add the following to your =project.clj=:
   [jarohen/flow "0.1.0-rc1"]
 #+END_SRC
 
-*** Requires:
+*** Requires
 
 Flow only has one require, as follows:
 
@@ -102,4 +102,29 @@ following snippet to your configuration:
     (for<< 1)
     (el<< 0))
 #+END_SRC
+
+
+** Example projects using Flow
+
+In this repo:
+
+- '[[https://github.com/james-henderson/flow/tree/master/flow-sample][flow-sample]]' - a simple counter app
+- '[[https://github.com/james-henderson/flow/tree/master/flow-sample][Contact Manager]]'
+- '[[https://github.com/james-henderson/flow/tree/master/todomvc][TodoMVC]]' (because it's pretty much obligatory!)
+
+** Diving deeper into Flow
+
+I'll flesh this documentation out more over the weekend. In the
+meantime, if you have any questions, feel free to get in touch through
+Twitter (I'm [[https://twitter.com/jarohen][@jarohen]]) or through the traditional GitHub methods!
+
+Thanks!
+
+James
+
+** License
+
+Copyright © 2014 James Henderson
+
+Distributed under the Eclipse Public License, the same as Clojure
 
