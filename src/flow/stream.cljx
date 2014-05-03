@@ -48,12 +48,6 @@
           
           out-ch)))))
 
-(defn ->stream [obj]
-  (cond
-   (satisfies? Stream obj) obj
-   (and (satisfies? ap/ReadPort obj)
-        (satisfies? ap/Channel obj)) (ch->stream obj)))
-
 (extend-protocol Stream
   Atom
   (stream-ch [!atom cancel-ch buffer-fn]
@@ -110,6 +104,14 @@
   js/HTMLSelectElement
   (stream-ch [$el cancel-ch buffer-fn]
     (html-element-stream-ch $el cancel-ch buffer-fn #(.-value %))))
+
+(defn ->stream [obj]
+  (cond
+   (satisfies? Stream obj) obj
+   
+   (and (satisfies? ap/ReadPort obj) (satisfies? ap/Channel obj)) (ch->stream obj)
+   
+   :else (atom obj)))
 
 (defn stream-return [v]
   (reify Stream
