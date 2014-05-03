@@ -157,12 +157,12 @@
                                    (a/close! out-ch))))
 
             fn-stream-ch ([new-val]
-                           (if-not (nil? new-val)
-                             (do
-                               (a/>! out-ch new-val)
-                               (recur old-stream-value fn-cancel-ch fn-stream-ch))
+                            (if-not (nil? new-val)
+                              (do
+                                (a/>! out-ch new-val)
+                                (recur old-stream-value fn-cancel-ch fn-stream-ch))
                              
-                             (recur old-stream-value fn-cancel-ch (a/chan))))))
+                              (recur old-stream-value fn-cancel-ch (a/chan))))))
         
         out-ch))))
 
