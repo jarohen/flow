@@ -122,6 +122,11 @@ Thanks!
 
 James
 
+** Thanks
+
+A big thanks to [[https://github.com/henrygarner][Henry Garner]] for his excellent suggestion of the =<<=
+Flow syntax, and for his feedback on early versions of the library.
+
 ** License
 
 Copyright © 2014 James Henderson
