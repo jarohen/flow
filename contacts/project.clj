@@ -30,11 +30,11 @@
 
   :resource-paths ["resources" "target/resources"]
 
-  :cljx {:builds [{:source-paths ["src/cljx" "../src"]
+  :cljx {:builds [{:source-paths ["src/cljx"]
                    :output-path "target/generated/clj"
                    :rules :clj}
 
-                  {:source-paths ["src/cljx" "../src"]
+                  {:source-paths ["src/cljx"]
                    :output-path "target/generated/cljs"
                    :rules :cljs}]}
 
