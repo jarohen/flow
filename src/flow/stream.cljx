@@ -17,6 +17,15 @@
 (def nil-sentinel
   ::nil)
 
+(defn wrap-nil [v]
+  (if-not (nil? v)
+    v
+    nil-sentinel))
+
+(defn unwrap-nil [v]
+  (when-not (= v nil-sentinel)
+    v))
+
 (defprotocol Stream
   (stream-ch [_ cancel-ch buffer-fn]))
 
@@ -54,11 +63,11 @@
     (let [out-ch (a/chan (buffer-fn))
           watch-key (gensym "atom-stream")]
 
-      (a/put! out-ch @!atom)
+      (a/put! out-ch (wrap-nil @!atom))
       
       (add-watch !atom watch-key
                  (fn [_ _ _ v]
-                   (a/put! out-ch v)))
+                   (a/put! out-ch (wrap-nil v))))
       
       (go
         (a/<! cancel-ch)
@@ -70,7 +79,8 @@
 #+cljs
 (defn html-element-stream-ch [$el cancel-ch buffer-fn value-fn]
   
-  (let [out-ch (a/chan (buffer-fn))
+  (let [value-fn #(or (value-fn %) "")
+        out-ch (a/chan (buffer-fn))
         listener (fn [e]
                    (a/put! out-ch (value-fn (.-target e))))]
 
@@ -142,9 +152,7 @@
             stream-value-ch ([new-val]
                                (if-not (nil? new-val)
 
-                                 (let [new-val (if (= nil-sentinel new-val)
-                                                 nil
-                                                 new-val)]
+                                 (let [new-val (unwrap-nil new-val)]
                                    (if (= old-stream-value new-val)
                                      (recur old-stream-value fn-cancel-ch fn-stream-ch)
                                                               
