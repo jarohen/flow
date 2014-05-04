@@ -4,7 +4,7 @@
             #+cljs [dommy.core :as d]
             [clojure.data :refer [diff]]
             [clojure.set :as set]
-            [flow.stream :refer [nil-sentinel stream-ch]])
+            [flow.stream :refer [unwrap-nil stream-ch]])
 
   #+cljs
   (:require-macros [dommy.macros :refer [node sel1]]
@@ -15,8 +15,26 @@
   (node [:div {:style {:display "inline"}}]))
 
 #+cljs
-(defn- update-els! [$container old-els new-els]
-  (d/replace-contents! $container new-els))
+(defn update-els! [$container old-els new-els]
+  (let [[deleted inserted kept] (map set (diff old-els new-els))]
+    (if (and (= ((fnil remove #{}) deleted old-els)
+                ((fnil remove #{}) inserted new-els))
+
+             (< (+ (count inserted) (count deleted))
+                (count kept)))
+
+      (do
+        (doseq [$el deleted]
+          (d/remove! $el))
+        (doseq [[$el $after-el] (->> new-els
+                                     (partition-all 2 1)
+                                     reverse)
+                :when (inserted $el)]
+          (if $after-el
+            (d/insert-before! $after-el)
+            (d/append! $container $el))))
+      
+      (d/replace-contents! $container new-els))))
 
 #+cljs
 (defn el<< [el-stream]
@@ -25,17 +43,12 @@
     
     (go-loop [old-els nil]
       (when-let [$el (a/<! el-ch)]
-        (if (:flow/ids (meta $el))
-          (let [els $el]
-            (update-els! $container old-els els)
-            (recur els))
-          
-          (let [$el (if (= nil-sentinel $el)
-                      nil
-                      $el)]
-            (d/replace-contents! $container $el)
+        (if (seq? $el)
+          (do
+            (update-els! $container old-els $el)
+            (recur $el))
+          (do
+            (d/replace-contents! $container (unwrap-nil $el))
             (recur nil)))))
     
     $container))
-
-
