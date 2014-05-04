@@ -15,40 +15,13 @@
   (node [:div {:style {:display "inline"}}]))
 
 #+cljs
-(defn update-els! [$container old-els new-els]
-  (let [[deleted inserted kept] (map set (diff old-els new-els))]
-    (if (and (= ((fnil remove #{}) deleted old-els)
-                ((fnil remove #{}) inserted new-els))
-
-             (< (+ (count inserted) (count deleted))
-                (count kept)))
-
-      (do
-        (doseq [$el deleted]
-          (d/remove! $el))
-        (doseq [[$el $after-el] (->> new-els
-                                     (partition-all 2 1)
-                                     reverse)
-                :when (inserted $el)]
-          (if $after-el
-            (d/insert-before! $after-el)
-            (d/append! $container $el))))
-      
-      (d/replace-contents! $container new-els))))
-
-#+cljs
 (defn el<< [el-stream]
   (let [$container (new-container)
         el-ch (stream-ch el-stream (a/chan) #(a/sliding-buffer 1))]
     
-    (go-loop [old-els nil]
+    (go-loop []
       (when-let [$el (a/<! el-ch)]
-        (if (seq? $el)
-          (do
-            (update-els! $container old-els $el)
-            (recur $el))
-          (do
-            (d/replace-contents! $container (unwrap-nil $el))
-            (recur nil)))))
+        (d/replace-contents! $container (unwrap-nil $el))
+        (recur)))
     
     $container))
