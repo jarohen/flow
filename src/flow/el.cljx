@@ -11,8 +11,9 @@
                    [cljs.core.async.macros :refer [go go-loop alt!]]))
 
 #+cljs
-(defn- new-container []
-  (node [:div {:style {:display "inline"}}]))
+(let [container (node [:div {:style {:display "inline"}}])]
+  (defn- new-container []
+    (.cloneNode container)))
 
 #+cljs
 (defn el<< [el-stream]
