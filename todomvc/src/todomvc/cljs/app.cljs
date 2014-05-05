@@ -25,9 +25,9 @@
         (swap! !todos
                assoc-in [i :done?] true))
 
-      (dotimes [i els]
-        (swap! !todos
-               dissoc i))
+      #_(dotimes [i els]
+          (swap! !todos
+                 dissoc i))
 
       (swap! !todos
              assoc els {:caption (str "test" els), :done? false}))))
@@ -40,4 +40,6 @@
 
           (d/replace-contents! (sel1 :#content) (make-todomvc !todos events-ch))
 
-          #_(run-benchmark! !todos))))
+          (go
+            (a/<! (a/timeout 1000))
+            (run-benchmark! !todos)))))
