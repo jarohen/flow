@@ -12,12 +12,12 @@
 
                  [prismatic/dommy "0.1.2"]
 
-                 [org.clojure/core.async "0.1.267.0-0d7780-alpha"]
+                 [org.clojure/core.async "0.1.301.0-deb34a-alpha"]
                  [org.clojure/clojurescript "0.0-2202"]
 
                  [gaka "0.3.0"]
 
-                 [jarohen/flow "0.1.0-rc1"]]
+                 [jarohen/flow "0.1.0-SNAPSHOT"]]
 
   :plugins [[jarohen/lein-frodo "0.3.0-rc2"]
             [lein-cljsbuild "1.0.3"]
