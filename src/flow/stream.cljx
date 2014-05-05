@@ -123,6 +123,7 @@
    
    :else (atom obj)))
 
+#+clj
 (defmacro ->stream [obj]
   ;; This macro doesn't change the behaviour of ->stream*, just
   ;; extracts out a few equivalences at compile-time
