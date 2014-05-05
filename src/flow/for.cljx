@@ -93,11 +93,9 @@
 
             for-ch ([ids]
                       (if ids
-                        (let [results (-> (for [id ids]
-                                            (or (get cache id)
-                                                (body-fn id)))
-                                          
-                                          (vary-meta assoc :flow/ids ids))]
+                        (let [results (for [id ids]
+                                        (or (get cache id)
+                                            (body-fn id)))]
                           (a/>! out-ch results)
                           (recur (zipmap ids results)))
 
