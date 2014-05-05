@@ -16,7 +16,7 @@
 (defn run-benchmark! [!todos]
   (reset! !todos {})
   (go
-    (let [els 100]
+    (let [els 250]
       (dotimes [i els]
         (swap! !todos
                assoc i {:caption (str "test" i), :done? false}))
@@ -24,10 +24,10 @@
       (dotimes [i els]
         (swap! !todos
                assoc-in [i :done?] true))
-
+      
       #_(dotimes [i els]
-          (swap! !todos
-                 dissoc i))
+        (swap! !todos
+               dissoc i))
 
       (swap! !todos
              assoc els {:caption (str "test" els), :done? false}))))
