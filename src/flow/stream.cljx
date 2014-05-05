@@ -193,14 +193,14 @@
   ;; extracts out a few equivalences at compile-time
   (let [expanded-stream (macroexpand s)]
     (or (when (and (seq? f)
-                   (= 3 (count f))
-                   (let [[fn-call [arg] body] f]
-                     (and (= fn-call 'clojure.core/fn)
-                          (= `(stream-return ~arg) body))))
-          expanded-stream)
+                   (= 3 (count f)))
+          (let [[fn-call [arg] body] f]
+            (when (and (= fn-call 'clojure.core/fn)
+                       (= `(stream-return ~arg) body))
+              expanded-stream)))
               
-        (when (seq? expanded-stream)
-          (or (when (= (first expanded-stream) 'flow.stream/stream-return)
-                `(~f ~(second expanded-stream)))))
+        (when (and (seq? expanded-stream)
+                   (= (first expanded-stream) 'flow.stream/stream-return))
+          `(~f ~(second expanded-stream)))
 
         `(stream-bind* ~expanded-stream ~f))))
