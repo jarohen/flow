@@ -156,8 +156,6 @@
                   fn-stream-ch (a/chan)]
 
           (alt!
-            :priority true
-
             cancel-ch ([_]
                          (a/close! stream-cancel-ch)
                          (a/close! fn-cancel-ch)
