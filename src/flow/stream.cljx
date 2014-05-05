@@ -1,8 +1,7 @@
 (ns flow.stream
   #+clj
   (:require [clojure.core.async :as a :refer [go go-loop alt!]]
-            [clojure.core.async.impl.protocols :as ap]
-            [clojure.walk :refer [macroexpand-all]])
+            [clojure.core.async.impl.protocols :as ap] )
 
   #+clj
   (:import [clojure.lang Atom])
@@ -127,7 +126,7 @@
 (defmacro ->stream [obj]
   ;; This macro doesn't change the behaviour of ->stream*, just
   ;; extracts out a few equivalences at compile-time
-  (let [expanded-obj (macroexpand-all obj)]
+  (let [expanded-obj (macroexpand obj)]
     (or (when (seq? expanded-obj)
           (condp = (first expanded-obj)
             'flow.stream/stream-return expanded-obj
@@ -193,12 +192,11 @@
 (defmacro stream-bind [s f]
   ;; This macro doesn't change the behaviour of stream-bind*, just
   ;; extracts out a few equivalences at compile-time
-  (let [expanded-stream (macroexpand-all s)
-        expanded-fn (macroexpand-all f)]
-
-    (or (when (and (seq? expanded-fn)
-                   (let [[fn-call [[arg] body]] expanded-fn]
-                     (and (= fn-call 'fn*)
+  (let [expanded-stream (macroexpand s)]
+    (or (when (and (seq? f)
+                   (= 3 (count f))
+                   (let [[fn-call [arg] body] f]
+                     (and (= fn-call 'clojure.core/fn)
                           (= `(stream-return ~arg) body))))
           expanded-stream)
               
