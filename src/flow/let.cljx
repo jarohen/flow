@@ -1,5 +1,5 @@
 (ns flow.let
-  (:require [flow.stream :refer [stream-bind stream-return ->stream]]
+  (:require #+clj [flow.stream :refer [stream-bind stream-return ->stream]]
             #+clj [flow.ioc :refer [form->binds]]))
 
 #+clj
