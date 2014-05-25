@@ -6,16 +6,23 @@
             [flow.core :refer-macros [el<< for<< let<<]])
   (:require-macros [dommy.macros :refer [node sel1]]))
 
+(defn listen! [$el type f]
+  (if (.-addEventListener $el)
+    (.addEventListener $el (name type) f)
+    ;; For IE < 9
+    (.attachEvent $el (name type) f))
+  $el)
+
 (defn toggle-all-widget [!todos events-ch]
   (el<<
     (let<< [all-done? (every? :done? (vals (<< !todos)))]
       (doto (node [:input#toggle-all {:type "checkbox"
                                       :checked all-done?}])
-        (d/listen! :change #(a/put! events-ch {:type :toggle-all
+        (listen! :change #(a/put! events-ch {:type :toggle-all
                                                :done? (not all-done?)}))))))
 
 (defn on-enter [$el f]
-  (d/listen! $el :keyup
+  (listen! $el :keyup
     (fn [e]
       (when (= kc/ENTER (.-keyCode e))
         (f e)
@@ -36,7 +43,7 @@
       (with-edit-handler id !editing? events-ch)))
 
 (defn with-toggle-handler [$checkbox id events-ch]
-  (d/listen! $checkbox :change
+  (listen! $checkbox :change
     #(a/put! events-ch {:type :toggle
                         :toggled-id id})))
 
@@ -54,10 +61,10 @@
                  (with-toggle-handler id events-ch))
 
              (doto (node [:label caption])
-               (d/listen! :dblclick #(reset! !editing? true)))
+               (listen! :dblclick #(reset! !editing? true)))
 
              (doto (node [:button.destroy])
-               (d/listen! :click #(a/put! events-ch {:type :delete
+               (listen! :click #(a/put! events-ch {:type :delete
                                                      :deleted-id id})))]
             
             (edit-input todo !editing? events-ch))])))))
@@ -105,7 +112,7 @@
             (doto (node [:a ^:attrs (when (= todo-filter filter-option)
                                       {:class "selected"})
                          (filter-label filter-option)])
-              (d/listen! :click #(reset! !todo-filter filter-option)))]))))]))
+              (listen! :click #(reset! !todo-filter filter-option)))]))))]))
 
 (defn clear-completed-widget [!todos events-ch]
   (el<<
@@ -115,7 +122,7 @@
           (when-not (zero? completed-count)
             (doto (node [:button#clear-completed
                          (str "Clear completed " completed-count)])
-              (d/listen! :click #(a/put! events-ch {:type :clear-completed}))))]))))
+              (listen! :click #(a/put! events-ch {:type :clear-completed}))))]))))
 
 (defn make-todomvc [!todos events-ch]
   (let [!todo-filter (atom :all)]
