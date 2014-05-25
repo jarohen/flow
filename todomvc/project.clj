@@ -21,7 +21,8 @@
 
   :plugins [[jarohen/lein-frodo "0.3.0-rc2"]
             [lein-cljsbuild "1.0.3"]
-            [lein-pdo "0.1.1"]]
+            [lein-pdo "0.1.1"]
+            [lein-shell "0.4.0"]]
 
   :frodo/config-resource "todomvc-config.edn"
 
@@ -34,4 +35,13 @@
                                    :optimizations :whitespace
                                    :pretty-print true}}}}
 
-  :aliases {"dev" ["pdo" "cljsbuild" "auto" "dev," "frodo"]})
+  :aliases {"dev" ["do"
+                   ["shell" "mkdir" "-p"
+                    "target/generated/clj"
+                    "target/generated/cljs"
+                    "target/resources"]
+                   ["cljx" "once"]
+                   ["pdo"
+                    ["cljx" "auto"]
+                    ["cljsbuild" "auto" "dev"]
+                    "frodo"]]})
