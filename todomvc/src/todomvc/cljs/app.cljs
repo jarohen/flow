@@ -16,7 +16,7 @@
 (defn run-benchmark! [!todos]
   (reset! !todos {})
   (go
-    (let [els 100]
+    (let [els 250]
       (dotimes [i els]
         (swap! !todos
                assoc i {:caption (str "test" i), :done? false}))
@@ -24,8 +24,8 @@
       (dotimes [i els]
         (swap! !todos
                assoc-in [i :done?] true))
-
-      (dotimes [i els]
+      
+      #_(dotimes [i els]
         (swap! !todos
                dissoc i))
 
@@ -40,4 +40,6 @@
 
           (d/replace-contents! (sel1 :#content) (make-todomvc !todos events-ch))
 
-          #_(run-benchmark! !todos))))
+          (go
+            (a/<! (a/timeout 1000))
+            (run-benchmark! !todos)))))

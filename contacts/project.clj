@@ -15,7 +15,7 @@
                  [org.clojure/clojurescript "0.0-2202"]
                  [org.clojure/tools.reader "0.8.3"]
 
-                 [jarohen/flow "0.1.0-rc1"]
+                 [jarohen/flow "0.1.0-rc2"]
 
                  [gaka "0.3.0"]]
 

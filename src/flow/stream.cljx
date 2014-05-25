@@ -1,7 +1,7 @@
 (ns flow.stream
   #+clj
   (:require [clojure.core.async :as a :refer [go go-loop alt!]]
-            [clojure.core.async.impl.protocols :as ap])
+            [clojure.core.async.impl.protocols :as ap] )
 
   #+clj
   (:import [clojure.lang Atom])
@@ -115,7 +115,7 @@
   (stream-ch [$el cancel-ch buffer-fn]
     (html-element-stream-ch $el cancel-ch buffer-fn #(.-value %))))
 
-(defn ->stream [obj]
+(defn ->stream* [obj]
   (cond
    (satisfies? Stream obj) obj
    
@@ -123,10 +123,25 @@
    
    :else (atom obj)))
 
+#+clj
+(defmacro ->stream [obj]
+  ;; This macro doesn't change the behaviour of ->stream*, just
+  ;; extracts out a few equivalences at compile-time
+  (let [expanded-obj (macroexpand obj)]
+    (or (when (seq? expanded-obj)
+          (condp = (first expanded-obj)
+            'flow.stream/stream-return expanded-obj
+            'flow.stream/stream-bind* expanded-obj
+            'flow.stream/->stream* expanded-obj
+            
+            nil))
+      
+      `(->stream* ~expanded-obj))))
+
 (defn stream-return [v]
   (atom v))
 
-(defn stream-bind [s f]
+(defn stream-bind* [s f]
   ;; s :: Stream a
   ;; f :: (a -> Stream b)
   ;; returns :: Stream b
@@ -142,8 +157,6 @@
                   fn-stream-ch (a/chan)]
 
           (alt!
-            :priority true
-
             cancel-ch ([_]
                          (a/close! stream-cancel-ch)
                          (a/close! fn-cancel-ch)
@@ -174,4 +187,20 @@
         
         out-ch))))
 
+#+clj
+(defmacro stream-bind [s f]
+  ;; This macro doesn't change the behaviour of stream-bind*, just
+  ;; extracts out a few equivalences at compile-time
+  (let [expanded-stream (macroexpand s)]
+    (or (when (and (seq? f)
+                   (= 3 (count f)))
+          (let [[fn-call [arg] body] f]
+            (when (and (= fn-call 'clojure.core/fn)
+                       (= `(stream-return ~arg) body))
+              expanded-stream)))
+              
+        (when (and (seq? expanded-stream)
+                   (= (first expanded-stream) 'flow.stream/stream-return))
+          `(~f ~(second expanded-stream)))
 
+        `(stream-bind* ~expanded-stream ~f))))

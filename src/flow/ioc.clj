@@ -1,5 +1,5 @@
 (ns flow.ioc
-  (:require [clojure.walk :refer [postwalk macroexpand-all]]
+  (:require [clojure.walk :refer [postwalk]]
             [flow.stream :refer [stream-bind stream-return ->stream]]))
 
 (defn find-streams [form]
