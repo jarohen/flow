@@ -1,7 +1,7 @@
 * Flow
 
 #+BEGIN_SRC clojure
-  [jarohen/flow "0.1.0-rc1"]
+  [jarohen/flow "0.1.0-rc2"]
 #+END_SRC
 
 Flow is a lightweight library to help you write dynamic ClojureScript
@@ -80,7 +80,7 @@ changed.
 To add Flow to your Leiningen project, add the following to your =project.clj=:
 
 #+BEGIN_SRC clojure
-  [jarohen/flow "0.1.0-rc1"]
+  [jarohen/flow "0.1.0-rc2"]
 #+END_SRC
 
 *** Requires

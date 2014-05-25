@@ -1,4 +1,4 @@
-(defproject jarohen/flow "0.1.0-SNAPSHOT"
+(defproject jarohen/flow "0.1.0-rc2"
   :description "Lightweight library to help you write dynamic CLJS webapps"
 
   :url "https://github.com/james-henderson/flow"
