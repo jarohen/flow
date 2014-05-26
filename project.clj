@@ -1,4 +1,4 @@
-(defproject jarohen/flow "0.1.0-rc2"
+(defproject jarohen/flow "0.1.0"
   :description "Lightweight library to help you write dynamic CLJS webapps"
 
   :url "https://github.com/james-henderson/flow"
@@ -7,7 +7,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
   :dependencies [[org.clojure/clojure "1.6.0"]
-                 [org.clojure/core.async "0.1.278.0-76b25b-alpha"]]
+                 [org.clojure/core.async "0.1.303.0-886421-alpha"]]
 
   :plugins [[com.keminglabs/cljx "0.3.2"]]
 

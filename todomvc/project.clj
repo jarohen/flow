@@ -17,7 +17,7 @@
 
                  [gaka "0.3.0"]
 
-                 [jarohen/flow "0.1.0-rc2"]]
+                 [jarohen/flow "0.1.0"]]
 
   :plugins [[jarohen/lein-frodo "0.3.0"]
             [lein-cljsbuild "1.0.3"]
