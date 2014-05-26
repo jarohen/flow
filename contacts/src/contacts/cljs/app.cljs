@@ -3,8 +3,7 @@
             [contacts.cljx.formatter :as f]
             [dommy.core :as d]
             [goog.events.KeyCodes :as kc]
-            [flow.core :refer-macros [for<< let<< el<<]]
-            frodo.brepl)
+            [flow.core :refer-macros [for<< let<< el<<]])
   (:require-macros [dommy.macros :refer [node sel1]]
                    [cljs.core.async.macros :refer [go-loop]]))
 

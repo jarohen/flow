@@ -17,7 +17,7 @@
 
                  [jarohen/flow "0.1.0-rc2"]]
 
-  :plugins [[jarohen/lein-frodo "0.3.0-rc2"]
+  :plugins [[jarohen/lein-frodo "0.3.0"]
             [lein-cljsbuild "1.0.3"]
             [lein-pdo "0.1.1"]]
 

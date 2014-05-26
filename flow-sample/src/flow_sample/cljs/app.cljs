@@ -2,8 +2,7 @@
   (:require [clojure.string :as s]
             [cljs.core.async :as a]
             [dommy.core :as d]
-            [flow.core :refer-macros [let<< el<<]]
-            frodo.brepl)
+            [flow.core :refer-macros [let<< el<<]])
   (:require-macros [dommy.macros :refer [node sel1]]
                    [cljs.core.async.macros :refer [go-loop]]))
 
