@@ -109,9 +109,9 @@ following snippet to your configuration:
 
 In this repo:
 
-- '[[https://github.com/james-henderson/flow/tree/master/flow-sample][flow-sample]]' - a simple counter app
-- '[[https://github.com/james-henderson/flow/tree/master/flow-sample][Contact Manager]]'
-- '[[https://github.com/james-henderson/flow/tree/master/todomvc][TodoMVC]]' (because it's pretty much obligatory!)
+- '[[https://github.com/james-henderson/flow/tree/master/samples/flow-sample][flow-sample]]' - a simple counter app
+- '[[https://github.com/james-henderson/flow/tree/master/samples/contacts][Contact Manager]]'
+- '[[https://github.com/james-henderson/flow/tree/master/samples/todomvc][TodoMVC]]' (because it's pretty much obligatory!)
 
 ** Diving deeper into Flow
 
