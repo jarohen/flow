@@ -1,0 +1,6 @@
+* ChangeLog
+
+** 0.1.0
+
+Initial release - thanks to [[https://github.com/henrygarner][Henry Garner]], [[https://github.com/matlux][Mathieu Gauthron]], [[https://github.com/n8dawgrr][Nathan
+Matthews]] and [[https://github.com/malcolmsparks][Malcolm Sparks]], whose advice and feedback made it happen.
