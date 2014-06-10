@@ -11,14 +11,8 @@
                    [cljs.core.async.macros :refer [go go-loop alt!]]))
 
 #+cljs
-(let [container (node [:div {:style {:display "inline"}}])]
-  (defn- new-container []
-    (.cloneNode container)))
-
-#+cljs
-(defn el<< [el-stream]
-  (let [$container (new-container)
-        el-ch (stream-ch el-stream (a/chan) #(a/sliding-buffer 1))]
+(defn el<< [{:keys [$container]} el-stream]
+  (let [el-ch (stream-ch el-stream (a/chan) #(a/sliding-buffer 1))]
     
     (go-loop []
       (when-let [$el (a/<! el-ch)]
@@ -26,3 +20,4 @@
         (recur)))
     
     $container))
+
