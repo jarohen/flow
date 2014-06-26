@@ -26,7 +26,9 @@
   :resource-paths ["resources" "target/resources"]
 
   :cljsbuild {:builds {:dev
-                       {:source-paths ["src"]
+                       {:source-paths ["src"
+                                       "checkouts/flow/target/generated/clj"
+                                       "checkouts/flow/target/generated/cljs"]
                         :compiler {:output-to "target/resources/js/flow-sample.js"
                                    :output-dir "target/resources/js/"
                                    :optimizations :whitespace
