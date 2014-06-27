@@ -1,4 +1,6 @@
-(ns flow.el)
+(ns flow.el
+  (:require [clojure.walk :as w]
+            [flow.exit :as exit]))
 
 (defn parse-vector [[tagish possible-attrs & body]]
   (let [tagish (name tagish)
@@ -46,15 +48,9 @@
   (cond
    (map? attrs) (for [[k v] attrs]
                   (case k
-                    :style `(do ~@(effect-style! $elem-sym v))
-                    :classes `(do ~@(add-classes! $elem-sym v))
-                    `(.setAttribute ~$elem-sym ~(name k) v)))))
-
-(effect-attrs! 'elem {:classes '["abc"
-                                 (when (zero? (rand-int 3))
-                                   "blah")]
-                      :style '{:float (when (zero? (rand-int 3))
-                                        "right")}})
+                    :flow.core/style `(do ~@(effect-style! $elem-sym v))
+                    :flow.core/classes `(do ~@(add-classes! $elem-sym v))
+                    `(.setAttribute ~$elem-sym ~(name k) ~v)))))
 
 (declare ->node)
 
@@ -65,7 +61,8 @@
            [`(set! (.-id ~$elem-sym) ~id)])
        
        ~@(for [$child children]
-           `(.appendChild ~$elem-sym ~(->node $child)))
+           `(when-let [child# ~(->node $child)]
+              (.appendChild ~$elem-sym child#)))
 
        ~@(add-classes! $elem-sym classes)
 
@@ -73,24 +70,12 @@
        
        ~$elem-sym)))
 
-
-#_(->node '[:div {:style {:color "#549"}}
-            [:h1 "Hello world!"]
-            [:p.copy
-             "If I can get this working tonight, "
-             [:strong "I'll be a happy man :)"]]])
-
 (defn ->node [elem]
   (cond
    (vector? elem) (render-elem (parse-vector elem))
    (string? elem) `(js/document.createTextNode ~elem)
-   (list? elem) `(flow.el/runtime-el ~elem)))
+   (list? elem) (exit/wrap-exit-vectors elem ->node)))
 
-#+clj
 (defmacro el [elem]
-  (->node elem))
-
-#+cljs
-(defn runtime-el [elem]
-  (println "got" (pr-str elem)))
-
+  (exit/with-macroexpand-env &env
+    (->node elem)))

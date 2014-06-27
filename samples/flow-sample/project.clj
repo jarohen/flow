@@ -19,6 +19,7 @@
 
   :plugins [[jarohen/lein-frodo "0.3.0"]
             [lein-cljsbuild "1.0.3"]
+            [com.keminglabs/cljx "0.4.0"]
             [lein-pdo "0.1.1"]]
 
   :frodo/config-resource "flow-sample-config.edn"
@@ -27,6 +28,7 @@
 
   :cljsbuild {:builds {:dev
                        {:source-paths ["src"
+                                       "checkouts/flow/src"
                                        "checkouts/flow/target/generated/clj"
                                        "checkouts/flow/target/generated/cljs"]
                         :compiler {:output-to "target/resources/js/flow-sample.js"

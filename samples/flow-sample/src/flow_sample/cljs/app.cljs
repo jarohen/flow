@@ -8,13 +8,15 @@
       (fn []
         (f/root js/document.body
                 (f/el
-                 [:div.container {:style {:color "#439"}
-                                  :classes ["abc"
-                                            (when (zero? (rand-int 3))
-                                              "blah")]}
+                 [:div.container {::f/style {:color "#439"}
+                                  ::f/classes ["abc"
+                                               (when (zero? (rand-int 3))
+                                                 "blah")]}
                   [:h1 "Hello world!"]
-                  [:p.copy {:style {:float :right}}
-                   "If I can get this working tonight, "
-                   [:strong "I'll be a happy man :)"]]]))))
+                  
+                  (when-not (zero? (rand-int 5))
+                    [:p.copy {::f/style {:float :right}}
+                     "If I can get this working tonight, "
+                     [:strong "I'll be very happy :)"]])]))))
 
 

@@ -9,7 +9,7 @@
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [org.clojure/core.async "0.1.303.0-886421-alpha"]]
 
-  :plugins [[com.keminglabs/cljx "0.3.2"]]
+  :plugins [[com.keminglabs/cljx "0.4.0"]]
 
   :source-paths ["src" "target/generated/clj"]
   
