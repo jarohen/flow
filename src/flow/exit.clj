@@ -1,33 +1,13 @@
-(ns flow.exit
-  (:require [cljs.analyzer :refer [macroexpand-1] :rename {macroexpand-1 cljs-macroexpand-1}]))
-
-(def ^:dynamic *macroexpand-env*)
-(def ^:dynamic *macroexpand-1* #(cljs-macroexpand-1 *macroexpand-env* %))
-
-(defmacro with-macroexpand-env [env & body]
-  `(binding [*macroexpand-env* ~env]
-     ~@body))
+(ns flow.exit)
 
 (defmulti wrap-exit-vectors-in-form
   (fn [form f]
     (symbol (name (first form)))))
 
-(defn macroexpand-until-known [form]
-  (loop [form form]
-    (let [expanded-form (*macroexpand-1* form)]
-      (if (or (#{'let 'case 'if 'do 'for 
-                 'clojure.core/let 'clojure.core/case 'clojure.core/for
-                 'el 'flow.core/el} (first form))
-              
-              (= form expanded-form))
-        form
-        
-        (recur expanded-form)))))
-
 (defn wrap-exit-vectors [form f]
   (cond
    (vector? form) (f form)
-   (seq? form) (wrap-exit-vectors-in-form (macroexpand-until-known form) f)
+   (seq? form) (wrap-exit-vectors-in-form form f)
    :else form))
 
 (defmethod wrap-exit-vectors-in-form 'if [[_ test then else] f]

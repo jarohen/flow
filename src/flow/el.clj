@@ -1,5 +1,6 @@
 (ns flow.el
   (:require [clojure.walk :as w]
+            [flow.expand :refer [expand-macros]]
             [flow.exit :as exit]))
 
 (defn parse-vector [[tagish possible-attrs & body]]
@@ -77,5 +78,4 @@
    (list? elem) (exit/wrap-exit-vectors elem ->node)))
 
 (defmacro el [elem]
-  (exit/with-macroexpand-env &env
-    (->node elem)))
+  (->node (expand-macros elem &env)))
