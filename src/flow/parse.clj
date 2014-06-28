@@ -82,26 +82,28 @@
    :args (map parse-form args)})
 
 (defn parse-form [form & [{:keys [elem?]
-                           :or {elem? true}}]]
-  (cond
-   (and elem? (vector? form)) (parse-node form)
+                           :or {elem? false}}]]
+  (-> (cond
+       (and elem? (vector? form)) (parse-node form)
 
-   (seq? form) (assoc (parse-call form elem?)
-                 :type :call)
+       (seq? form) (assoc (parse-call form elem?)
+                     :type :call)
 
-   (symbol? form) {:type :symbol
-                   :symbol form}
+       (symbol? form) {:type :symbol
+                       :symbol form}
 
-   (map? form) {:type :map
-                :map (->> form
-                          (map (partial map parse-form))
-                          (into {}))}
+       (map? form) {:type :map
+                    :map (->> form
+                              (map (partial map parse-form))
+                              (into {}))}
    
-   (coll? form) {:type :coll
-                 :coll (->> form
-                            (map parse-form)
-                            (into (empty form)))}
+       (coll? form) {:type :coll
+                     :coll (->> form
+                                (map parse-form)
+                                (into (empty form)))}
    
-   :else {:type :primitive
-          :primitive form}))
+       :else {:type :primitive
+              :primitive form})
+      
+      (assoc :elem? elem?)))
 

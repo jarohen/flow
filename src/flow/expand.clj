@@ -7,17 +7,21 @@
 
 (defn macroexpand-until-known [form]
   (loop [form form]
-    (let [expanded-form (*macroexpand-1* form)]
-      (if (or (#{'let 'case 'if 'do 'for 
-                 'clojure.core/let 'clojure.core/case 'clojure.core/for
-                 'el 'flow.core/el} (first form))
-              
-              (= form expanded-form))
-        form
-        
-        (recur expanded-form)))))
+    (if (seq? form)
+      (let [expanded-form (*macroexpand-1* form)]
+        (if (or (= form expanded-form)
+                (#{'let 'case 'if 'do 'for 
+                   'clojure.core/let 'clojure.core/case 'clojure.core/for
+                   'el 'flow.core/el} (first form)))
+          form
+          
+          (recur expanded-form)))
+
+      form)))
 
 (defn expand-macros [elem env]
   (binding [*macroexpand-env* env]
     (w/postwalk macroexpand-until-known
                 elem)))
+
+
