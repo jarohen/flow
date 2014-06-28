@@ -53,9 +53,16 @@
                 :value (parse-form value)})
    :body (if elem?
            (concat (map parse-form (butlast body))
-                   [(parse-form (last body) {:elem? true})])
+                   [(parse-form (last body) {:elem? elem?})])
            
            (map parse-form body))})
+
+(defmethod parse-call 'clojure.core/for [[_ bindings body] elem?]
+  {:call-type :for
+   :bindings (for [[bind value] (partition 2 bindings)]
+               {:bind bind
+                :value (parse-form value)})
+   :body (parse-form body {:elem? elem?})})
 
 (defmethod parse-call 'if [[_ test then else] elem?]
   {:call-type :if
