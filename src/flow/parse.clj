@@ -46,16 +46,13 @@
   (fn [call elem?]
     (first call)))
 
-(defmethod parse-call 'let* [[_ bindings & body] elem?]
+(defmethod parse-call 'clojure.core/let [[_ bindings & body] elem?]
   {:call-type :let
    :bindings (for [[bind value] (partition 2 bindings)]
                {:bind bind
                 :value (parse-form value)})
-   :body (if elem?
-           (concat (map parse-form (butlast body))
-                   [(parse-form (last body) {:elem? elem?})])
-           
-           (map parse-form body))})
+   :side-effects (butlast body)
+   :body (parse-form (last body) {:elem? elem?})})
 
 (defmethod parse-call 'clojure.core/for [[_ bindings body] elem?]
   {:call-type :for
