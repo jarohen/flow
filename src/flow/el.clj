@@ -11,6 +11,9 @@
 (defmacro el [elem]
   (-> (expand-macros elem &env)
       (parse-form {:elem? true})
-      (compile-el {})
+      (compile-el {:state-sym (gensym "state")
+                   :old-state-sym (gensym "old-state")
+                   :new-state-sym (gensym "new-state")
+                   :updated-var-sym (gensym "updated-var")})
       (render-el)))
 

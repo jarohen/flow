@@ -6,4 +6,4 @@
 
 (require 'flow.compile.node)
 (require 'flow.compile.simple)
-
+(require 'flow.compile.calls)
