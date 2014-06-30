@@ -26,11 +26,9 @@
      :id (second (re-find #"#([^.]+)" tagish))
      
      :classes (concat (for [class-name (map second (re-seq #"\.([^.]+)" tagish))]
-                        {:type :static
-                         :class-name class-name})
+                        {:class (parse-form class-name)})
                       (for [class (::f/classes attrs)]
-                        {:type :dynamic
-                         :class (parse-form class)}))
+                        {:class (parse-form class)}))
 
      :style (parse-map-vals (::f/style attrs))
 
@@ -39,8 +37,6 @@
      :attrs (parse-map-vals (dissoc attrs ::f/classes ::f/style ::f/on))
      
      :children (map #(parse-form % {:elem? true}) children)}))
-
-
 
 (defmulti parse-call
   (fn [call elem?]
@@ -73,16 +69,15 @@
    :return (parse-form (last body) {:elem? elem?})})
 
 (defmethod parse-call '<<! [[_ cursor] _]
-  {:type :unwrap-cursor
+  {:call-type :unwrap-cursor
    :cursor cursor})
 
 (defmethod parse-call '!>> [[_ cursor] _]
-  {:type :wrap-cursor
+  {:call-type :wrap-cursor
    :cursor cursor})
 
-(defmethod parse-call :default [[call-fn & args] elem?]
-  {:call-type :call
-   :call-fn call-fn
+(defmethod parse-call :default [[& args] _]
+  {:call-type :fn-call
    :args (map parse-form args)})
 
 (defn parse-form [form & [{:keys [elem?]
