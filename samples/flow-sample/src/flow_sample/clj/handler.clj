@@ -3,7 +3,8 @@
             [compojure.core :refer [routes GET]]
             [compojure.route :refer [resources]]
             [compojure.handler :refer [api]]
-            [hiccup.page :refer [html5 include-css include-js]]))
+            [hiccup.page :refer [html5 include-css include-js]]
+            [simple-brepl.service :refer [brepl-js]]))
 
 (defn page-frame []
   (html5
@@ -13,7 +14,11 @@
     (include-js "//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js")
     (include-css "//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css")
 
+    [:script (brepl-js)]
+    
     (include-js "/js/flow-sample.js")]
+
+   
    [:body
     [:div#content]]))
 

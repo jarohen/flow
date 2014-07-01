@@ -1,5 +1,6 @@
 (ns flow-sample.cljs.app
-  (:require [flow.core :as f :include-macros true])
+  (:require [flow.core :as f :include-macros true]
+            simple-brepl.client)
   (:require-macros [cljs.core.async.macros :refer [go-loop]]))
 
 (enable-console-print!)
