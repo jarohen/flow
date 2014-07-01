@@ -26,9 +26,9 @@
      :id (second (re-find #"#([^.]+)" tagish))
      
      :classes (concat (for [class-name (map second (re-seq #"\.([^.]+)" tagish))]
-                        {:class (parse-form class-name)})
+                        (parse-form class-name))
                       (for [class (::f/classes attrs)]
-                        {:class (parse-form class)}))
+                        (parse-form class)))
 
      :style (parse-map-vals (::f/style attrs))
 

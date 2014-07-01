@@ -20,9 +20,12 @@
      :on-update (:on-update return)}))
 
 (defmethod compile-call :if [{:keys [test then else]} opts]
-  {:as-value `(if ~(:as-value test)
-                ~(:as-value then)
-                ~(:as-value else))})
+  (let [[compiled-test compiled-then compiled-else] (map #(compile-el % opts) [test then else])]
+    {:deps (set (mapcat :deps [compiled-test compiled-then compiled-else]))
+     :as-value `(if ~(:as-value compiled-test)
+                  ~(:as-value compiled-then)
+                  ~(:as-value compiled-else))
+     }))
 
 (defmethod compile-call :let [{:keys [bindings side-effects body]}]
   )
@@ -40,7 +43,12 @@
                          unshadowed-sym
                          cursor)]
     {:deps #{unshadowed-sym}
-     :as-value `(get ~state-sym ~unshadowed-sym)}))
+     :as-value `(get ~state-sym (quote ~unshadowed-sym))}))
+
+(defmethod compile-call :wrap-cursor [{:keys [cursor]}
+                                      {:keys [dynamic-syms state-sym updated-var-sym]
+                                       :as opts}]
+  )
 
 (comment
   (require 'flow.parse)

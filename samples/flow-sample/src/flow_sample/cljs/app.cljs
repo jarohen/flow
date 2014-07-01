@@ -7,13 +7,19 @@
 
 (set! (.-onload js/window)
       (fn []
-        (f/root js/document.body
-                (f/el
-                 [:div#test.container.blah {::f/classes ["abc"]
-                                            :data-test "foo"}
-                  [:h1 "Hello world!"]
-                  [:p.copy {::f/style {:text-align :right}}
-                   "If this works, " [:strong "I'll be very happy :)"]]]))))
+        (let [!color (atom "#427")]
+          (def !foo-color !color)
+          (f/root js/document.body
+                  (f/el
+                    [:div#test.container.blah {::f/classes ["abc"
+                                                            (when (= (<<! !color) "#000")
+                                                              "black")]
+                                               ::f/style {:color (<<! !color)}
+                                               :data-test "foo"
+                                               :data-is-black (boolean (= (<<! !color) "#000"))}
+                     [:h1 "Hello world!"]
+                     [:p.copy {::f/style {:text-align :right}}
+                      "If this works, " [:strong "I'll be very happy :)"]]])))))
 
 (comment
   (f/el
@@ -60,8 +66,3 @@
 
   {:init `[(aset ~elem-sym 'style 'color ~v)]})
 
-
-(comment
-  (let [val (<<! !atom)
-        !atom (!>> val)
-        ]))
