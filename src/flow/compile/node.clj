@@ -35,23 +35,17 @@
         deps (set (mapcat :deps compiled-classes))]
     {:deps deps
 
-     :el-init [`(doseq [class# (set [~@(->> compiled-classes
-                                            (remove (comp not-empty :deps))
-                                            (map :as-value))])]
-                  (fd/add-class! ~elem-sym class#))]
+     :el-init [`(fd/add-classes! ~elem-sym (set [~@(->> compiled-classes
+                                                        (remove (comp not-empty :deps))
+                                                        (map :as-value))]))]
      
      :on-update (when (not-empty deps)
-                  [`(let [old-classes# (let [~state-sym ~old-state-sym]
-                                         (set [~@(map :as-value compiled-classes)]))
-                          
-                          new-classes# (let [~state-sym ~new-state-sym]
-                                         (disj (set [~@(map :as-value compiled-classes)]) nil))]
-                      
-                      (doseq [class# (clojure.set/difference new-classes# old-classes#)]
-                        (fd/add-class! ~elem-sym class#))
-                      
-                      (doseq [class# (clojure.set/difference old-classes# new-classes#)]
-                        (fd/remove-class! ~elem-sym class#)))])}))
+                  [`(fd/update-classes! ~elem-sym
+                                        (let [~state-sym ~old-state-sym]
+                                          (set [~@(map :as-value compiled-classes)]))
+
+                                        (let [~state-sym ~new-state-sym]
+                                          (disj (set [~@(map :as-value compiled-classes)]) nil)))])}))
 
 (defn compile-child [elem-sym child opts]
   (let [{:keys [el-init el-bindings el-return deps on-update]} (compile-el child opts)]
