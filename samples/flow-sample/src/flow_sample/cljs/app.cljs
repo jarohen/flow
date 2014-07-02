@@ -17,11 +17,17 @@
                     [:div#test.container.blah {::f/classes ["abc"
                                                             (when (= (:primary (<<! !colors)) "#000")
                                                               "black")]
+                                               
                                                ::f/style {:color (:primary (<<! !colors))}
+                                               
                                                :data-test "foo"
+                                               
                                                :data-is-black (boolean (= (:primary (<<! !colors)) "#000"))}
+
                      [:h1 "Hello world!"]
+                     
                      [:p.copy {::f/style {:text-align :right
                                           :color (:secondary (<<! !colors))}}
+                      
                       "If this works, " [:strong "I'll be very happy :)"]]])))))
 
