@@ -19,5 +19,5 @@
   (if (nil? primitive)
     nil
     
-    {:el-init `(js/document.createTextNode ~(str primitive))
+    {:el-return `(js/document.createTextNode ~(str primitive))
      :as-value primitive}))

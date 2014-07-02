@@ -35,9 +35,10 @@
         deps (set (mapcat :deps compiled-classes))]
     {:deps deps
 
-     :el-init (when (empty? deps)
-                [`(doseq [class# (set [~@(map :as-value compiled-classes)])]
-                    (fd/add-class! ~elem-sym class#))])
+     :el-init [`(doseq [class# (set [~@(->> compiled-classes
+                                            (remove (comp not-empty :deps))
+                                            (map :as-value))])]
+                  (fd/add-class! ~elem-sym class#))]
      
      :on-update (when (not-empty deps)
                   [`(let [old-classes# (let [~state-sym ~old-state-sym]
@@ -53,9 +54,15 @@
                         (fd/remove-class! ~elem-sym class#)))])}))
 
 (defn compile-child [elem-sym child opts]
-  #_(let [{:keys [el-init]} (compile-el child opts)]
-      {:el-init `(when-let [child# ~el-init]
-                   (.appendChild ~elem-sym child#))}))
+  (let [{:keys [el-init el-bindings el-return deps on-update]} (compile-el child opts)]
+    {:el-init `[~@el-init
+                (.appendChild ~elem-sym ~el-return)]
+     
+     :el-bindings el-bindings
+     
+     :on-update on-update
+     
+     :deps deps}))
 
 (comment
   (require 'flow.parse)
