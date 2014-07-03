@@ -30,3 +30,16 @@
   (if-not (nil? v)
     (.setAttribute $el (name k) v)
     (.removeAttribute $el (name k) v)))
+
+(let [$null-elem (doto (js/document.createElement "span")
+                   (set-style! :display :none))]
+  (defn null-elem [& [id]]
+    (let [$elem (.cloneNode $null-elem)]
+      (when id
+        (set! (.-id $elem) id))
+      
+      $elem)))
+
+(defn swap-elem! [$old $new]
+  (when-let [$parent (.-parentNode $old)]
+    (.replaceChild $parent $new $old)))
