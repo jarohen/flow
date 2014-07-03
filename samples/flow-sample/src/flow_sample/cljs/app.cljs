@@ -8,9 +8,11 @@
 (set! (.-onload js/window)
       (fn []
         (let [!colors (atom {:primary "#427"
-                             :secondary "#983"})]
+                             :secondary "#983"})
+              !heading (atom "Hello world!")]
 
           (def !foo-colors !colors)
+          (def !foo-heading !heading)
           
           (f/root js/document.body
                   (f/el
@@ -24,7 +26,7 @@
                                                
                                                :data-is-black (boolean (= (:primary (<<! !colors)) "#000"))}
 
-                     [:h1 "Hello world!"]
+                     [:h1 (<<! !heading)]
                      
                      [:p.copy {::f/style {:text-align :right
                                           :color (:secondary (<<! !colors))}}

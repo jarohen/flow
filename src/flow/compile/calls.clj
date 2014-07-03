@@ -1,6 +1,9 @@
 (ns flow.compile.calls
   (:require [flow.compile :refer [compile-el]]))
 
+(alias 'fd (doto 'flow.dom create-ns))
+
+
 (defmulti compile-call
   (fn [call opts]
     (:call-type call)))
@@ -37,13 +40,27 @@
      :as-value (map :as-value compiled-args)}))
 
 (defmethod compile-call :unwrap-cursor [{:keys [cursor]}
-                                        {:keys [dynamic-syms state-sym updated-var-sym]
+                                        {:keys [dynamic-syms state-sym new-state-sym updated-var-sym]
                                          :as opts}]
   (let [unshadowed-sym (if-let [{:keys [unshadowed-sym]} (get dynamic-syms cursor)]
                          unshadowed-sym
-                         cursor)]
+                         cursor)
+        !el-sym (gensym (str cursor))
+        el-value-sym (gensym (str cursor "-value"))]
+    
     {:deps #{unshadowed-sym}
-     :as-value `(get ~state-sym (quote ~unshadowed-sym))}))
+     :as-value `(get ~state-sym (quote ~unshadowed-sym))
+
+     :el-bindings `[[~!el-sym (atom (fd/null-elem))]]
+     :el-return `(deref ~!el-sym)
+     :on-update [`(let [~el-value-sym (get ~new-state-sym (quote ~unshadowed-sym))
+                        ~el-value-sym (if (.-nodeType ~el-value-sym)
+                                        ~el-value-sym
+                                        (-> ~el-value-sym
+                                            (str)
+                                            (js/document.createTextNode)))]
+                    (fd/swap-elem! @~!el-sym ~el-value-sym)
+                    (reset! ~!el-sym ~el-value-sym))]}))
 
 (defmethod compile-call :wrap-cursor [{:keys [cursor]}
                                       {:keys [dynamic-syms state-sym updated-var-sym]
