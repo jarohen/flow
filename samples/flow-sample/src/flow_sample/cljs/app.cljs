@@ -28,8 +28,11 @@
 
                      [:h1 (<<! !heading)]
                      
-                     [:p.copy {::f/style {:text-align :right
-                                          :color (:secondary (<<! !colors))}}
+                     (if (= 3 (+ 1 1))
+                       [:p.copy {::f/style {:text-align :right
+                                            :color (:secondary (<<! !colors))}}
                       
-                      "If this works, " [:strong "I'll be very happy :)"]]])))))
+                        "If this works, " [:strong "I'll be very happy :)"]]
+
+                       [:p "Maths always let me down..."])])))))
 
