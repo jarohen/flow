@@ -75,35 +75,25 @@
                       [~!then-bindings-sym (atom nil)]
                       [~!else-bindings-sym (atom nil)]
 
-                      [~init-then-sym (fn [state#]
-                                        (let [~state-sym state#]
-                                          ~(init-branch compiled-then !then-bindings-sym)))]
+                      [~init-then-sym (fn [~state-sym]
+                                        ~(init-branch compiled-then !then-bindings-sym))]
                       
-                      [~init-else-sym (fn [state#]
-                                        (let [~state-sym state#]
-                                          ~(init-branch compiled-else !else-bindings-sym)))]
+                      [~init-else-sym (fn [~state-sym]
+                                        ~(init-branch compiled-else !else-bindings-sym))]
                       
-                      [~eval-test-sym (fn [state#]
-                                        (let [~state-sym state#]
-                                          ~(:as-value compiled-test)))]
+                      [~eval-test-sym (fn [~state-sym]
+                                        ~(:as-value compiled-test))]
                       
-                      [~then-on-update-sym (fn [updated-var#]
-                                             (let [~updated-var-sym updated-var#]
+                      [~then-on-update-sym (fn [~old-state-sym ~new-state-sym ~updated-var-sym]
+                                             (let [~@(read-bindings !then-bindings-sym (:el-bindings compiled-then))]
                                                ~(on-update-form compiled-then opts)))]
                       
-                      [~else-on-update-sym (fn [updated-var#]
-                                             (let [~updated-var-sym updated-var#]
+                      [~else-on-update-sym (fn [~old-state-sym ~new-state-sym ~updated-var-sym]
+                                             (let [~@(read-bindings !else-bindings-sym (:el-bindings compiled-else))]
                                                ~(on-update-form compiled-else opts)))]]
        
        :el-return `(deref ~!el-sym)
        
-       :el-init `[~@(when (empty? (:deps compiled-test))
-                      [`(let [test-value# (~eval-test-sym ~state-sym)]
-                          (reset! ~!last-test-value-sym test-value#)
-                          (if test-value#
-                            (~init-then-sym ~state-sym)
-                            (~init-else-sym ~state-sym)))])]
-
        :on-update `[~@(if (not-empty (:deps compiled-test))
                         [`(if (contains? #{~@(for [dep (:deps compiled-test)]
                                                `(quote ~dep))
@@ -121,16 +111,16 @@
                                     (~init-else-sym ~new-state-sym)))
 
                                 (if new-test#
-                                  (~then-on-update-sym ~updated-var-sym)
-                                  (~else-on-update-sym ~updated-var-sym))))
+                                  (~then-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym)
+                                  (~else-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym))))
 
                             (if @~!last-test-value-sym
-                              (~then-on-update-sym ~updated-var-sym)
-                              (~else-on-update-sym ~updated-var-sym)))]
+                              (~then-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym)
+                              (~else-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym)))]
 
                         [`(if @~!last-test-value-sym
-                            (~then-on-update-sym ~updated-var-sym)
-                            (~else-on-update-sym ~updated-var-sym))])]})))
+                            (~then-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym)
+                            (~else-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym))])]})))
 
 (comment
   (require 'flow.parse)
