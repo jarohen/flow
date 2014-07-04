@@ -78,9 +78,11 @@
 
 (defmethod compile-call :fn-call [{:keys [args]} opts]
   (let [compiled-args (map #(compile-el % opts) args)
-        deps (set (mapcat :deps compiled-args))]
+        deps (set (mapcat :deps compiled-args))
+        value (map :as-value compiled-args)]
     {:deps deps
-     :as-value (map :as-value compiled-args)}))
+     :as-value value
+     :el-return value}))
 
 (defmethod compile-call :unwrap-cursor [{:keys [cursor]}
                                         {:keys [dynamic-syms state-sym new-state-sym updated-var-sym]
