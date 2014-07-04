@@ -1,5 +1,6 @@
 (ns flow.compile.node
-  (:require [flow.compile :refer [compile-el]]))
+  (:require [flow.compile :refer [compile-el]]
+            [flow.compile.update :refer [on-update-form]]))
 
 (alias 'fd (doto 'flow.dom create-ns))
 
@@ -88,16 +89,8 @@
                         (:deps compiled-classes)
                         (mapcat :deps compiled-children)))
 
-     :on-update (letfn [(update! [{:keys [deps on-update]}]
-                          (when (seq deps)
-                            `(when (contains? #{~@(for [dep deps]
-                                                    `(quote ~dep))
-                                                :all}
-                                              ~updated-var-sym)
-                               ~@on-update)))]
-                  
-                  (concat (map update! compiled-attrs)
-                          (map update! compiled-styles)
-                          [(update! compiled-classes)]
-                          (map update! compiled-children)))}))
+     :on-update (concat (map (on-update-form opts) compiled-attrs)
+                        (map (on-update-form opts) compiled-styles)
+                        [(on-update-form compiled-classes opts)]
+                        (map (on-update-form opts) compiled-children))}))
 
