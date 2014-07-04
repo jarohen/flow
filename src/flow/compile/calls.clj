@@ -15,7 +15,7 @@
      :el-init `[~@side-effects ~@(:el-init compiled-return)]
      :el-return (:el-return compiled-return)
 
-     :deps (:deps return)
+     :deps (:deps compiled-return)
 
      ;; TODO not sure about this...
      :as-value (when-let [as-val (:as-value compiled-return)]
@@ -23,7 +23,7 @@
                     ~@side-effects
                     ~as-val))
      
-     :on-update (:on-update return)}))
+     :on-update (:on-update compiled-return)}))
 
 (defn init-bindings [bindings]
   (->> (for [[bind value] bindings]
