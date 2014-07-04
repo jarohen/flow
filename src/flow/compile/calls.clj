@@ -52,7 +52,9 @@
         init-else-sym (symbol (str !el-sym "-init-else"))
         
         then-on-update-sym (symbol (str !el-sym "-then-on-update"))
-        else-on-update-sym (symbol (str !el-sym "-else-on-update"))]
+        else-on-update-sym (symbol (str !el-sym "-else-on-update"))
+
+        update-branches-sym (gensym "update-branches")]
     
     (letfn [(init-branch [compiled-branch !bindings-sym]
               (let [bindings (:el-bindings compiled-branch)]
@@ -90,9 +92,21 @@
                       
                       [~else-on-update-sym (fn [~old-state-sym ~new-state-sym ~updated-var-sym]
                                              (let [~@(read-bindings !else-bindings-sym (:el-bindings compiled-else))]
-                                               ~(on-update-form compiled-else opts)))]]
+                                               ~(on-update-form compiled-else opts)))]
+                      
+                      [~update-branches-sym (fn [test-value# ~old-state-sym ~new-state-sym ~updated-var-sym]
+                                              (if test-value#
+                                                (~then-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym)
+                                                (~else-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym)))]]
        
        :el-return `(deref ~!el-sym)
+
+       :el-init `[~@(when (empty? (:deps compiled-test))
+                      [`(let [new-test# (~eval-test-sym nil)]
+                          (reset! ~!last-test-value-sym new-test#)
+                          (if new-test#
+                            (~init-then-sym {})
+                            (~init-else-sym {})))])]
        
        :on-update `[~@(if (not-empty (:deps compiled-test))
                         [`(if (contains? #{~@(for [dep (:deps compiled-test)]
@@ -102,25 +116,25 @@
                             (let [old-test# @~!last-test-value-sym
                                   new-test# (~eval-test-sym ~new-state-sym)]
                               (if (or (= ~updated-var-sym :all)
-                                      (not= old-test# new-test#))
-                              
+                                      (not= (boolean old-test#) (boolean new-test#)))
+                                
                                 (do
                                   (reset! ~!last-test-value-sym new-test#)
                                   (if new-test#
                                     (~init-then-sym ~new-state-sym)
-                                    (~init-else-sym ~new-state-sym)))
+                                    (~init-else-sym ~new-state-sym))
 
-                                (if new-test#
-                                  (~then-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym)
-                                  (~else-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym))))
+                                  ;; test value changed, branch change
+                                  (~update-branches-sym new-test# ~old-state-sym ~new-state-sym :all))
 
-                            (if @~!last-test-value-sym
-                              (~then-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym)
-                              (~else-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym)))]
+                                ;; test value unchanged
+                                (~update-branches-sym new-test# ~old-state-sym ~new-state-sym ~updated-var-sym)))
 
-                        [`(if @~!last-test-value-sym
-                            (~then-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym)
-                            (~else-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym))])]})))
+                            ;; test deps not updated
+                            (~update-branches-sym @~!last-test-value-sym ~old-state-sym ~new-state-sym ~updated-var-sym))]
+
+                        ;; test has no deps
+                        `[(~update-branches-sym @~!last-test-value-sym ~old-state-sym ~new-state-sym ~updated-var-sym)])]})))
 
 (comment
   (require 'flow.parse)
@@ -129,12 +143,15 @@
               :old-state-sym (gensym "old-state")
               :new-state-sym (gensym "new-state")
               :updated-var-sym (gensym "updated-var")}]
-    (-> '[:div
-          (if (<<! !show-heading?)
-            [:h1 (<<! !heading)])]
+    (-> '(do
+           [:h1 {:flow.core/style {:color (:secondary (<<! !colors))
+                                   :background-color (:secondary (<<! !colors))}}
+            "Hello world!"])
         (flow.parse/parse-form {:elem? true})
         (compile-el syms)
-        #_(flow.render/render-el syms))))
+        #_(flow.render/render-el syms)))
+
+  )
 
 (defmethod compile-call :let [{:keys [bindings side-effects body]}]
   )
@@ -178,7 +195,13 @@
 (comment
   (require 'flow.parse)
 
-  (compile-el (flow.parse/parse-form '[:div {:flow.core/style {:color (<<! !color)}}] {:elem? true}) {:state-sym (gensym "state")}))
+  (compile-el (flow.parse/parse-form '(if (+ 1 1)
+                                        [:div {:flow.core/style {:color (<<! !color)}}])
+                                     {:elem? true})
+              {:state-sym (gensym "state")
+               :old-state-sym (gensym "old-state")
+               :new-state-sym (gensym "new-state")
+               :updated-var-sym (gensym "updated-var")}))
 
 (defmethod compile-el :call [call opts]
   (compile-call call opts))

@@ -9,10 +9,12 @@
       (fn []
         (let [!colors (atom {:primary "#427"
                              :secondary "#983"})
-              !show-heading? (atom true)]
+              !show-heading? (atom true)
+              !heading (atom "Hello world!")]
 
           (def !foo-colors !colors)
           (def !foo-show-heading? !show-heading?)
+          (def !foo-heading !heading)
           
           (f/root js/document.body
                   (f/el
@@ -27,11 +29,12 @@
                                                :data-is-black (boolean (= (:primary (<<! !colors)) "#000"))}
 
                      (when (<<! !show-heading?)
-                       [:h1 {::f/style {:color (:primary (<<! !colors))
-                                        :background-color (:secondary (<<! !colors))}}
-                        "Hello world!"])
+                       [:h1 {::f/style {:color (:secondary (<<! !colors))
+                                        :padding "0.5em"
+                                        :background-color (:primary (<<! !colors))}}
+                        (<<! !heading)])
                      
-                     (if (= 3 (+ 1 1))
+                     (if (= 2 (+ 1 1))
                        [:p.copy {::f/style {:text-align :right
                                             :color (:secondary (<<! !colors))}}
                       
