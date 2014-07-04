@@ -32,7 +32,9 @@
 
      :style (parse-map-vals (::f/style attrs))
 
-     :listeners (parse-map-vals (::f/on attrs))
+     :listeners (for [[event listener] (::f/on attrs)]
+                  {:event event
+                   :listener (parse-form listener)})
      
      :attrs (parse-map-vals (dissoc attrs ::f/classes ::f/style ::f/on))
      
@@ -42,7 +44,7 @@
   (fn [call elem?]
     (first call)))
 
-(defmethod parse-call 'clojure.core/let [[_ bindings & body] elem?]
+(defmethod parse-call 'let [[_ bindings & body] elem?]
   {:call-type :let
    :bindings (for [[bind value] (partition 2 bindings)]
                {:bind bind
@@ -50,12 +52,16 @@
    :side-effects (butlast body)
    :body (parse-form (last body) {:elem? elem?})})
 
-(defmethod parse-call 'clojure.core/for [[_ bindings body] elem?]
+(defmethod parse-call 'for [[_ bindings body] elem?]
   {:call-type :for
    :bindings (for [[bind value] (partition 2 bindings)]
                {:bind bind
                 :value (parse-form value)})
    :body (parse-form body {:elem? elem?})})
+
+(defmethod parse-call 'fn* [decl _]
+  {:call-type :fn-decl
+   :fn-decl decl})
 
 (defmethod parse-call 'if [[_ test then else] elem?]
   {:call-type :if

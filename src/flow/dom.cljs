@@ -43,3 +43,6 @@
 (defn swap-elem! [$old $new]
   (when-let [$parent (.-parentNode $old)]
     (.replaceChild $parent $new $old)))
+
+(defn add-listener! [$el event listener]
+  (.addEventListener $el (name event) listener))

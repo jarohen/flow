@@ -49,6 +49,10 @@
                                           (let [~state-sym ~new-state-sym]
                                             (disj (set [~@(map :as-value compiled-classes)]) nil)))])})))
 
+(defn compile-listener [elem-sym {:keys [event listener]} opts]
+  (spit "/tmp/listener.edn" [listener (compile-el listener opts)])
+  {:el-init [`(fd/add-listener! ~elem-sym ~event ~(:as-value (compile-el listener opts)))]})
+
 (defn compile-child [elem-sym child opts]
   (let [{:keys [el-init el-bindings el-return deps on-update]} (compile-el child opts)]
     {:el-init `[~@el-init
@@ -65,12 +69,13 @@
 
   (compile-el (flow.parse/parse-form '[:div {:flow.core/style {:color (<<! !color)}}] {:elem? true}) {:state-sym (gensym "state")}))
 
-(defmethod compile-el :node [{:keys [tag id style classes attrs children]} {:keys [updated-var-sym] :as opts}]
+(defmethod compile-el :node [{:keys [tag id style classes attrs children listeners]} {:keys [updated-var-sym] :as opts}]
   (let [elem-sym (gensym "elem")
         compiled-attrs (map #(compile-attr elem-sym % opts) attrs)
         compiled-styles (map #(compile-style elem-sym % opts) style)
         compiled-classes (compile-classes elem-sym classes opts)
-        compiled-children (map #(compile-child elem-sym % opts) children)]
+        compiled-children (map #(compile-child elem-sym % opts) children)
+        compiled-listeners (map #(compile-listener elem-sym % opts) listeners)]
     
     {:el-bindings `[[~elem-sym (js/document.createElement ~tag)]
                     ~@(mapcat :el-bindings compiled-children)]
@@ -82,6 +87,7 @@
                
                 ~@(mapcat :el-init compiled-attrs)
                 ~@(mapcat :el-init compiled-styles)
+                ~@(mapcat :el-init compiled-listeners)
                 ~@(:el-init compiled-classes)
                 ~@(mapcat :el-init compiled-children)]     
      

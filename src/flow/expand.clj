@@ -10,7 +10,7 @@
     (if (seq? form)
       (let [expanded-form (*macroexpand-1* form)]
         (if (or (= form expanded-form)
-                (#{'let 'case 'if 'do 'for 
+                (#{'let 'case 'if 'do 'for
                    'clojure.core/let 'clojure.core/case 'clojure.core/for
                    'el 'flow.core/el} (first form)))
           form

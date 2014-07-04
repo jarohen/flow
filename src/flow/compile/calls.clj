@@ -136,6 +136,9 @@
                         ;; test has no deps
                         `[(~update-branches-sym @~!last-test-value-sym ~old-state-sym ~new-state-sym ~updated-var-sym)])]})))
 
+(defmethod compile-call :fn-decl [{:keys [fn-decl]} opts]
+  {:as-value fn-decl})
+
 (comment
   (require 'flow.parse)
   (require 'flow.render)
