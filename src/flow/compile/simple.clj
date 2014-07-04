@@ -1,6 +1,8 @@
 (ns flow.compile.simple
   (:require [flow.compile :refer [compile-el]]))
 
+(alias 'fd (doto 'flow.dom create-ns))
+
 (defmethod compile-el :map [m opts]
   {:as-value (->> (for [[k v] m]
                     [(:as-value (compile-el k opts))
@@ -17,7 +19,7 @@
 
 (defmethod compile-el :primitive [{:keys [primitive elem?]} opts]
   (if (nil? primitive)
-    nil
+    {:el-return `(fd/null-elem)}
     
     {:el-return `(js/document.createTextNode ~(str primitive))
      :as-value primitive}))
