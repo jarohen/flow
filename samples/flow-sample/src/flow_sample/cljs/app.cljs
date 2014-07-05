@@ -52,7 +52,12 @@
                        [:p "Maths always let me down..."])
 
                      [:button.btn.btn-default {::f/on {:click (fn [e] (a/put! change-colors-ch :change!))}}
-                      "Change colours!"]]))
+                      "Change colours!"]
+
+                     [:button.btn.btn-default {::f/on {:click #(swap! !show-heading? not)}}
+                      (if (<<! !show-heading?) 
+                        "Hide heading!"
+                        "Show heading!")]]))
 
           (go-loop []
             (a/<! change-colors-ch)
