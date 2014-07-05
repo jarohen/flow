@@ -14,7 +14,9 @@
         (parse-form {:elem? true
                      :path (str el-sym)})
         (compile-el syms)
-        (render-el syms))))
+        (doto (->> (spit "/tmp/compiled.edn")))
+        (render-el syms)
+        (doto (->> (spit "/tmp/rendered.edn"))))))
 
 #_(comment
     (let [el-sym (gensym "flow-el")

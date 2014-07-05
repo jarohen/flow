@@ -3,7 +3,7 @@
             [flow.compile.update :refer [on-update-form]]))
 
 (alias 'fd (doto 'flow.dom create-ns))
-
+(alias 'f (doto 'flow.core create-ns))
 
 (defmulti compile-call
   (fn [call opts]
