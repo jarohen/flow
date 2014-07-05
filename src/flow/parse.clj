@@ -88,8 +88,9 @@
      :then (parse-form then {:elem? elem?, :path (str path "-then")})
      :else (parse-form else {:elem? elem?, :path (str path "-else")})}))
 
-(defmethod parse-call 'do [[_ & body] opts]
+(defmethod parse-call 'do [[_ & body] {:keys [path] :as opts}]
   {:call-type :do
+   :path path
    :side-effects (butlast body)
    :return (parse-form (last body) opts)})
 
@@ -116,21 +117,25 @@
                      :type :call)
 
        (symbol? form) {:type :symbol
-                       :symbol form}
+                       :symbol form
+                       :path path}
 
        (map? form) {:type :map
                     :map (->> (for [[[k v] idx] (map vector form (range))]
                                 [(parse-form k (update-in opts [:path] str "-" idx "-k"))
                                  (parse-form v (update-in opts [:path] str "-" idx "-v"))])
-                              (into {}))}
+                              (into {}))
+                    :path path}
    
        (coll? form) {:type :coll
                      :coll (->> form
                                 (map parse-form)
-                                (into (empty form)))}
+                                (into (empty form)))
+                     :path path}
    
        :else {:type :primitive
-              :primitive form})
+              :primitive form
+              :path path})
       
       (assoc :elem? elem?)))
 
