@@ -50,7 +50,6 @@
                                             (disj (set [~@(map :as-value compiled-classes)]) nil)))])})))
 
 (defn compile-listener [elem-sym {:keys [event listener]} opts]
-  (spit "/tmp/listener.edn" [listener (compile-el listener opts)])
   {:el-init [`(fd/add-listener! ~elem-sym ~event ~(:as-value (compile-el listener opts)))]})
 
 (defn compile-child [elem-sym child opts]
