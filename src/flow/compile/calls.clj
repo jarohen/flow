@@ -37,104 +37,113 @@
           
           bindings))
 
-(defmethod compile-call :if [{:keys [test then else]} {:keys [state-sym old-state-sym new-state-sym updated-var-sym] :as opts}]
-  (let [[compiled-test compiled-then compiled-else] (map #(compile-el % opts) [test then else])
+(defn init-block [!el-return-sym compiled-block !bindings-sym]
+  (let [bindings (:el-bindings compiled-block)]
+    `(do
+       (reset! ~!bindings-sym ~(init-bindings bindings))
+       (let [~@(read-bindings !bindings-sym bindings)
+             $elem# ~(:el-return compiled-block)]
+         (fd/swap-elem! @~!el-return-sym $elem#)
+         (reset! ~!el-return-sym $elem#)
+         ~@(:el-init compiled-block)))))
 
-        !el-sym (gensym (str "if"))
+(defn compile-block [form compiled-form !el-return-sym
+                     & [{:keys [state-sym old-state-sym new-state-sym updated-var-sym] :as opts}]]
+  (let [{:keys [path]} form
+        !block-bindings-sym (symbol (str path "-binds"))
+        init-block-sym (symbol (str path "-init"))
+        block-on-update-sym (symbol (str path "-on-update"))]
 
-        !then-bindings-sym (symbol (str !el-sym "-then-binds"))
-        !else-bindings-sym (symbol (str !el-sym "-else-binds"))
+    {:el-bindings [[!block-bindings-sym `(atom nil)]
+                   
+                   [init-block-sym `(fn [~state-sym]
+                                      ~(init-block !el-return-sym compiled-form !block-bindings-sym))]
+                   
+                   [block-on-update-sym `(fn [~old-state-sym ~new-state-sym ~updated-var-sym]
+                                           (let [~@(read-bindings !block-bindings-sym (:el-bindings compiled-form))]
+                                             ~(on-update-form compiled-form opts)))]]
+     
+     :syms {:init-sym init-block-sym
+            :on-update-sym block-on-update-sym}}))
 
-        eval-test-sym (symbol (str !el-sym "-eval-test"))
-        !last-test-value-sym (symbol (str "!" !el-sym "-last-test-value"))
+(defmethod compile-call :if [{:keys [path test then else]} {:keys [el-sym state-sym old-state-sym new-state-sym updated-var-sym] :as opts}]
+  (let [el-sym (symbol (str path "-el"))
         
-        init-then-sym (symbol (str !el-sym "-init-then"))
-        init-else-sym (symbol (str !el-sym "-init-else"))
+        [compiled-test compiled-then compiled-else] (map #(compile-el % opts) [test then else])
+
+        !el-return-sym (symbol (str "!" path "-return"))
+
+        eval-test-sym (symbol (str "eval-" path "-test"))
+        !last-test-value-sym (symbol (str "!" path "-last-test-value"))
         
-        then-on-update-sym (symbol (str !el-sym "-then-on-update"))
-        else-on-update-sym (symbol (str !el-sym "-else-on-update"))
+        {then-el-bindings :el-bindings
+         {init-then-sym :init-sym
+          then-on-update-sym :on-update-sym} :syms}
+        (compile-block then compiled-then !el-return-sym opts)
 
-        update-branches-sym (gensym "update-branches")]
-    
-    (letfn [(init-branch [compiled-branch !bindings-sym]
-              (let [bindings (:el-bindings compiled-branch)]
-                `(do
-                   (reset! ~!bindings-sym ~(init-bindings bindings))
-                   (let [~@(read-bindings !bindings-sym bindings)
-                         $elem# ~(:el-return compiled-branch)]
-                     (fd/swap-elem! @~!el-sym $elem#)
-                     (reset! ~!el-sym $elem#)
-                     ~@(:el-init compiled-branch)))))]
-      
-      {:deps (set (mapcat :deps [compiled-test compiled-then compiled-else]))
-       :as-value `(if ~(:as-value compiled-test)
-                    ~(:as-value compiled-then)
-                    ~(:as-value compiled-else))
+        {else-el-bindings :el-bindings
+         {init-else-sym :init-sym
+          else-on-update-sym :on-update-sym} :syms}
+        (compile-block else compiled-else !el-return-sym opts)
 
-       
-       :el-bindings `[[~!el-sym (atom (fd/null-elem))]
-                      [~!last-test-value-sym (atom nil)]
-                      [~!then-bindings-sym (atom nil)]
-                      [~!else-bindings-sym (atom nil)]
+        update-branches-sym (symbol (str path "-update-branches!"))]
 
-                      [~init-then-sym (fn [~state-sym]
-                                        ~(init-branch compiled-then !then-bindings-sym))]
-                      
-                      [~init-else-sym (fn [~state-sym]
-                                        ~(init-branch compiled-else !else-bindings-sym))]
-                      
-                      [~eval-test-sym (fn [~state-sym]
-                                        ~(:as-value compiled-test))]
-                      
-                      [~then-on-update-sym (fn [~old-state-sym ~new-state-sym ~updated-var-sym]
-                                             (let [~@(read-bindings !then-bindings-sym (:el-bindings compiled-then))]
-                                               ~(on-update-form compiled-then opts)))]
-                      
-                      [~else-on-update-sym (fn [~old-state-sym ~new-state-sym ~updated-var-sym]
-                                             (let [~@(read-bindings !else-bindings-sym (:el-bindings compiled-else))]
-                                               ~(on-update-form compiled-else opts)))]
-                      
-                      [~update-branches-sym (fn [test-value# ~old-state-sym ~new-state-sym ~updated-var-sym]
-                                              (if test-value#
-                                                (~then-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym)
-                                                (~else-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym)))]]
-       
-       :el-return `(deref ~!el-sym)
+    {:deps (set (mapcat :deps [compiled-test compiled-then compiled-else]))
+     
+     :as-value `(if ~(:as-value compiled-test)
+                  ~(:as-value compiled-then)
+                  ~(:as-value compiled-else))
 
-       :el-init `[~@(when (empty? (:deps compiled-test))
-                      [`(let [new-test# (~eval-test-sym nil)]
-                          (reset! ~!last-test-value-sym new-test#)
-                          (if new-test#
-                            (~init-then-sym {})
-                            (~init-else-sym {})))])]
-       
-       :on-update `[~@(if (not-empty (:deps compiled-test))
-                        [`(if (contains? #{~@(for [dep (:deps compiled-test)]
-                                               `(quote ~dep))
-                                           :all}
-                                         ~updated-var-sym)
-                            (let [old-test# @~!last-test-value-sym
-                                  new-test# (~eval-test-sym ~new-state-sym)]
-                              (if (or (= ~updated-var-sym :all)
-                                      (not= (boolean old-test#) (boolean new-test#)))
-                                
-                                (do
-                                  (reset! ~!last-test-value-sym new-test#)
-                                  (if new-test#
-                                    (~init-then-sym ~new-state-sym)
-                                    (~init-else-sym ~new-state-sym))
+     :el-bindings (concat [[!el-return-sym `(atom (fd/null-elem))]
+                           [!last-test-value-sym `(atom nil)]
 
-                                  ;; test value changed, branch change
-                                  (~update-branches-sym new-test# ~old-state-sym ~new-state-sym :all))
+                           [eval-test-sym `(fn [~state-sym]
+                                             ~(:as-value compiled-test))]]
 
-                                ;; test value unchanged
-                                (~update-branches-sym new-test# ~old-state-sym ~new-state-sym ~updated-var-sym)))
+                          then-el-bindings
+                          else-el-bindings
+                          
+                          [[update-branches-sym `(fn [test-value# ~old-state-sym ~new-state-sym ~updated-var-sym]
+                                                   (if test-value#
+                                                     (~then-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym)
+                                                     (~else-on-update-sym ~old-state-sym ~new-state-sym ~updated-var-sym)))]])
+     
+     :el-return `(deref ~!el-return-sym)
 
-                            ;; test deps not updated
-                            (~update-branches-sym @~!last-test-value-sym ~old-state-sym ~new-state-sym ~updated-var-sym))]
+     :el-init (when (empty? (:deps compiled-test))
+                `[(let [new-test# (~eval-test-sym nil)]
+                    (reset! ~!last-test-value-sym new-test#)
+                    (if new-test#
+                      (~init-then-sym {})
+                      (~init-else-sym {})))])
+     
+     :on-update (if (not-empty (:deps compiled-test))
+                  `[(if (contains? #{~@(for [dep (:deps compiled-test)]
+                                         `(quote ~dep))
+                                     :all}
+                                   ~updated-var-sym)
+                      (let [old-test# @~!last-test-value-sym
+                            new-test# (~eval-test-sym ~new-state-sym)]
+                        (if (or (= ~updated-var-sym :all)
+                                (not= (boolean old-test#) (boolean new-test#)))
+                             
+                          (do
+                            (reset! ~!last-test-value-sym new-test#)
+                            (if new-test#
+                              (~init-then-sym ~new-state-sym)
+                              (~init-else-sym ~new-state-sym))
 
-                        ;; test has no deps
-                        `[(~update-branches-sym @~!last-test-value-sym ~old-state-sym ~new-state-sym ~updated-var-sym)])]})))
+                            ;; test value changed, branch change
+                            (~update-branches-sym new-test# ~old-state-sym ~new-state-sym :all))
+
+                          ;; test value unchanged
+                          (~update-branches-sym new-test# ~old-state-sym ~new-state-sym ~updated-var-sym)))
+
+                      ;; test deps not updated
+                      (~update-branches-sym @~!last-test-value-sym ~old-state-sym ~new-state-sym ~updated-var-sym))]
+
+                  ;; test has no deps
+                  `[(~update-branches-sym @~!last-test-value-sym ~old-state-sym ~new-state-sym ~updated-var-sym)])}))
 
 (defmethod compile-call :fn-decl [{:keys [fn-decl]} opts]
   {:as-value fn-decl})
@@ -142,22 +151,55 @@
 (comment
   (require 'flow.parse)
   (require 'flow.render)
-  (let [syms {:state-sym (gensym "state")
-              :old-state-sym (gensym "old-state")
-              :new-state-sym (gensym "new-state")
-              :updated-var-sym (gensym "updated-var")}]
-    (-> '(do
-           [:h1 {:flow.core/style {:color (:secondary (<<! !colors))
-                                   :background-color (:secondary (<<! !colors))}}
-            "Hello world!"])
-        (flow.parse/parse-form {:elem? true})
-        (compile-el syms)
-        #_(flow.render/render-el syms)))
-
+  (def foo-syms
+    (let [el-sym (gensym "flow-el")]
+      {:el-sym el-sym
+       :state-sym (symbol (str el-sym "-state"))
+       :!state-sym (symbol (str el-sym "-!state"))
+       :old-state-sym (symbol (str el-sym "-old-state"))
+       :new-state-sym (symbol (str el-sym "-new-state"))
+       :updated-var-sym (symbol (str el-sym "-updated-var"))}))
+  
+  (flow.render/render-el
+   (compile-el
+    (flow.parse/parse-form '(let [x 4]
+                              [:h1 {:data-flow x}
+                               "Hello world!"])
+                           {:elem? true
+                            :path (str (gensym "flow-el"))})
+    foo-syms)
+   foo-syms)
   )
 
-(defmethod compile-call :let [{:keys [bindings side-effects body]}]
-  )
+(defmethod compile-call :let [{:keys [bindings body]} {:keys [el-sym] :as opts}]
+  (if (empty? bindings)
+    (compile-el body opts)
+    
+    (let [[{:keys [bind value]} & more-bindings] bindings
+          compiled-value (compile-el value opts)
+          shadowed-sym (gensym (str el-sym "-" bind))
+          compiled-body (compile-el body
+                                    (update-in opts [:shadowed-syms]
+                                               assoc bind {:shadowed-sym shadowed-sym
+                                                           :dynamic? (->> (:deps compiled-value)
+                                                                          not-empty
+                                                                          boolean)}))]
+      {:deps (set (concat (:deps compiled-value)
+                          (:deps compiled-body)))
+
+       :as-value `(let [~shadowed-sym ~(:as-value compiled-value)]
+                    ~(:as-value compiled-body))
+
+       :el-bindings (concat (if (empty? (:deps compiled-value))
+                              [[shadowed-sym (:as-value compiled-value)]
+                               [el-sym (:el-return compiled-body)]])
+                            
+                            (:el-bindings compiled-body))
+
+       :el-init (when (empty? (:deps compiled-value))
+                  (:el-init compiled-body))
+       
+       :el-return el-sym})))
 
 (defmethod compile-call :fn-call [{:keys [args]} opts]
   (let [compiled-args (map #(compile-el % opts) args)
@@ -167,14 +209,15 @@
      :as-value value
      :el-return value}))
 
-(defmethod compile-call :unwrap-cursor [{:keys [cursor]}
-                                        {:keys [dynamic-syms state-sym new-state-sym updated-var-sym]
+(defmethod compile-call :unwrap-cursor [{:keys [cursor path]}
+                                        {:keys [shadowed-syms updated-var-sym
+                                                state-sym new-state-sym]
                                          :as opts}]
-  (let [unshadowed-sym (if-let [{:keys [unshadowed-sym]} (get dynamic-syms cursor)]
+  (let [unshadowed-sym (if-let [{:keys [unshadowed-sym]} (get shadowed-syms cursor)]
                          unshadowed-sym
                          cursor)
-        !el-sym (gensym (str cursor))
-        el-value-sym (gensym (str cursor "-value"))]
+        !el-sym (symbol (str path "-!el"))
+        el-value-sym (symbol (str path "-value"))]
     
     {:deps #{unshadowed-sym}
      :as-value `(get ~state-sym (quote ~unshadowed-sym))
@@ -198,13 +241,26 @@
 (comment
   (require 'flow.parse)
 
-  (compile-el (flow.parse/parse-form '(if (+ 1 1)
-                                        [:div {:flow.core/style {:color (<<! !color)}}])
-                                     {:elem? true})
-              {:state-sym (gensym "state")
-               :old-state-sym (gensym "old-state")
-               :new-state-sym (gensym "new-state")
-               :updated-var-sym (gensym "updated-var")}))
+  (defn test-compile []
+    (let [syms {:state-sym 'flow-test-state
+                :old-state-sym 'flow-test-old-state
+                :new-state-sym 'flow-test-new-state
+                :updated-var-sym 'flow-test-updated-var}]
+      (-> (compile-el (flow.parse/parse-form '(if (<<! !show-heading?)
+                                                (do
+                                                  [:h1 {::f/style {:color (:secondary (<<! !colors))
+                                                                   :padding "0.5em"
+                                                                   :background-color (:primary (<<! !colors))}
+                                                        ;; ::f/on {:click (fn [e]
+                                                        ;;                  (a/put! change-colors-ch :change!))}
+                                                        }
+                                                   (<<! !heading)]))
+                                             {:elem? true
+                                              :path "flow-test"})
+                      syms)
+          #_(render-el syms)))
+
+    ))
 
 (defmethod compile-el :call [call opts]
   (compile-call call opts))
