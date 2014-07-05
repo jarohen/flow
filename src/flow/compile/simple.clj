@@ -13,9 +13,10 @@
 (defmethod compile-el :coll [coll opts]
   {:as-value (map (comp :as-value #(compile-el % opts)) coll)})
 
-(defmethod compile-el :symbol [{:keys [symbol]} {:keys [dynamic-syms]}]
-  {:as-value (or (get-in dynamic-syms [symbol :unshadowed-sym])
-                 symbol)})
+(defmethod compile-el :symbol [{:keys [symbol]} {:keys [shadowed-syms]}]
+  (let [{:keys [dynamic? shadowed-sym]} (get shadowed-syms symbol)]
+    {:deps (when dynamic? #{symbol})
+     :as-value (or shadowed-sym symbol)}))
 
 (defmethod compile-el :primitive [{:keys [primitive elem?]} opts]
   (if (nil? primitive)
