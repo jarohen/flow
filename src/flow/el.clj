@@ -4,25 +4,24 @@
             [flow.compile :refer [compile-el]]
             [flow.render :refer [render-el]]))
 
-(defn print-console-ln [& args]
-  (binding [*out* System/out]
-    (apply println args)))
-
 (defmacro el [elem]
-  (let [syms {:state-sym (gensym "state")
-              :old-state-sym (gensym "old-state")
-              :new-state-sym (gensym "new-state")
-              :updated-var-sym (gensym "updated-var")}]
+  (let [el-sym (gensym "flow-el")
+        syms {:state-sym (symbol (str el-sym "-state"))
+              :old-state-sym (symbol (str el-sym "-old-state"))
+              :new-state-sym (symbol (str el-sym "-new-state"))
+              :updated-var-sym (symbol (str el-sym "-updated-var"))}]
     (-> (expand-macros elem &env)
-        (parse-form {:elem? true})
+        (parse-form {:elem? true
+                     :path (str el-sym)})
         (compile-el syms)
         (render-el syms))))
 
 #_(comment
-    (let [syms {:state-sym (gensym "state")
-                :old-state-sym (gensym "old-state")
-                :new-state-sym (gensym "new-state")
-                :updated-var-sym (gensym "updated-var")}]
+    (let [el-sym (gensym "flow-el")
+          syms {:state-sym (symbol (str el-sym "-state"))
+                :old-state-sym (symbol (str el-sym "-old-state"))
+                :new-state-sym (symbol (str el-sym "-new-state"))
+                :updated-var-sym (symbol (str el-sym "-updated-var"))}]
       (-> '[:div#test.container.blah {:flow.core/classes ["abc"]
                                       :data-test "foo"
                                       :flow.core/style {:color (<<! !color)}}
