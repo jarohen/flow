@@ -1,6 +1,7 @@
 (ns flow.core
   #+clj (:require [flow.el :as el])
-  #+cljs (:require clojure.set
+  #+cljs (:require flow.protocols
+                   clojure.set
                    flow.dom))
 
 #+clj

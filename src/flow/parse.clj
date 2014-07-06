@@ -7,7 +7,7 @@
 
 (defn parse-map-vals [m {:keys [path] :as opts}]
   (->> (for [[k v] m]
-         [k (parse-form v (assoc opts :path (str path "-" k)))])
+         [k (parse-form v (assoc opts :path (str path "-" (name k))))])
        (into {})))
 
 (defn parse-node [[tagish possible-attrs & body] {:keys [path] :as opts}]
@@ -39,7 +39,7 @@
                         (parse-form class {:path (str path "-classes-" idx)
                                            :elem? false})))
 
-     :style (parse-map-vals (::f/style attrs) {:path (str path "-attrs")
+     :style (parse-map-vals (::f/style attrs) {:path (str path "-style")
                                                :elem? false})
 
      :listeners (for [[event listener] (::f/on attrs)]
@@ -63,7 +63,9 @@
      :bindings (for [[[bind value] idx] (map vector (partition 2 bindings) (range))]
                  {:bind bind
                   :value (parse-form value {:elem? false
-                                            :path (str path "-bind-" idx)})})
+                                            :path (str path "-bind-" idx)})
+                  :path (str path "-" idx)})
+     
      :body (parse-form `(do ~@body) {:elem? elem?
                                      :path (str path "-body")})}))
 
@@ -105,6 +107,7 @@
 
 (defmethod parse-call :default [[& args] {:keys [path] :as opts}]
   {:call-type :fn-call
+   :path path
    :args (map #(parse-form % (update-in opts [:path] str "-call")) args)})
 
 (defn parse-form [form & [{:keys [elem? path]

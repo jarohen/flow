@@ -1,102 +1,197 @@
 (ns flow.compile.node
-  (:require [flow.compile :refer [compile-el]]
-            [flow.compile.update :refer [on-update-form]]))
+  (:require [flow.compile :refer [compile-el compile-value]]
+            [flow.util :as u]
+            [flow.bindings :as b]))
 
 (alias 'fd (doto 'flow.dom create-ns))
+(alias 'fp (doto 'flow.protocols create-ns))
 
+(declare compile-node)
 
-(defn compile-attr [elem-sym [k v] {:keys [state-sym new-state-sym] :as opts}]
-  (let [{:keys [deps as-value]} (compile-el v opts)
-        set-attr-form `(let [v# ~as-value]
-                         (fd/set-attr! ~elem-sym ~k v#))]
+(defn compile-attr [elem-sym [k v] path
+                    {:keys [state old-state new-state updated-vars] :as opts}]
+  
+  (let [{:keys [deps inline-value value declarations]} (compile-value v opts)
+        value-sym (symbol (str path "-attrs-" (name k)))]
     {:deps deps
 
-     :el-init (when (empty? deps)
-                [set-attr-form])
+     :el-bindings (when (not-empty deps)
+                    [[value-sym value]])
+     
+     :el-init (if (empty? deps)
+                `[(fd/set-attr! ~elem-sym ~k ~inline-value)]
+                `[(fd/set-attr! ~elem-sym ~k (fp/current-value ~value-sym ~state))])
+
+     :declarations declarations
      
      :on-update (when (not-empty deps)
-                  [`(let [~state-sym ~new-state-sym]
-                      ~set-attr-form)])}))
+                  `[(when (fp/should-update-value? ~value-sym ~updated-vars)
+                      (fd/set-attr! ~elem-sym ~k (fp/current-value ~value-sym ~new-state)))])}))
 
-(defn compile-style [elem-sym [k v] {:keys [state-sym new-state-sym] :as opts}]
-  (let [{:keys [deps as-value]} (compile-el v opts)
-        set-style-form `(let [v# ~as-value]
-                          (fd/set-style! ~elem-sym ~k v#))]
+(defn compile-style [elem-sym [k v] path {:keys [state new-state updated-vars] :as opts}]
+  (let [{:keys [deps value inline-value declarations]} (compile-value v opts)
+        value-sym (symbol (str path "-style-" (name k)))]
     {:deps deps
 
-     :el-init (when (empty? deps)
-                [set-style-form])
+     :el-bindings (when (not-empty deps)
+                    [[value-sym value]])
+     
+     :el-init (if (empty? deps)
+                `[(fd/set-style! ~elem-sym ~k ~inline-value)]
+                `[(fd/set-style! ~elem-sym ~k (fp/current-value ~value-sym ~state))])
 
+     :declarations declarations
+     
      :on-update (when (not-empty deps)
-                  [`(let [~state-sym ~new-state-sym]
-                      ~set-style-form)])}))
+                  `[(when (fp/should-update-value? ~value-sym ~updated-vars)
+                      (fd/set-style! ~elem-sym ~k (fp/current-value ~value-sym ~new-state)))])}))
 
-(defn compile-classes [elem-sym classes {:keys [state-sym old-state-sym new-state-sym] :as opts}]
+(defn compile-classes [elem-sym classes {:keys [state old-state new-state] :as opts}]
   (when (seq classes)
-    (let [compiled-classes (map #(compile-el % opts) classes)
+    (let [compiled-classes (map #(-> %
+                                     (compile-value opts)
+                                     (assoc :value-sym (symbol (:path %))))
+                                classes)
           deps (set (mapcat :deps compiled-classes))]
+
       {:deps deps
 
-       :el-init [`(fd/add-classes! ~elem-sym (set [~@(->> compiled-classes
-                                                          (remove (comp not-empty :deps))
-                                                          (map :as-value))]))]
+       :el-bindings (->> compiled-classes
+                         (filter (comp not-empty :deps))
+                         (map (juxt :value-sym :value)))
+       
+       :el-init [`(fd/add-classes! ~elem-sym
+                                   (-> (set [~@(for [{:keys [value-sym inline-value deps]} compiled-classes]
+                                                 (if (empty? deps)
+                                                   inline-value
+                                                   `(fp/current-value ~value-sym ~state)))])
+                                       (disj nil)))]
+
+       :declarations (mapcat :declarations compiled-classes)
        
        :on-update (when (not-empty deps)
-                    [`(fd/update-classes! ~elem-sym
-                                          (let [~state-sym ~old-state-sym]
-                                            (set [~@(map :as-value compiled-classes)]))
+                    (letfn [(classes-for [deps-state-sym]
+                              `(-> (concat (map #(fp/current-value % ~deps-state-sym)
+                                                [~@(->> compiled-classes
+                                                        (filter (comp not-empty :deps))
+                                                        (map :value-sym))])
+                                           
+                                           [~@(->> compiled-classes
+                                                   (filter (comp empty? :deps))
+                                                   (map :inline-value))])
+                                   set
+                                   (disj nil)))]
+                      
+                      [`(fd/update-classes! ~elem-sym
+                                            ~(classes-for old-state)
+                                            ~(classes-for new-state))]))})))
 
-                                          (let [~state-sym ~new-state-sym]
-                                            (disj (set [~@(map :as-value compiled-classes)]) nil)))])})))
+(defn compile-listener [elem-sym {:keys [event listener]} {:keys [state-sym] :as opts}]
+  {:el-init [`(fd/add-listener! ~elem-sym ~event ~(:inline-value (compile-value listener opts)))]})
 
-(defn compile-listener [elem-sym {:keys [event listener]} opts]
-  {:el-init [`(fd/add-listener! ~elem-sym ~event ~(:as-value (compile-el listener opts)))]})
+(defn compile-child [elem-sym child {:keys [state old-state new-state updated-vars] :as opts}]
+  (let [{:keys [el] :as compiled-child} (if (= :node (:type child))
+                                          (compile-node child opts)
+                                          (compile-el child opts))
+        child-sym (symbol (:path child))]
 
-(defn compile-child [elem-sym child opts]
-  (let [{:keys [el-init el-bindings el-return deps on-update]} (compile-el child opts)]
-    {:el-init `[~@el-init
-                (.appendChild ~elem-sym ~el-return)]
-     
-     :el-bindings el-bindings
-     
-     :on-update on-update
-     
-     :deps deps}))
+    (if el
+      (let [{:keys [el deps declarations]} compiled-child]
+        {:deps deps
+         :declarations declarations
+         :el-bindings [[child-sym el]]
+         :el-init [`(.appendChild ~elem-sym (fp/build-element ~child-sym ~state))]
+         
+         :on-update [`(when (fp/should-update-el? ~child-sym ~updated-vars)
+                        (fp/handle-update! ~child-sym ~old-state ~new-state ~updated-vars))]})
+
+      (let [{:keys [el-return]} compiled-child]
+        (-> compiled-child
+            (update-in [:el-init] conj `(.appendChild ~elem-sym ~el-return)))))))
 
 (comment
   (require 'flow.parse)
 
-  (compile-el (flow.parse/parse-form '[:div {:flow.core/style {:color (<<! !color)}}] {:elem? true}) {:state-sym (gensym "state")}))
+  (let [syms {:state 'flow-test-state
+              :old-state 'flow-test-old-state
+              :new-state 'flow-test-new-state
+              :updated-vars 'flow-test-updated-vars}]
+    (-> (compile-el (flow.parse/parse-form '[:div
+                                             [:h1 "Show heading is:" (pr-str (<<! !show-heading))]]
+                                           {:elem? true
+                                            :path "flow-test"})
+                    syms)
+        #_(render-el syms)))
+  )
 
-(defmethod compile-el :node [{:keys [tag id style classes attrs children listeners]} opts]
+(defn compile-node [{:keys [tag id style classes attrs children listeners path]} opts]
   (let [elem-sym (gensym "elem")
-        compiled-attrs (map #(compile-attr elem-sym % opts) attrs)
-        compiled-styles (map #(compile-style elem-sym % opts) style)
+        compiled-attrs (map #(compile-attr elem-sym % path opts) attrs)
+        compiled-styles (map #(compile-style elem-sym % path opts) style)
         compiled-classes (compile-classes elem-sym classes opts)
         compiled-children (map #(compile-child elem-sym % opts) children)
         compiled-listeners (map #(compile-listener elem-sym % opts) listeners)]
-    
+
     {:el-bindings `[[~elem-sym (js/document.createElement ~tag)]
+                    ~@(mapcat :el-bindings compiled-attrs)
+                    ~@(mapcat :el-bindings compiled-styles)
+                    ~@(mapcat :el-bindings compiled-listeners)
+                    ~@(:el-bindings compiled-classes)
                     ~@(mapcat :el-bindings compiled-children)]
 
      :el-return elem-sym
      
      :el-init `[~@(when id
                     [`(set! (.-id ~elem-sym) ~id)])
-               
+                
                 ~@(mapcat :el-init compiled-attrs)
                 ~@(mapcat :el-init compiled-styles)
                 ~@(mapcat :el-init compiled-listeners)
                 ~@(:el-init compiled-classes)
-                ~@(mapcat :el-init compiled-children)]     
-     
+                ~@(mapcat :el-init compiled-children)]
+
      :deps (set (concat (mapcat :deps compiled-attrs)
                         (mapcat :deps compiled-styles)
                         (:deps compiled-classes)
                         (mapcat :deps compiled-children)))
 
-     :on-update (concat (map (on-update-form opts) compiled-attrs)
-                        (map (on-update-form opts) compiled-styles)
-                        [(on-update-form compiled-classes opts)]
-                        (map (on-update-form opts) compiled-children))}))
+     :declarations (concat (mapcat :declarations compiled-attrs)
+                           (mapcat :declarations compiled-styles)
+                           (:declarations compiled-classes)
+                           (mapcat :declarations compiled-children))
+
+     :on-update (concat (mapcat :on-update compiled-attrs)
+                        (mapcat :on-update compiled-styles)
+                        (:on-update compiled-classes)
+                        (mapcat :on-update compiled-children))}))
+
+(defmethod compile-el :node [{:keys [path] :as node}
+                             {:keys [state old-state new-state updated-vars] :as opts}]
+  (let [{:keys [el-bindings el-return el-init on-update deps declarations]} (compile-node node opts)
+        
+        el-fn (symbol (str path "-node"))]
+    declarations
+    {:el `(~el-fn)
+     :deps deps
+     :declarations (concat declarations
+
+                           [(let [!bindings (gensym "binds")]
+                              `(defn ~el-fn []
+                                 (let [~!bindings (atom nil)]
+                              
+                                   (reify fp/DynamicElement
+                                     (~'should-update-el? [_# ~updated-vars]
+                                       ~(u/deps->should-update deps updated-vars))
+                                
+                                     (~'build-element [_# ~state]
+                                       (reset! ~!bindings ~(b/init-bindings el-bindings))
+
+                                       (let [~@(b/read-bindings !bindings el-bindings)]
+                                         ~@el-init
+                                      
+                                         ~el-return))
+                                
+                                     (~'handle-update! [_# ~old-state ~new-state ~updated-vars]
+                                       (let [~@(b/read-bindings !bindings el-bindings)]
+                                         ~@on-update))))))])}))
 
