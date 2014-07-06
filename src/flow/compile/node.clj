@@ -68,7 +68,7 @@
 
   (compile-el (flow.parse/parse-form '[:div {:flow.core/style {:color (<<! !color)}}] {:elem? true}) {:state-sym (gensym "state")}))
 
-(defmethod compile-el :node [{:keys [tag id style classes attrs children listeners]} {:keys [updated-var-sym] :as opts}]
+(defmethod compile-el :node [{:keys [tag id style classes attrs children listeners]} opts]
   (let [elem-sym (gensym "elem")
         compiled-attrs (map #(compile-attr elem-sym % opts) attrs)
         compiled-styles (map #(compile-style elem-sym % opts) style)

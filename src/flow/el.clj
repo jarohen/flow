@@ -9,7 +9,7 @@
         syms {:state-sym (symbol (str el-sym "-state"))
               :old-state-sym (symbol (str el-sym "-old-state"))
               :new-state-sym (symbol (str el-sym "-new-state"))
-              :updated-var-sym (symbol (str el-sym "-updated-var"))}]
+              :updated-vars-sym (symbol (str el-sym "-updated-vars"))}]
     (-> (expand-macros elem &env)
         (parse-form {:elem? true
                      :path (str el-sym)})
@@ -23,7 +23,7 @@
           syms {:state-sym (symbol (str el-sym "-state"))
                 :old-state-sym (symbol (str el-sym "-old-state"))
                 :new-state-sym (symbol (str el-sym "-new-state"))
-                :updated-var-sym (symbol (str el-sym "-updated-var"))}]
+                :updated-vars-sym (symbol (str el-sym "-updated-vars"))}]
       (-> '[:div#test.container.blah {:flow.core/classes ["abc"]
                                       :data-test "foo"
                                       :flow.core/style {:color (<<! !color)}}
