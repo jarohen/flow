@@ -46,3 +46,13 @@
 
 (defn add-listener! [$el event listener]
   (.addEventListener $el (name event) listener))
+
+(defn ->node [$el-or-val]
+  (cond
+   (nil? $el-or-val) (null-elem)
+   
+   (.-nodeType $el-or-val) $el-or-val
+   
+   (js/createTextNode (if (string? $el-or-val)
+                        $el-or-val
+                        (pr-str $el-or-val)))))
