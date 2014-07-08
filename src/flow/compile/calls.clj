@@ -93,111 +93,96 @@
 
                                          (update-branch# @!last-test-value#)))))))])}))
 
-(comment
-  (comment
-    (require 'flow.parse)
-    (require 'flow.render)
-    (def foo-syms
-      (let [el-sym (gensym "flow-el")]
-        {:el-sym el-sym
-         :state-sym (symbol (str el-sym "-state"))
-         :!state-sym (symbol (str el-sym "-!state"))
-         :old-state-sym (symbol (str el-sym "-old-state"))
-         :new-state-sym (symbol (str el-sym "-new-state"))
-         :updated-vars-sym (symbol (str el-sym "-updated-vars"))}))
+(defmethod compile-call :let [{:keys [bindings body]} {:keys [state old-state new-state updated-vars] :as opts}]
+  (if (empty? bindings)
+    (compile-el body opts)
     
-    (flow.render/render-el
-     (compile-el
-      (flow.parse/parse-form '(let [x 4]
-                                [:h1 {:data-flow x}
-                                 "Hello world!"])
-                             {:elem? true
-                              :path (str (gensym "flow-el"))})
-      foo-syms)
-     foo-syms)
-    )
+    (let [[{:keys [bind value path]} & more-bindings] bindings
 
-  (defmethod compile-call :let [{:keys [bindings body]} {:keys [state-sym old-state-sym new-state-sym updated-vars-sym] :as opts}]
-    (if (empty? bindings)
-      (compile-el body opts)
-      
-      (let [[{:keys [bind value path]} & more-bindings] bindings
-            compiled-value (compile-el value opts)
-            compiled-body (compile-el body (cond-> opts
-                                             (not-empty (:deps compiled-value)) (update-in [:dynamic-syms] conj bind)))
+          compiled-value (compile-value value opts)
 
-            !el-return-sym (symbol (str path "-el"))
-            !last-value-sym (symbol (str "!" path "-last-value"))
-            eval-value-sym (symbol (str "eval-" path "-value"))
+          dynamic-value? (empty (:deps compiled-value))
+          
+          compiled-body (compile-call {:call-type :let
+                                       :bindings more-bindings
+                                       :body body}
 
-            {body-el-bindings :el-bindings
-             {init-body-sym :init-sym
-              body-on-update-sym :on-update-sym} :syms}
-            (compile-block body compiled-body !el-return-sym opts)]
-        
-        {:deps (set (concat (:deps compiled-value)
-                            (disj (:deps compiled-body) bind)))
+                                      (update-in opts
+                                                 [(if (empty (:deps compiled-value))
+                                                    :local-syms
+                                                    :dynamic-syms)]
+                                                 conj bind))
+          
+          let-sym (symbol path)
 
-         :as-value `(let [~bind ~(:as-value compiled-value)]
-                      ~(:as-value compiled-body))
+          deps (mapcat :deps [compiled-value compiled-body])]
 
-         :el-bindings (concat [[!el-return-sym `(atom (fd/null-elem))]
-                               [!last-value-sym `(atom nil)]
-                               
-                               [eval-value-sym `(fn [~state-sym]
-                                                  ~(:as-value compiled-value))]]
-                              
-                              body-el-bindings)
-         
-         :el-return `(deref ~!el-return-sym)
+      {:el `(~let-sym)
+       :deps deps
+       :declarations (concat (mapcat :declarations [compiled-value compiled-body])
+                             [`(defn ~let-sym []
+                                 (let [!placeholder-el# (atom nil)
+                                       value# ~(:value compiled-value)
+                                       body# ~(:el compiled-body)
+                                       
+                                       !last-value# (atom nil)]
+                                   
+                                   (reify fp/DynamicElement
+                                     (~'should-update-el? [_# ~updated-vars]
+                                       ~(u/deps->should-update deps updated-vars))
 
-         :el-init (when (empty? (:deps compiled-value))
-                    `[(let [new-value# (~eval-value-sym {})]
-                        (reset! ~!last-value-sym new-value#)
-                        (let [~bind new-value#]
-                          (~init-body-sym {})))])
+                                     (~'build-element [_# state#]
+                                       (let [initial-value# (fp/current-value value# state#)
+                                             initial-el# (fp/build-element body# (assoc state# ~bind initial-value#))]
+                                         
+                                         (reset! !last-value# initial-value#)
+                                         (reset! !placeholder-el# initial-el#)
+                                         initial-el#))
 
-         :on-update (if (empty? (:deps compiled-value))
-                      [(body-on-update-sym old-state-sym new-state-sym updated-vars-sym)]
+                                     (~'handle-update! [_# old-state# new-state# updated-vars#]
+                                       (letfn [(update-body# [old-value# new-value# updated-vars#]
+                                                 (when (fp/should-update-el? body# updated-vars#)
+                                                   (fp/handle-update! body#
+                                                                      (assoc old-state#
+                                                                        ~bind old-value#)
+                                                                      (assoc new-value#
+                                                                        ~bind new-state#)
+                                                                      updated-vars#)))]
+                                       
+                                         (if (fp/should-update-value? value# updated-vars#)
+                                           (let [old-value# @!last-value#
+                                                 new-value# (fp/current-value value# new-state#)]
+                                             (if (not= old-value# new-value#)
+                                               (do
+                                                 (reset! !last-value# new-value#)
+                                                 (update-branch# @!last-value# new-value# (conj updated-vars# ~bind)))
+                                               
+                                               (update-branch# @!last-value# @!last-value# updated-vars#)))
 
-                      `(if (some #(contains? #{~@(for [dep (:deps compiled-value)]
-                                                   `(quote ~dep))
-                                               :all}
-                                             %)
-                                 ~updated-vars-sym)
-                         
-                         [(let [old-val# @~!last-value-sym
-                                new-val# (~eval-value-sym ~new-state-sym)]
-                            (reset! ~!last-value-sym new-val#)
-                            
-                            (cond
-                             (contains? ~updated-vars-sym :all)
-                             (do
-                               (~init-body-sym (assoc ~new-state-sym
-                                                 (quote ~bind) new-val#))
-                               
-                               (~body-on-update-sym (assoc ~old-state-sym
-                                                      (quote ~bind) old-val#)
+                                           (update-branch# @!last-value# @!last-value# updated-vars#)))))))])})))
 
-                                                    (assoc ~new-state-sym
-                                                      (quote ~bind) new-val#)
-                                                    
-                                                    #{:all}))
-                             
-                             (not= old-val# new-val#)
-                             (~body-on-update-sym (assoc ~old-state-sym
-                                                    (quote ~bind) old-val#)
-
-                                                  (assoc ~new-state-sym
-                                                    (quote ~bind) new-val#)
-                                                  
-                                                  (conj ~updated-vars-sym (quote ~bind)))
-
-                             ;; value unchanged
-                             :else (~body-on-update-sym ~old-state-sym ~new-state-sym ~updated-vars-sym)))]
-                         
-                         [(let [~bind @~!last-value-sym]
-                            (~body-on-update-sym ~old-state-sym ~new-state-sym ~updated-vars-sym))]))}))))
+(comment
+  (require 'flow.parse)
+  (require 'flow.render)
+  (def foo-syms
+    (let [el-sym (gensym "flow-el")]
+      {:el-sym el-sym
+       :state-sym (symbol (str el-sym "-state"))
+       :!state-sym (symbol (str el-sym "-!state"))
+       :old-state-sym (symbol (str el-sym "-old-state"))
+       :new-state-sym (symbol (str el-sym "-new-state"))
+       :updated-vars-sym (symbol (str el-sym "-updated-vars"))}))
+  
+  (flow.render/render-el
+   (compile-el
+    (flow.parse/parse-form '(let [x 4]
+                              [:h1 {:data-flow x}
+                               "Hello world!"])
+                           {:elem? true
+                            :path (str (gensym "flow-el"))})
+    foo-syms)
+   foo-syms)
+  )
 
 (defmethod compile-call :fn-call [{:keys [args]} opts]
   ;; TODO

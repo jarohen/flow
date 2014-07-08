@@ -53,6 +53,6 @@
    
    (.-nodeType $el-or-val) $el-or-val
    
-   (js/createTextNode (if (string? $el-or-val)
-                        $el-or-val
-                        (pr-str $el-or-val)))))
+   :else (js/createTextNode (if (string? $el-or-val)
+                              $el-or-val
+                              (pr-str $el-or-val)))))

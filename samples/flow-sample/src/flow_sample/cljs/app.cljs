@@ -35,13 +35,15 @@
                                                  
                                                :data-is-black (boolean (= (:primary (<<! !colors)) "#000"))}
 
-                     (when (<<! !show-heading?)
-                       [:h1 {::f/style {:color (:secondary (<<! !colors))
-                                        :padding "0.5em"
-                                        :background-color (:primary (<<! !colors))}}
-                        (<<! !heading)])
+                     (let [show-heading? (<<! !show-heading?)]
+                       [:div
+                        (when show-heading?
+                          [:h1 {::f/style {:color (:secondary (<<! !colors))
+                                           :padding "0.5em"
+                                           :background-color (:primary (<<! !colors))}}
+                           (<<! !heading)])
 
-                     [:p "Show heading is: " (<<! !show-heading?)]
+                        [:p "Show heading is: " show-heading?]])
                        
                      [:p.copy {::f/style {:text-align :right
                                           :color (:secondary (<<! !colors))}}
