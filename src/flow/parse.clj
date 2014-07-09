@@ -120,8 +120,8 @@
                      :type :call)
 
        (symbol? form) {:type :symbol
-                       :symbol form
-                       :path path}
+                       :sym form
+                       :path (str (gensym (str path "-" form)))}
 
        (map? form) {:type :map
                     :map (->> (for [[[k v] idx] (map vector form (range))]
