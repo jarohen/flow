@@ -19,16 +19,16 @@
     {:inline-value `(into ~(empty coll) [~@(map :inline-value compiled-elems)])
      :deps (set (mapcat :deps compiled-elems))}))
 
-(defmethod compile-value-form :symbol [{:keys [sym]} {:keys [dynamic-syms local-syms state-sym]}]
+(defmethod compile-value-form :symbol [{:keys [sym]} {:keys [dynamic-syms local-syms state]}]
   (let [dynamic? (contains? dynamic-syms sym)
         local? (contains? local-syms sym)]
     {:deps (when dynamic?
              #{sym})
      :inline-value (if (or dynamic? local?)
-                     `(get ~state-sym (quote ~sym))
+                     `(get ~state (quote ~sym))
                      sym)}))
 
-(defmethod compile-el :symbol [{:keys [sym path]} {:keys [dynamic-syms local-syms state-sym updated-vars]}]
+(defmethod compile-el :symbol [{:keys [sym path]} {:keys [dynamic-syms local-syms state updated-vars]}]
   (let [dynamic? (contains? dynamic-syms sym)
         el (symbol path)
         deps (when dynamic?
@@ -52,7 +52,7 @@
                                (reset! !placeholder-el# new-el#))))))]
 
      :el-return (when-not dynamic?
-                  `(fd/->node (get ~state-sym (quote ~symbol))))}))
+                  `(fd/->node (get ~state (quote ~symbol))))}))
 
 (defmethod compile-el :primitive [{:keys [primitive elem?]} opts]
   {:el-return `(fd/->node ~primitive)})

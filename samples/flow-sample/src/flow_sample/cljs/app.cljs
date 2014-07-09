@@ -26,8 +26,8 @@
           (f/root js/document.body
                   (f/el
                     [:div#test.container.blah {::f/classes ["abc"
-                                                            #_(when (= (:primary (<<! !colors)) "#000")
-                                                                "black")]
+                                                            (when (= (:primary (<<! !colors)) "#000")
+                                                              "black")]
                                                  
                                                ::f/style {:color (:primary (<<! !colors))}
                                                  

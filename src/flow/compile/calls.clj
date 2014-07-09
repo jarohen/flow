@@ -108,14 +108,17 @@
                                        :body body}
 
                                       (update-in opts
-                                                 [(if (empty (:deps compiled-value))
+                                                 [(if (empty? (:deps compiled-value))
                                                     :local-syms
                                                     :dynamic-syms)]
                                                  conj bind))
           
           let-sym (symbol path)
 
-          deps (mapcat :deps [compiled-value compiled-body])]
+          deps (-> (set (:deps compiled-body))
+                   (disj bind)
+                   (concat (:deps compiled-value))
+                   set)]
 
       {:el `(~let-sym)
        :deps deps
@@ -234,21 +237,20 @@
                 :dynamic-syms #{}
                 :local-syms #{}}]
       (-> (compile-el (flow.parse/parse-form '(let [primary (<<! !primary)]
-                                                [:div
-                                                 [:h1 {::f/style {:color primary}}]
-                                                 #_(if (= primary "#000")
-                                                     (do
-                                                       [:p "is black"]))])
+                                                (if primary
+                                                  (do
+                                                    
+                                                    [:div
+                                                     [:h1 {::f/style {:color primary}}]
+                                                     #_(if (= primary "#000")
+                                                         (do
+                                                           [:p "is black"]))])))
                                              {:elem? true
                                               :path "flow-test"})
                       syms)
           #_(render-el syms)))
 
-    {:el (flow-test-let-0), :deps (!primary),
-     :declarations ((clojure.core/defn flow-test-let-bind-0-unwrap-cursor-!primary-value [] (clojure.core/reify flow.protocols/DynamicValue (should-update-value? [___10581__auto__ updated-vars11384] (clojure.core/boolean (clojure.core/some (fn* [p1__10545__10546__auto__] (clojure.core/contains? #{(quote !primary)} p1__10545__10546__auto__)) updated-vars11384))) (current-value [___10581__auto__ flow-test-let-bind-0-unwrap-cursor-!primary-state] (clojure.core/get flow-test-let-bind-0-unwrap-cursor-!primary-state (quote !primary)))))
-                    (clojure.core/defn flow-test-let-body-div-node [] (clojure.core/let [binds11387 (clojure.core/atom nil)] (clojure.core/reify flow.protocols/DynamicElement (should-update-el? [___10700__auto__ flow-test-updated-vars] nil) (build-element [___10700__auto__ flow-test-state] (clojure.core/reset! binds11387 {(quote elem11385) (js/document.createElement "div"), (quote elem11386) (js/document.createElement "h1")}) (clojure.core/let [elem11385 (clojure.core/get (clojure.core/deref binds11387) (quote elem11385)) elem11386 (clojure.core/get (clojure.core/deref binds11387) (quote elem11386))] (flow.dom/set-style! elem11386 :color (clojure.core/get nil (quote primary))) (.appendChild elem11385 elem11386) elem11385)) (handle-update! [___10700__auto__ flow-test-old-state flow-test-new-state flow-test-updated-vars] (clojure.core/let [elem11385 (clojure.core/get (clojure.core/deref binds11387) (quote elem11385)) elem11386 (clojure.core/get (clojure.core/deref binds11387) (quote elem11386))])))))
-                    (clojure.core/defn flow-test-let-0 [] (clojure.core/let [!placeholder-el__11266__auto__ (clojure.core/atom nil) value__11267__auto__ (flow-test-let-bind-0-unwrap-cursor-!primary-value) body__11268__auto__ (flow-test-let-body-div-node) !last-value__11269__auto__ (clojure.core/atom nil)] (clojure.core/reify flow.protocols/DynamicElement (should-update-el? [___11270__auto__ flow-test-updated-vars] (clojure.core/boolean (clojure.core/some (fn* [p1__10545__10546__auto__] (clojure.core/contains? #{(quote !primary)} p1__10545__10546__auto__)) flow-test-updated-vars))) (build-element [___11270__auto__ state__11271__auto__] (clojure.core/let [initial-value__11272__auto__ (flow.protocols/current-value value__11267__auto__ state__11271__auto__) initial-el__11273__auto__ (flow.protocols/build-element body__11268__auto__ (clojure.core/assoc state__11271__auto__ primary initial-value__11272__auto__))] (clojure.core/reset! !last-value__11269__auto__ initial-value__11272__auto__) (clojure.core/reset! !placeholder-el__11266__auto__ initial-el__11273__auto__) initial-el__11273__auto__)) (handle-update! [___11270__auto__ old-state__11274__auto__ new-state__11275__auto__ updated-vars__11276__auto__] (clojure.core/letfn [(update-body__11277__auto__ [old-value__11278__auto__ new-value__11279__auto__ updated-vars__11276__auto__] (clojure.core/when (flow.protocols/should-update-el? body__11268__auto__ updated-vars__11276__auto__) (flow.protocols/handle-update! body__11268__auto__ (clojure.core/assoc old-state__11274__auto__ primary old-value__11278__auto__) (clojure.core/assoc new-value__11279__auto__ primary new-state__11275__auto__) updated-vars__11276__auto__)))] (if (flow.protocols/should-update-value? value__11267__auto__ updated-vars__11276__auto__) (clojure.core/let [old-value__11278__auto__ (clojure.core/deref !last-value__11269__auto__) new-value__11279__auto__ (flow.protocols/current-value value__11267__auto__ new-state__11275__auto__)] (if (clojure.core/not= old-value__11278__auto__ new-value__11279__auto__) (do (clojure.core/reset! !last-value__11269__auto__ new-value__11279__auto__) (update-branch__11280__auto__ (clojure.core/deref !last-value__11269__auto__) new-value__11279__auto__ (clojure.core/conj updated-vars__11276__auto__ primary))) (update-branch__11280__auto__ (clojure.core/deref !last-value__11269__auto__) (clojure.core/deref !last-value__11269__auto__) updated-vars__11276__auto__))) (update-branch__11280__auto__ (clojure.core/deref !last-value__11269__auto__) (clojure.core/deref !last-value__11269__auto__) updated-vars__11276__auto__)))))))
-                    )}))
+    ))
 
 (defmethod compile-el :call [call opts]
   (compile-call call opts))
