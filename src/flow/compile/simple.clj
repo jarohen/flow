@@ -30,29 +30,32 @@
 
 (defmethod compile-el :symbol [{:keys [sym path]} {:keys [dynamic-syms local-syms state updated-vars]}]
   (let [dynamic? (contains? dynamic-syms sym)
-        el (symbol path)
-        deps (when dynamic?
-               #{sym})]
-    {:deps deps
-     :el `(~el)
-     :declarations [`(defn ~el []
-                       (let [!placeholder-el# (atom nil)]
-                         (reify fp/DynamicElement
-                           (~'should-update-el? [_# ~updated-vars]
-                             ~(u/deps->should-update deps updated-vars))
+        local? (contains? local-syms sym)
+        el (symbol path)]
+    
+    (cond
+     dynamic? (let [deps #{sym}]
+                {:deps deps
+                 :el `(~el)
+                 :declarations [`(defn ~el []
+                                   (let [!placeholder-el# (atom nil)]
+                                     (reify fp/DynamicElement
+                                       (~'should-update-el? [_# ~updated-vars]
+                                         ~(u/deps->should-update deps updated-vars))
 
-                           (~'build-element [_# state#]
-                             (let [initial-el# (fd/->node (get state# (quote ~sym)))]
-                               (reset! !placeholder-el# initial-el#)
-                               initial-el#))
+                                       (~'build-element [_# state#]
+                                         (let [initial-el# (fd/->node (get state# (quote ~sym)))]
+                                           (reset! !placeholder-el# initial-el#)
+                                           initial-el#))
 
-                           (~'handle-update! [_# old-state# new-state# updated-vars#]
-                             (let [new-el# (fd/->node (get new-state# (quote ~sym)))]
-                               (fd/swap-elem! @!placeholder-el# new-el#)
-                               (reset! !placeholder-el# new-el#))))))]
+                                       (~'handle-update! [_# old-state# new-state# updated-vars#]
+                                         (let [new-el# (fd/->node (get new-state# (quote ~sym)))]
+                                           (fd/swap-elem! @!placeholder-el# new-el#)
+                                           (reset! !placeholder-el# new-el#))))))]})
 
-     :el-return (when-not dynamic?
-                  `(fd/->node (get ~state (quote ~symbol))))}))
+     local? {:el-return `(fd/->node (get ~state (quote ~sym)))}
+
+     :else {:el-return `(fd/->node ~sym)})))
 
 (defmethod compile-el :primitive [{:keys [primitive elem?]} opts]
   {:el-return `(fd/->node ~primitive)})
