@@ -17,7 +17,7 @@
 
                  [jarohen/flow "0.1.0"]]
 
-  :plugins [[jarohen/lein-frodo "0.3.0"]
+  :plugins [[jarohen/lein-frodo "0.3.2"]
             [jarohen/simple-brepl "0.1.1"]
             [lein-cljsbuild "1.0.3"]
             [com.keminglabs/cljx "0.4.0"]
@@ -28,7 +28,7 @@
   :resource-paths ["resources" "target/resources"]
 
   :cljsbuild {:builds {:dev
-                       {:source-paths ["src"
+                       {:source-paths ["ui-src"
                                        "checkouts/flow/src"
                                        "checkouts/flow/target/generated/clj"
                                        "checkouts/flow/target/generated/cljs"]

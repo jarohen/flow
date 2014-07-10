@@ -191,6 +191,11 @@
 
                                              (update-body# @!last-value# @!last-value# updated-vars#))))))))])})))
 
+(defmethod compile-call :for [{:keys [bindings body]} opts]
+  
+
+  )
+
 (comment
   (require 'flow.parse)
   (require 'flow.render)

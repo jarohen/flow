@@ -1,4 +1,4 @@
 {:frodo/config {:web {:port 3000
-                      :handler-fn flow-sample.clj.handler/app}
+                      :handler-fn flow-sample.service.handler/app}
                 :nrepl {:port 7888
                         :cljs-repl? true}}}

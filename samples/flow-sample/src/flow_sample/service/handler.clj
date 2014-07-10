@@ -1,4 +1,4 @@
-(ns flow-sample.clj.handler
+(ns flow-sample.service.handler
   (:require [ring.util.response :refer [response]]
             [compojure.core :refer [routes GET]]
             [compojure.route :refer [resources]]
@@ -18,9 +18,7 @@
     
     (include-js "/js/flow-sample.js")]
 
-   
-   [:body
-    [:div#content]]))
+   [:body]))
 
 (defn app-routes []
   (routes
