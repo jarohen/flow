@@ -14,13 +14,12 @@
         (let [!colors (atom {:primary "#427"
                              :secondary "#983"})
               !show-heading? (atom true)
-              heading "Hello world!"
-              change-colors-ch (a/chan)
-              handle-click! (fn []
-                              (a/put! change-colors-ch :change!))]
+              !heading (atom "Hello world!")
+              change-colors-ch (a/chan)]
 
           (def !foo-colors !colors)
           (def !foo-show-heading? !show-heading?)
+          (def !foo-heading !foo-heading)
           
           (f/root js/document.body
                   (f/el
@@ -41,7 +40,7 @@
                             [:h1 {::f/style {:color secondary
                                              :padding "0.5em"
                                              :background-color primary}}
-                             heading])
+                             (<<! !heading)])
 
                           [:p "Show heading is: " show-heading?]])
                        
