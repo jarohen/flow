@@ -41,7 +41,7 @@
                                              :padding "0.5em"
                                              :background-color primary}}
                              (<<! !heading)])])
-                       
+
                        [:p.copy {::f/style {:text-align :center
                                             :color secondary}}
                         "If this works, " [:strong "I'll be very happy :)"]]
@@ -52,8 +52,9 @@
                        [:button.btn.btn-default {::f/on {:click #(swap! !show-heading? not)}}
                         "Show/Hide heading!"]
 
-                       [:div {::f/style {:margin "1em"}}
-                        [:h3 {::f/style {:color "#000"}} "And now for an SVG example:"]
+                       [:div {::f/style {:margin "1em"
+                                         :color "#000"}}
+                        [:h3 "And now for an SVG example:"]
 
                         [:svg 
                          [:rect {:x 10
