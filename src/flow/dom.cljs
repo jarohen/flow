@@ -1,12 +1,20 @@
 (ns flow.dom
   (:require [clojure.set :as set]))
 
+(def !debug (atom false))
+
 (defn add-class! [$el class-name]
+  (when @!debug
+    (js/console.log "adding class" (pr-str class-name) "to" $el))
+  
   (.. $el
       -classList
       (add class-name)))
 
 (defn remove-class! [$el class-name]
+  (when @!debug
+    (js/console.log "removing class" (pr-str class-name) "from" $el))
+  
   (.. $el
       -classList
       (remove class-name)))
@@ -23,10 +31,16 @@
     (remove-class! $el class-name)))
 
 (defn set-style! [$el k v]
+  (when @!debug
+    (js/console.log "setting style on" $el ":" (pr-str k) "=" (pr-str v)))
+  
   (aset (.-style $el) (name k) (cond-> v
                                  (keyword? v) name)))
 
 (defn set-attr! [$el k v]
+  (when @!debug
+    (js/console.log "setting attr on" $el ":" (pr-str k) "=" (pr-str v)))
+  
   (if-not (nil? v)
     (.setAttribute $el (name k) v)
     (.removeAttribute $el (name k) v)))
@@ -41,10 +55,16 @@
       $elem)))
 
 (defn swap-elem! [$old $new]
+  (when @!debug
+    (js/console.log "swapping" $old "for" $new))
+  
   (when-let [$parent (.-parentNode $old)]
     (.replaceChild $parent $new $old)))
 
 (defn add-listener! [$el event listener]
+  (when @!debug
+    (js/console.log "adding" (pr-str event) "listener on" $el))
+  
   (.addEventListener $el (name event) listener))
 
 (defn ->node [$el-or-val]
