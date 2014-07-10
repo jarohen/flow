@@ -69,13 +69,17 @@
      :body (parse-form `(do ~@body) {:elem? elem?
                                      :path (str path "-body")})}))
 
-(defmethod parse-call 'for [[_ bindings body] elem?]
-  ;; TODO needs path
-  {:call-type :for
-   :bindings (for [[bind value] (partition 2 bindings)]
-               {:bind bind
-                :value (parse-form value)})
-   :body (parse-form body {:elem? elem?})})
+(defmethod parse-call 'for [[_ bindings body] {:keys [elem? path] :as opts}]
+  (let [path (str path "-for")]
+    {:call-type :for
+     :path path
+     :bindings (for [[[bind value] idx] (map vector (partition 2 bindings) (range))]
+                 (let [path (str path "-" idx)]
+                   {:bind bind
+                    :value (parse-form value (assoc opts :path path))
+                    :key-fn (::f/key-fn (meta value))
+                    :path path}))
+     :body (parse-form body (assoc opts :path (str path "-body")))}))
 
 (defmethod parse-call 'fn* [decl {:keys [path]}]
   {:call-type :fn-decl
