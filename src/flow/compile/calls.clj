@@ -1,11 +1,13 @@
 (ns flow.compile.calls
   (:require [flow.compile :refer [compile-el compile-value]]
             [flow.bindings :as b]
-            [flow.util :as u]))
+            [flow.util :as u]
+            [clojure.set :as set]))
 
 (alias 'fd (doto 'flow.dom create-ns))
 (alias 'f (doto 'flow.core create-ns))
 (alias 'fp (doto 'flow.protocols create-ns))
+(alias 'set (doto 'clojure.set create-ns))
 
 (defmulti compile-call
   (fn [call opts]
@@ -93,6 +95,17 @@
 
                                          (update-branch# @!last-test-value#)))))))])}))
 
+(defn destructuring-bind-syms [bind]
+  (letfn [(dbs* [bind] (cond
+                        (map? bind) (let [{:keys [as]
+                                           ks :keys} bind]
+                                      (concat (mapcat dbs* ks)
+                                              (dbs* as)
+                                              (mapcat dbs* (keys (dissoc bind :keys :as)))))
+                        (vector? bind) (mapcat dbs* bind)
+                        (symbol? bind) [(symbol (name bind))]))]
+    (set (dbs* bind))))
+
 (defmethod compile-call :let [{:keys [bindings body]} {:keys [state old-state new-state updated-vars] :as opts}]
   (if (empty? bindings)
     (compile-el body opts)
@@ -102,6 +115,8 @@
           compiled-value (compile-value value opts)
 
           dynamic-value? (empty (:deps compiled-value))
+
+          bind-syms (destructuring-bind-syms bind)
           
           compiled-body (compile-call {:call-type :let
                                        :bindings more-bindings
@@ -111,12 +126,12 @@
                                                  [(if (empty? (:deps compiled-value))
                                                     :local-syms
                                                     :dynamic-syms)]
-                                                 conj bind))
+                                                 (comp set #(concat % bind-syms))))
           
           let-sym (symbol path)
 
           deps (-> (set (:deps compiled-body))
-                   (disj bind)
+                   (set/difference bind-syms)
                    (concat (:deps compiled-value))
                    set)]
 
@@ -124,45 +139,57 @@
        :deps deps
        :declarations (concat (mapcat :declarations [compiled-value compiled-body])
                              [`(defn ~let-sym []
-                                 (let [!placeholder-el# (atom nil)
-                                       value# ~(:value compiled-value)
-                                       body# ~(:el compiled-body)
-                                       
-                                       !last-value# (atom nil)]
+                                 (letfn [(bind-values-map# [value#]
+                                           (let [~bind value#]
+                                             ~(->> (for [bind-sym bind-syms]
+                                                     `[(quote ~bind-sym) ~bind-sym])
+                                                   (into {}))))
+
+                                         (bind-updated-vars# [old-value# new-value#]
+                                           (let [old-map# (bind-values-map# old-value#)
+                                                 new-map# (bind-values-map# new-value#)]
+                                             (set (filter #(not= (get old-map# %)
+                                                                 (get new-map# %))
+                                                          #{~@(for [bind-sym bind-syms]
+                                                                `(quote ~bind-sym))}))))]
                                    
-                                   (reify fp/DynamicElement
-                                     (~'should-update-el? [_# ~updated-vars]
-                                       ~(u/deps->should-update deps updated-vars))
-
-                                     (~'build-element [_# state#]
-                                       (let [initial-value# (fp/current-value value# state#)
-                                             initial-el# (fp/build-element body# (assoc state# (quote ~bind) initial-value#))]
+                                   (let [!placeholder-el# (atom nil)
+                                         value# ~(:value compiled-value)
+                                         body# ~(:el compiled-body)
                                          
-                                         (reset! !last-value# initial-value#)
-                                         (reset! !placeholder-el# initial-el#)
-                                         initial-el#))
+                                         !last-value# (atom nil)]
+                                     
+                                     (reify fp/DynamicElement
+                                       (~'should-update-el? [_# ~updated-vars]
+                                         ~(u/deps->should-update deps updated-vars))
 
-                                     (~'handle-update! [_# old-state# new-state# updated-vars#]
-                                       (letfn [(update-body# [old-value# new-value# updated-vars#]
-                                                 (when (fp/should-update-el? body# updated-vars#)
-                                                   (fp/handle-update! body#
-                                                                      (assoc old-state#
-                                                                        (quote ~bind) old-value#)
-                                                                      (assoc new-state#
-                                                                        (quote ~bind) new-value#)
-                                                                      updated-vars#)))]
-                                         
-                                         (if (fp/should-update-value? value# updated-vars#)
-                                           (let [old-value# @!last-value#
-                                                 new-value# (fp/current-value value# new-state#)]
-                                             (if (not= old-value# new-value#)
-                                               (do
-                                                 (reset! !last-value# new-value#)
-                                                 (update-body# @!last-value# new-value# (conj updated-vars# (quote ~bind))))
-                                               
-                                               (update-body# @!last-value# @!last-value# updated-vars#)))
+                                       (~'build-element [_# state#]
+                                         (let [initial-value# (fp/current-value value# state#)
+                                               initial-el# (fp/build-element body# (merge state# (bind-values-map# initial-value#)))]
+                                           
+                                           (reset! !last-value# initial-value#)
+                                           (reset! !placeholder-el# initial-el#)
+                                           initial-el#))
 
-                                           (update-body# @!last-value# @!last-value# updated-vars#)))))))])})))
+                                       (~'handle-update! [_# old-state# new-state# updated-vars#]
+                                         (letfn [(update-body# [old-value# new-value# updated-vars#]
+                                                   (when (fp/should-update-el? body# updated-vars#)
+                                                     (fp/handle-update! body#
+                                                                        (merge old-state# (bind-values-map# old-value#))
+                                                                        (merge new-state# (bind-values-map# new-value#))
+                                                                        updated-vars#)))]
+                                           
+                                           (if (fp/should-update-value? value# updated-vars#)
+                                             (let [old-value# @!last-value#
+                                                   new-value# (fp/current-value value# new-state#)]
+                                               (if (not= old-value# new-value#)
+                                                 (do
+                                                   (reset! !last-value# new-value#)
+                                                   (update-body# @!last-value# new-value# (set/union updated-vars# (bind-updated-vars# old-value# new-value#))))
+                                                 
+                                                 (update-body# @!last-value# @!last-value# updated-vars#)))
+
+                                             (update-body# @!last-value# @!last-value# updated-vars#))))))))])})))
 
 (comment
   (require 'flow.parse)

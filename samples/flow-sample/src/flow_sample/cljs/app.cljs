@@ -24,74 +24,36 @@
           
           (f/root js/document.body
                   (f/el
-                    [:div#test.container.blah {::f/classes ["abc"
-                                                            (when (= (:primary (<<! !colors)) "#000")
-                                                              "black")]
+                    (let [{:keys [primary secondary]} (<<! !colors)]
+                      [:div#test.container.blah {::f/classes ["abc"
+                                                              (when (= primary "#000")
+                                                                "black")]
                                                  
-                                               ::f/style {:color (:primary (<<! !colors))}
+                                                 ::f/style {:color primary}
                                                  
-                                               :data-test "foo"
+                                                 :data-test "foo"
                                                  
-                                               :data-is-black (boolean (= (:primary (<<! !colors)) "#000"))}
+                                                 :data-is-black (boolean (= primary "#000"))}
 
-                     (let [show-heading? (<<! !show-heading?)]
-                       [:div
-                        (when show-heading?
-                          [:h1 {::f/style {:color (:secondary (<<! !colors))
-                                           :padding "0.5em"
-                                           :background-color (:primary (<<! !colors))}}
-                           heading])
+                       (let [show-heading? (<<! !show-heading?)]
+                         [:div
+                          (when show-heading?
+                            [:h1 {::f/style {:color secondary
+                                             :padding "0.5em"
+                                             :background-color primary}}
+                             heading])
 
-                        [:p "Show heading is: " show-heading?]])
+                          [:p "Show heading is: " show-heading?]])
                        
-                     [:p.copy {::f/style {:text-align :right
-                                          :color (:secondary (<<! !colors))}}
-                      "If this works, " [:strong "I'll be very happy :)"]]
+                       [:p.copy {::f/style {:text-align :right
+                                            :color secondary}}
+                        "If this works, " [:strong "I'll be very happy :)"]]
 
-                     [:button.btn.btn-default {::f/on {:click (fn [e] (a/put! change-colors-ch :change!))}}
-                      "Change colours!"]
+                       [:button.btn.btn-default {::f/on {:click (fn [e] (a/put! change-colors-ch :change!))}}
+                        "Change colours!"]
 
-                     [:button.btn.btn-default {::f/on {:click #(swap! !show-heading? not)}}
-                      "Show/Hide heading!"]]
-
-
-
-
-                    
-                    #_(let [primary (:primary (<<! !colors))]
-                        [:div#test.container.blah {::f/classes ["abc"
-                                                                (when (= primary "#000")
-                                                                  "black")]
-                                                 
-                                                   ::f/style {:color primary}
-                                                 
-                                                   :data-test "foo"
-                                                 
-                                                   :data-is-black (boolean (= primary "#000"))}
-
-                         (when (<<! !show-heading?)
-                           [:h1 {::f/style {:color (:secondary (<<! !colors))
-                                            :padding "0.5em"
-                                            :background-color primary}
-                                 ::f/on {:click (fn [e]
-                                                  (a/put! change-colors-ch :change!))}}
-                            (<<! !heading)])
-                       
-                         (if (= 2 (+ 1 1))
-                           [:p.copy {::f/style {:text-align :right
-                                                :color (:secondary (<<! !colors))}}
-                          
-                            "If this works, " [:strong "I'll be very happy :)"]]
-
-                           [:p "Maths always let me down..."])
-
-                         [:button.btn.btn-default {::f/on {:click (fn [e] (a/put! change-colors-ch :change!))}}
-                          "Change colours!"]
-
-                         [:button.btn.btn-default {::f/on {:click #(swap! !show-heading? not)}}
-                          (if (<<! !show-heading?) 
-                            "Hide heading!"
-                            "Show heading!")]])))
+                       [:button.btn.btn-default {::f/on {:click #(swap! !show-heading? not)}}
+                        "Show/Hide heading!"]])))
 
           (go-loop []
             (a/<! change-colors-ch)

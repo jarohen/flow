@@ -1,8 +1,8 @@
 (ns flow.core
   #+clj (:require [flow.el :as el])
   #+cljs (:require flow.protocols
-                   clojure.set
-                   flow.dom))
+                   flow.dom
+                   clojure.set))
 
 #+clj
 (defmacro el [elem]
