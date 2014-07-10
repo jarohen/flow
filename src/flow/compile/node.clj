@@ -132,7 +132,7 @@
         compiled-children (map #(compile-child elem-sym % opts) children)
         compiled-listeners (map #(compile-listener elem-sym % opts) listeners)]
 
-    {:el-bindings `[[~elem-sym (js/document.createElement ~tag)]
+    {:el-bindings `[[~elem-sym (fd/new-element ~tag)]
                     ~@(mapcat :el-bindings compiled-attrs)
                     ~@(mapcat :el-bindings compiled-styles)
                     ~@(mapcat :el-bindings compiled-listeners)

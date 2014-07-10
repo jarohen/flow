@@ -40,11 +40,9 @@
                             [:h1 {::f/style {:color secondary
                                              :padding "0.5em"
                                              :background-color primary}}
-                             (<<! !heading)])
-
-                          [:p "Show heading is: " show-heading?]])
+                             (<<! !heading)])])
                        
-                       [:p.copy {::f/style {:text-align :right
+                       [:p.copy {::f/style {:text-align :center
                                             :color secondary}}
                         "If this works, " [:strong "I'll be very happy :)"]]
 
@@ -52,7 +50,23 @@
                         "Change colours!"]
 
                        [:button.btn.btn-default {::f/on {:click #(swap! !show-heading? not)}}
-                        "Show/Hide heading!"]])))
+                        "Show/Hide heading!"]
+
+                       [:div {::f/style {:margin "1em"}}
+                        [:h3 {::f/style {:color "#000"}} "And now for an SVG example:"]
+
+                        [:svg 
+                         [:rect {:x 10
+                                 :y 10
+                                 :height 100
+                                 :width 100
+                                 ::f/style {:stroke primary
+                                            :fill secondary}}]
+                         [:circle {:cx 60
+                                   :cy 60
+                                   :r 40
+                                   ::f/style {:stroke secondary
+                                              :fill primary}}]]]])))
 
           (go-loop []
             (a/<! change-colors-ch)

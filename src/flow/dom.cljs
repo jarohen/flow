@@ -3,6 +3,16 @@
 
 (def !debug (atom false))
 
+;; pinched from Dommy
+;; https://github.com/Prismatic/dommy/blob/5d75be9d24b0016f419bb1e23fcbf700421be6c7/src/dommy/template.cljs#L6-L7
+(def svg-ns "http://www.w3.org/2000/svg")
+(def svg-tag? #{"svg" "g" "rect" "circle" "clipPath" "path" "line" "polygon" "polyline" "text" "textPath"})
+
+(defn new-element [tag]
+  (if (svg-tag? tag)
+    (js/document.createElementNS svg-ns tag)
+    (js/document.createElement tag)))
+
 (defn add-class! [$el class-name]
   (when @!debug
     (js/console.log "adding class" (pr-str class-name) "to" $el))
