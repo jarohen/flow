@@ -102,7 +102,7 @@
                                       (concat (mapcat dbs* ks)
                                               (dbs* as)
                                               (mapcat dbs* (keys (dissoc bind :keys :as)))))
-                        (vector? bind) (mapcat dbs* bind)
+                        (vector? bind) (disj (set (mapcat dbs* bind)) '&)
                         (symbol? bind) [(symbol (name bind))]))]
     (set (dbs* bind))))
 
