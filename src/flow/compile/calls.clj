@@ -248,35 +248,44 @@
      :deps deps
      :declarations (concat (mapcat :declarations (concat compiled-values [compiled-body]))
                            
-                           [(let [values (map #(gensym (str "for-value-" % "-")) (range (count bindings)))
-                                  initial-values (map #(gensym (str "for-initial-value-" % "-")) (range (count bindings)))
+                           [(let [dynamic-values (map #(gensym (str "for-dyn-value-" % "-")) (range (count bindings)))
                                   bind-values-maps (map #(gensym (str "bind-values-map-" % "-")) (range (count bindings)))
-                                  bind-updated-varses (map #(gensym (str "bind-updated-vars-" % "-")) (range (count bindings)))]
+                                  bind-updated-varses (map #(gensym (str "bind-updated-vars-" % "-")) (range (count bindings)))
+
+                                  !placeholder-el# (atom nil)]
+                              
                               `(defn ~for-sym []
-                                 (letfn [~@(map (fn [bind-values-map {:keys [bind destructured-binds]}]
-                                                  `(~bind-values-map [value#]
-                                                                     (let [~bind value#]
-                                                                       ~(->> (for [bind-sym destructured-binds]
-                                                                               `[(quote ~bind-sym) ~bind-sym])
-                                                                             (into {})))))
-                                             bind-values-maps compiled-values)
+                                 (let [body# ~(:el compiled-body)
+                                       ~@(mapcat (fn [dynamic-value compiled-value]
+                                                   `[~dynamic-value ~(:value compiled-value)])
+                                                 dynamic-values compiled-values)]
+                                   (letfn [~@(map (fn [bind-values-map {:keys [bind destructured-binds]}]
+                                                    `(~bind-values-map [value#]
+                                                                       (let [~bind value#]
+                                                                         ~(->> (for [bind-sym destructured-binds]
+                                                                                 `[(quote ~bind-sym) ~bind-sym])
+                                                                               (into {})))))
+                                               bind-values-maps compiled-values)
 
-                                         ~@(map (fn [bind-updated-vars bind-values-map {:keys [destructured-binds]}]
-                                                  `(bind-updated-vars# [old-value# new-value#]
-                                                                       (let [old-map# (~bind-values-map old-value#)
-                                                                             new-map# (~bind-values-map new-value#)]
-                                                                         (set (filter #(not= (get old-map# %)
-                                                                                             (get new-map# %))
-                                                                                      #{~@(for [bind-sym destructured-binds]
-                                                                                            `(quote ~bind-sym))})))))
-                                             bind-updated-varses bind-values-maps compiled-values)]
+                                           ~@(map (fn [bind-updated-vars bind-values-map {:keys [destructured-binds]}]
+                                                    `(bind-updated-vars# [old-value# new-value#]
+                                                                         (let [old-map# (~bind-values-map old-value#)
+                                                                               new-map# (~bind-values-map new-value#)]
+                                                                           (set (filter #(not= (get old-map# %)
+                                                                                               (get new-map# %))
+                                                                                        #{~@(for [bind-sym destructured-binds]
+                                                                                              `(quote ~bind-sym))})))))
+                                               bind-updated-varses bind-values-maps compiled-values)
 
-                                   (let [!placeholder-el# (atom nil)
-                                         ~@(mapcat (fn [value compiled-value]
-                                                     `[~value ~(:value compiled-value)])
-                                                   values compiled-values)
-                                         body# ~(:el compiled-body)]
-                                      
+                                           (for-values# [~state]
+                                             ~(let [values (map #(gensym (str "for-value-" % "-")) (range (count bindings)))]
+                                                `(for [~@(mapcat (fn [value dynamic-value bind-values-map]
+                                                                   `[~value (fp/current-value ~dynamic-value ~state)
+                                                                     :let [~state (merge ~state (~bind-values-map ~value))]])
+                                                                 values dynamic-values bind-values-maps)]
+                                                   {:values [~@values]
+                                                    :state ~state})))]
+
                                      (reify fp/DynamicElement
                                        (~'should-update-el? [_# ~updated-vars]
                                          ~(u/deps->should-update deps updated-vars))
@@ -285,13 +294,8 @@
                                          ;; TODO
                                          (println "building for element")
 
-                                         (let [initial-values# (for [~@(mapcat (fn [initial-value value bind-values-map]
-                                                                                 `[~initial-value (fp/current-value ~value ~state)
-                                                                                   :let [~state (merge ~state (~bind-values-map ~initial-value))]])
-                                                                               initial-values values bind-values-maps)]
-                                                                 {:values [~@initial-values]
-                                                                  :state ~state})]
-                                            
+                                         (let [initial-values# (for-values# ~state)]
+                                           
                                            #_(reset! !last-value# initial-value#)
                                            #_(reset! !placeholder-el# initial-el#)
                                            #_initial-el#
@@ -309,7 +313,7 @@
                                                                           (merge old-state# (bind-values-map# old-value#))
                                                                           (merge new-state# (bind-values-map# new-value#))
                                                                           updated-vars#)))]
-                                            
+                                             
                                              (if (fp/should-update-value? value# updated-vars#)
                                                (let [old-value# @!last-value#
                                                      new-value# (fp/current-value value# new-state#)]
@@ -317,7 +321,7 @@
                                                    (do
                                                      (reset! !last-value# new-value#)
                                                      (update-body# @!last-value# new-value# (set/union updated-vars# (bind-updated-vars# old-value# new-value#))))
-                                                  
+                                                   
                                                    (update-body# @!last-value# @!last-value# updated-vars#)))
 
                                                (update-body# @!last-value# @!last-value# updated-vars#)))))))))])})

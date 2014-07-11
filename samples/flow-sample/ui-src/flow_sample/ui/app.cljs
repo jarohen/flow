@@ -60,6 +60,7 @@
 
                         [:ul
                          (for [x (->> (<<! !random-numbers)
+                                      (filter even?)
                                       sort)]
                            [:li x])]]
                        
