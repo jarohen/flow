@@ -260,9 +260,6 @@
                                                    `[~dynamic-value ~(:value compiled-value)])
                                                  dynamic-values compiled-values)]
 
-                                   (set! js/window.for_state (fn []
-                                                               (prn [@!last-els#])))
-
                                    (letfn [~@(map (fn [bind-values-map {:keys [bind destructured-binds]}]
                                                     `(~bind-values-map [value#]
                                                                        (let [~bind value#]
@@ -288,6 +285,14 @@
                                                                      :let [~state (merge ~state (~bind-values-map ~value))]])
                                                                  values dynamic-values bind-values-maps)]
                                                    {:values [~@values]
+                                                    :keys (map (fn [key-fn# value#]
+                                                                 (or (when key-fn#
+                                                                       (key-fn# value#))
+                                                                     (::f/id value#)
+                                                                     (:id value#)
+                                                                     value#))
+                                                               [~@(map :key-fn compiled-values)]
+                                                               [~@values])
                                                     :state ~state})))]
 
                                      (reify fp/DynamicElement
@@ -296,8 +301,7 @@
 
                                        (~'build-element [_# ~state]
                                          (let [initial-values# (for-values# ~state)
-                                               initial-els# (for [{values# :values
-                                                                   ~state :state
+                                               initial-els# (for [{~state :state
                                                                    :as initial-value#} initial-values#]
                                                                 
                                                               (assoc initial-value#
