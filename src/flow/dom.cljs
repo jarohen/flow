@@ -13,6 +13,13 @@
     (js/document.createElementNS svg-ns tag)
     (js/document.createElement tag)))
 
+(defn append-child! [$el child-or-children]
+  (if (coll? child-or-children)
+    (doseq [$child child-or-children]
+      (.appendChild $el $child))
+    
+    (.appendChild $el child-or-children)))
+
 (defn add-class! [$el class-name]
   (when @!debug
     (js/console.log "adding class" (pr-str class-name) "to" $el))

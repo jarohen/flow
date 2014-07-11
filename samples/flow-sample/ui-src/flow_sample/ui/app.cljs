@@ -15,8 +15,12 @@
                              :secondary "#983"})
               !show-heading? (atom true)
               !heading (atom "Hello world!")
-              change-colors-ch (a/chan)]
+              change-colors-ch (a/chan)
+              random-numbers (repeatedly 5 #(rand-int 1000))
+              !random-numbers (atom random-numbers)]
 
+          (println "random numbers are:" random-numbers)
+          
           (def !foo-colors !colors)
           (def !foo-show-heading? !show-heading?)
           (def !foo-heading !foo-heading)
@@ -27,8 +31,6 @@
                       [:div#test.container.blah {::f/classes ["abc"
                                                               (when (= primary "#000")
                                                                 "black")]
-                                                 
-                                                 ::f/style {:color primary}
                                                  
                                                  :data-test "foo"
                                                  
@@ -52,7 +54,16 @@
                        [:button.btn.btn-default {::f/on {:click #(swap! !show-heading? not)}}
                         "Show/Hide heading!"]
 
-                       [:div {::f/style {:margin "1em"
+                       [:div {::f/style {:margin "1em 0"
+                                         :color "#000"}}
+                        [:h3 "And now for a 'for' example:"]
+
+                        [:ul
+                         (for [x (->> (<<! !random-numbers)
+                                      sort)]
+                           [:li x])]]
+                       
+                       [:div {::f/style {:margin "1em 0"
                                          :color "#000"}}
                         [:h3 "And now for an SVG example:"]
 

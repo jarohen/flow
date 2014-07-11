@@ -100,14 +100,14 @@
         {:deps deps
          :declarations declarations
          :el-bindings [[child-sym el]]
-         :el-init [`(.appendChild ~elem-sym (fp/build-element ~child-sym ~state))]
+         :el-init [`(fd/append-child! ~elem-sym (fp/build-element ~child-sym ~state))]
          
          :on-update [`(when (fp/should-update-el? ~child-sym ~updated-vars)
                         (fp/handle-update! ~child-sym ~old-state ~new-state ~updated-vars))]})
 
       (let [{:keys [el-return]} compiled-child]
         (-> compiled-child
-            (update-in [:el-init] conj `(.appendChild ~elem-sym ~el-return)))))))
+            (update-in [:el-init] conj `(fd/append-child! ~elem-sym ~el-return)))))))
 
 (comment
   (require 'flow.parse)

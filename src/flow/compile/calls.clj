@@ -191,38 +191,8 @@
 
                                              (update-body# @!last-value# @!last-value# updated-vars#))))))))])})))
 
-(let [dynamic-syms #{}
-      local-syms #{}
-      opts {}
-      bindings [{:bind 'todo
-                 :value (flow.parse/parse-form '(<<! !todos) {:elem? false :path "flow-test"})
-                 :key-fn :todo-id
-                 :path "1"}
-                {:bind 'y
-                 :value (flow.parse/parse-form (range 4) {:elem? false :path "flow-test"})
-                 :path "2"}
-                {:bind 'subtask
-                 :value (flow.parse/parse-form 'todo {:elem? false :path "flow-test"})
-                 :path "3"}]]
-  (reduce (fn [{:keys [compiled-values dynamic-syms local-syms] :as acc} {:keys [bind value path]}]
-            (let [{:keys [deps] :as compiled-value} (compile-value value (assoc opts
-                                                                           :dynamic-syms dynamic-syms
-                                                                           :local-syms local-syms))
-                  destructured-binds (destructuring-bind-syms bind)]
-                                              
-              (-> acc
-                  (update-in [(if (empty? deps) :local-syms :dynamic-syms)] set/union destructured-binds)
-                  (update-in [:compiled-values] conj compiled-value))))
-                                
-          {:dynamic-syms dynamic-syms
-           :local-syms local-syms
-           :compiled-values []}
-                
-          bindings))
-
 (defn parse-for-bindings [bindings {:keys [dynamic-syms local-syms] :as opts}]
   (reduce (fn [{:keys [compiled-values dynamic-syms local-syms] :as acc} {:keys [bind value path]}]
-            (prn acc)
             (let [{:keys [deps] :as compiled-value} (compile-value value (assoc opts
                                                                            :dynamic-syms dynamic-syms
                                                                            :local-syms local-syms))
@@ -249,6 +219,8 @@
           (reverse compiled-values)))
 
 (comment
+  (require 'flow.parse)
+  
   (compile-el (flow.parse/parse-form '(for [x (<<! !color)
                                             y (range 4)]
                                         [:div x y])
@@ -258,7 +230,8 @@
                :local-syms #{}
                :state 'test-state
                :old-state 'test-old-state
-               :new-state 'test-new-state}))
+               :new-state 'test-new-state})
+  )
 
 (defmethod compile-call :for [{:keys [bindings body path]} {:keys [dynamic-syms local-syms state updated-vars] :as opts}]
   (let [{:keys [compiled-values dynamic-syms local-syms]} (parse-for-bindings bindings opts)
@@ -275,26 +248,32 @@
      :deps deps
      :declarations (concat (mapcat :declarations (concat compiled-values [compiled-body]))
                            
-                           [(let [values (map #(gensym (str "for-value-" %)) (range (count bindings)))
-                                  initial-values (map #(gensym (str "for-initial-value-" %)) (range (count bindings)))]
+                           [(let [values (map #(gensym (str "for-value-" % "-")) (range (count bindings)))
+                                  initial-values (map #(gensym (str "for-initial-value-" % "-")) (range (count bindings)))
+                                  bind-values-maps (map #(gensym (str "bind-values-map-" % "-")) (range (count bindings)))
+                                  bind-updated-varses (map #(gensym (str "bind-updated-vars-" % "-")) (range (count bindings)))]
                               `(defn ~for-sym []
-                                 (letfn [#_(bind-values-map# [value#]
-                                                             (let [~bind value#]
-                                                               ~(->> (for [bind-sym bind-syms]
-                                                                       `[(quote ~bind-sym) ~bind-sym])
-                                                                     (into {}))))
+                                 (letfn [~@(map (fn [bind-values-map {:keys [bind destructured-binds]}]
+                                                  `(~bind-values-map [value#]
+                                                                     (let [~bind value#]
+                                                                       ~(->> (for [bind-sym destructured-binds]
+                                                                               `[(quote ~bind-sym) ~bind-sym])
+                                                                             (into {})))))
+                                             bind-values-maps compiled-values)
 
-                                         #_(bind-updated-vars# [old-value# new-value#]
-                                                               (let [old-map# (bind-values-map# old-value#)
-                                                                     new-map# (bind-values-map# new-value#)]
-                                                                 (set (filter #(not= (get old-map# %)
-                                                                                     (get new-map# %))
-                                                                              #{~@(for [bind-sym bind-syms]
-                                                                                    `(quote ~bind-sym))}))))]
+                                         ~@(map (fn [bind-updated-vars bind-values-map {:keys [destructured-binds]}]
+                                                  `(bind-updated-vars# [old-value# new-value#]
+                                                                       (let [old-map# (~bind-values-map old-value#)
+                                                                             new-map# (~bind-values-map new-value#)]
+                                                                         (set (filter #(not= (get old-map# %)
+                                                                                             (get new-map# %))
+                                                                                      #{~@(for [bind-sym destructured-binds]
+                                                                                            `(quote ~bind-sym))})))))
+                                             bind-updated-varses bind-values-maps compiled-values)]
 
                                    (let [!placeholder-el# (atom nil)
                                          ~@(mapcat (fn [value compiled-value]
-                                                     `[(quote ~value) ~(:value compiled-value)])
+                                                     `[~value ~(:value compiled-value)])
                                                    values compiled-values)
                                          body# ~(:el compiled-body)]
                                       
@@ -302,18 +281,29 @@
                                        (~'should-update-el? [_# ~updated-vars]
                                          ~(u/deps->should-update deps updated-vars))
 
-                                       #_(~'build-element [_# ~state]
-                                           (let [~@(mapcat (fn [initial-value value]
-                                                             `[(quote ~initial-value) (fp/current-value ~value ~state)]))
-                                                 
-                                                 initial-el# (fp/build-element body# (merge state# (bind-values-map# initial-value#)))]
-                                            
-                                             (reset! !last-value# initial-value#)
-                                             (reset! !placeholder-el# initial-el#)
-                                             initial-el#))
+                                       (~'build-element [_# ~state]
+                                         ;; TODO
+                                         (println "building for element")
 
-                                       #_(~'handle-update! [_# old-state# new-state# updated-vars#]
-                                           (letfn [(update-body# [old-value# new-value# updated-vars#]
+                                         (let [initial-values# (for [~@(mapcat (fn [initial-value value bind-values-map]
+                                                                                 `[~initial-value (fp/current-value ~value ~state)
+                                                                                   :let [~state (merge ~state (~bind-values-map ~initial-value))]])
+                                                                               initial-values values bind-values-maps)]
+                                                                 {:values [~@initial-values]
+                                                                  :state ~state})]
+                                            
+                                           #_(reset! !last-value# initial-value#)
+                                           #_(reset! !placeholder-el# initial-el#)
+                                           #_initial-el#
+
+                                           (for [{values# :values
+                                                  ~state :state} initial-values#]
+                                             (fp/build-element body# ~state))))
+
+                                       (~'handle-update! [_# old-state# new-state# updated-vars#]
+
+                                         ;; TODO
+                                         #_(letfn [(update-body# [old-value# new-value# updated-vars#]
                                                      (when (fp/should-update-el? body# updated-vars#)
                                                        (fp/handle-update! body#
                                                                           (merge old-state# (bind-values-map# old-value#))
