@@ -249,8 +249,7 @@
      :declarations (concat (mapcat :declarations (concat compiled-values [compiled-body]))
                            
                            [(let [dynamic-values (map #(gensym (str "for-dyn-value-" % "-")) (range (count bindings)))
-                                  bind-values-maps (map #(gensym (str "bind-values-map-" % "-")) (range (count bindings)))
-                                  bind-updated-varses (map #(gensym (str "bind-updated-vars-" % "-")) (range (count bindings)))]
+                                  bind-values-maps (map #(gensym (str "bind-values-map-" % "-")) (range (count bindings)))]
                               
                               `(defn ~for-sym []
                                  (let [body# ~(:el compiled-body)
@@ -267,16 +266,6 @@
                                                                                  `[(quote ~bind-sym) ~bind-sym])
                                                                                (into {})))))
                                                bind-values-maps compiled-values)
-
-                                           ~@(map (fn [bind-updated-vars bind-values-map {:keys [destructured-binds]}]
-                                                    `(bind-updated-vars# [old-value# new-value#]
-                                                                         (let [old-map# (~bind-values-map old-value#)
-                                                                               new-map# (~bind-values-map new-value#)]
-                                                                           (set (filter #(not= (get old-map# %)
-                                                                                               (get new-map# %))
-                                                                                        #{~@(for [bind-sym destructured-binds]
-                                                                                              `(quote ~bind-sym))})))))
-                                               bind-updated-varses bind-values-maps compiled-values)
 
                                            (for-values# [~state]
                                              ~(let [values (map #(gensym (str "for-value-" % "-")) (range (count bindings)))]
