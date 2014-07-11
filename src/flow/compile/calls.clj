@@ -250,15 +250,19 @@
                            
                            [(let [dynamic-values (map #(gensym (str "for-dyn-value-" % "-")) (range (count bindings)))
                                   bind-values-maps (map #(gensym (str "bind-values-map-" % "-")) (range (count bindings)))
-                                  bind-updated-varses (map #(gensym (str "bind-updated-vars-" % "-")) (range (count bindings)))
-
-                                  !placeholder-el# (atom nil)]
+                                  bind-updated-varses (map #(gensym (str "bind-updated-vars-" % "-")) (range (count bindings)))]
                               
                               `(defn ~for-sym []
                                  (let [body# ~(:el compiled-body)
+                                       !last-els# (atom nil)
+
                                        ~@(mapcat (fn [dynamic-value compiled-value]
                                                    `[~dynamic-value ~(:value compiled-value)])
                                                  dynamic-values compiled-values)]
+
+                                   (set! js/window.for_state (fn []
+                                                               (prn [@!last-els#])))
+
                                    (letfn [~@(map (fn [bind-values-map {:keys [bind destructured-binds]}]
                                                     `(~bind-values-map [value#]
                                                                        (let [~bind value#]
@@ -291,18 +295,17 @@
                                          ~(u/deps->should-update deps updated-vars))
 
                                        (~'build-element [_# ~state]
-                                         ;; TODO
-                                         (println "building for element")
-
-                                         (let [initial-values# (for-values# ~state)]
+                                         (let [initial-values# (for-values# ~state)
+                                               initial-els# (for [{values# :values
+                                                                   ~state :state
+                                                                   :as initial-value#} initial-values#]
+                                                                
+                                                              (assoc initial-value#
+                                                                :$el (fp/build-element body# ~state)))]
                                            
-                                           #_(reset! !last-value# initial-value#)
-                                           #_(reset! !placeholder-el# initial-el#)
-                                           #_initial-el#
+                                           (reset! !last-els# initial-els#)
 
-                                           (for [{values# :values
-                                                  ~state :state} initial-values#]
-                                             (fp/build-element body# ~state))))
+                                           (map :$el initial-els#)))
 
                                        (~'handle-update! [_# old-state# new-state# updated-vars#]
 
