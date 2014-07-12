@@ -17,13 +17,11 @@
               !heading (atom "Hello world!")
               change-colors-ch (a/chan)
               update-numbers-ch (a/chan)
-              random-numbers (for [idx (range 5)]
-                               {:id idx
-                                :num (rand-int 1000)})
-              !random-numbers (atom random-numbers)]
 
-          (println "random numbers are:" random-numbers)
-          
+              !random-numbers (atom (for [idx (range 5)]
+                                      {:id idx
+                                       :num (rand-int 1000)}))]
+
           (def !foo-colors !colors)
           (def !foo-show-heading? !show-heading?)
           (def !foo-heading !foo-heading)
@@ -34,9 +32,8 @@
             (swap! !random-numbers (fn [random-numbers]
                                      (for [{:keys [id num] :as rn} random-numbers]
                                        {:id id
-                                        :num (if (zero? (rand-int 3))
-                                               (rand-int 1000)
-                                               num)})))
+                                        :num (rand-int 1000)})))
+
             (recur))
           
           (f/root js/document.body
@@ -77,12 +74,15 @@
                                          :color "#000"}}
                         [:h3 "And now for a 'for' example:"]
 
-                        [:ul
-                         (for [{:keys [num]} (->> (<<! !random-numbers)
-                                                  ;;(filter (comp even? :num))
-                                                  ;;(sort-by :num)
-                                                  )]
-                           [:li num])]]
+                        (let [random-numbers (<<! !random-numbers)]
+                          [:div
+                           [:div "!random-numbers: " random-numbers]
+                           
+                           [:ul {::f/style {:margin-top "1em"}}
+                            (for [{:keys [num]} (->> random-numbers
+                                                     (filter (comp even? :num))
+                                                     (sort-by :num))]
+                              [:li num])]])]
                        
                        [:div {::f/style {:margin "1em 0"
                                          :color "#000"}}

@@ -13,12 +13,21 @@
     (js/document.createElementNS svg-ns tag)
     (js/document.createElement tag)))
 
-(defn append-child! [$el child-or-children]
+(defn remove-child! [$parent $el]
+  (when $el
+    (.removeChild $parent $el)))
+
+(defn append-child! [$parent child-or-children]
   (if (coll? child-or-children)
     (doseq [$child child-or-children]
-      (.appendChild $el $child))
+      (.appendChild $parent $child))
     
-    (.appendChild $el child-or-children)))
+    (.appendChild $parent child-or-children)))
+
+(defn insert-child-before! [$parent $el $before-sibling]
+  (if $before-sibling
+    (.insertBefore $parent $el $before-sibling)
+    (append-child! $parent $el)))
 
 (defn add-class! [$el class-name]
   (when @!debug
