@@ -2,7 +2,10 @@
   #+clj (:require [flow.el :as el])
   #+cljs (:require flow.protocols
                    flow.dom
-                   clojure.set))
+                   flow.if
+                   flow.let
+                   flow.for
+                   flow.symbol))
 
 #+clj
 (defmacro el [elem]

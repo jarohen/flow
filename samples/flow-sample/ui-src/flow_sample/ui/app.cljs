@@ -28,15 +28,15 @@
           (def !foo-heading !foo-heading)
           (def !foo-random-numbers !random-numbers)
 
-          (go-loop []
-            (a/<! (a/timeout 1000))
-            (swap! !random-numbers (fn [random-numbers]
-                                     (for [{:keys [id num] :as rn} random-numbers]
-                                       {:id id
-                                        :num (if (zero? (rand-int 3))
-                                               (rand-int 1000)
-                                               num)})))
-            (recur))
+          #_(go-loop []
+              (a/<! (a/timeout 1000))
+              (swap! !random-numbers (fn [random-numbers]
+                                       (for [{:keys [id num] :as rn} random-numbers]
+                                         {:id id
+                                          :num (if (zero? (rand-int 3))
+                                                 (rand-int 1000)
+                                                 num)})))
+              (recur))
           
           (f/root js/document.body
                   (f/el

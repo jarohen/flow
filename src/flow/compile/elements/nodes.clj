@@ -1,4 +1,4 @@
-(ns flow.compile.node
+(ns flow.compile.elements.nodes
   (:require [flow.compile :refer [compile-el compile-value]]
             [flow.util :as u]
             [flow.bindings :as b]))
@@ -25,7 +25,7 @@
      :declarations declarations
      
      :on-update (when (not-empty deps)
-                  `[(when (fp/should-update-value? ~value-sym ~updated-vars)
+                  `[(when (u/deps-updated? ~(u/quote-deps deps) ~updated-vars)
                       (fd/set-attr! ~elem-sym ~k (fp/current-value ~value-sym ~new-state)))])}))
 
 (defn compile-style [elem-sym [k v] path {:keys [state new-state updated-vars] :as opts}]
@@ -43,10 +43,10 @@
      :declarations declarations
      
      :on-update (when (not-empty deps)
-                  `[(when (fp/should-update-value? ~value-sym ~updated-vars)
+                  `[(when (u/deps-updated? ~(u/quote-deps deps) ~updated-vars)
                       (fd/set-style! ~elem-sym ~k (fp/current-value ~value-sym ~new-state)))])}))
 
-(defn compile-classes [elem-sym classes {:keys [state old-state new-state] :as opts}]
+(defn compile-classes [elem-sym classes {:keys [state old-state new-state updated-vars] :as opts}]
   (when (seq classes)
     (let [compiled-classes (map #(-> %
                                      (compile-value opts)
@@ -82,9 +82,10 @@
                                    set
                                    (disj nil)))]
                       
-                      [`(fd/update-classes! ~elem-sym
-                                            ~(classes-for old-state)
-                                            ~(classes-for new-state))]))})))
+                      [`(when (u/deps-updated? ~(u/quote-deps deps) ~updated-vars)
+                          (fd/update-classes! ~elem-sym
+                                              ~(classes-for old-state)
+                                              ~(classes-for new-state)))]))})))
 
 (defn compile-listener [elem-sym {:keys [event listener]} {:keys [state-sym] :as opts}]
   {:el-init [`(fd/add-listener! ~elem-sym ~event ~(:inline-value (compile-value listener opts)))]})
@@ -102,7 +103,7 @@
          :el-bindings [[child-sym el]]
          :el-init [`(fd/append-child! ~elem-sym (fp/build-element ~child-sym ~state))]
          
-         :on-update [`(when (fp/should-update-el? ~child-sym ~updated-vars)
+         :on-update [`(when (fp/should-update? ~child-sym ~updated-vars)
                         (fp/handle-update! ~child-sym ~old-state ~new-state ~updated-vars))]})
 
       (let [{:keys [el-return]} compiled-child]
@@ -180,8 +181,8 @@
                                  (let [~!bindings (atom nil)]
                               
                                    (reify fp/DynamicElement
-                                     (~'should-update-el? [_# ~updated-vars]
-                                       ~(u/deps->should-update deps updated-vars))
+                                     (~'should-update? [_# updated-vars#]
+                                       (u/deps-updated? ~(u/quote-deps deps) updated-vars#))
                                 
                                      (~'build-element [_# ~state]
                                        (reset! ~!bindings ~(b/init-bindings el-bindings))

@@ -14,7 +14,7 @@
              ~!state (atom {})]
 
          (letfn [(~notify! [updated-vars# old-state# new-state#]
-                   (when (fp/should-update-el? el# updated-vars#)
+                   (when (fp/should-update? el# updated-vars#)
                      (fp/handle-update! el# old-state# new-state# updated-vars#)))
                        
                  (~handler [dep-sym#]
