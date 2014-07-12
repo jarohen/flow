@@ -9,11 +9,23 @@
          [old-id & more-olds :as old-ids] old-ids
          [new-id & more-news :as new-ids] new-ids]
 
+    (comment
+      (prn)
+      (prn res)
+      (prn old-ids)
+      (prn new-ids)
+      (prn displaced-olds)
+      (prn displaced-news))
+    
     (cond
      (and (empty? old-ids)
           (empty? new-ids))
-     res
-     
+     (concat res
+             (for [displaced-new displaced-news]
+               [:moved-in displaced-new])
+             (for [displaced-old displaced-olds]
+               [:moved-out displaced-old]))
+
      (contains? (set displaced-olds) new-id)
      (let [[moved-out-olds still-displaced-olds] (split-with #(not= new-id %) displaced-olds)]
        (recur (concat res
@@ -65,4 +77,4 @@
 
 
 (comment
-  (vector-diff [0 1 2 3 4 5 6 8 9 7] [0 8 9 1 2 4 5 6 7]))
+  (time (vector-diff [0 1 2 3 4 5 6 8 9 10 7] [0 8 9 1 2 4 5 6 10])))
