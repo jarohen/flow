@@ -193,7 +193,8 @@
                                                                                [~@values])
                                                                     :state ~state}))))
                                                        
-                                                       ~(:el compiled-body)))))])})
+                                                       (fn []
+                                                         ~(:el compiled-body))))))])})
 
   )
 

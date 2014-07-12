@@ -1,9 +1,10 @@
 (ns flow.for
   (:require [flow.util :as u]
             [flow.dom :as fd]
-            [flow.protocols :as fp]))
+            [flow.protocols :as fp]
+            [flow.diff :refer [vector-diff]]))
 
-(defn for->el [quoted-deps for-values $!body]
+(defn for->el [quoted-deps for-values make-body-el]
   (let [!last-els (atom nil)
         null-elem (fd/null-elem)]
     
@@ -13,30 +14,45 @@
 
       (build-element [_ state]
         (let [initial-els (for [{:keys [state] :as initial-value} (for-values state)]
-                            
-                            (assoc initial-value
-                              :$el (fp/build-element $!body state)))]
-          
+                            (let [$!body (make-body-el)]
+                              (assoc initial-value
+                                :$!body $!body
+                                :$el (fp/build-element $!body state))))]
+
           (reset! !last-els initial-els)
 
           (or (seq (map :$el initial-els))
               null-elem)))
 
       (handle-update! [_ old-state new-state updated-vars]
+        (let [old-els @!last-els
+              new-values (for-values new-state)
+              {:keys [diff added removed]} (vector-diff (map :keys old-els)
+                                                        (map :keys new-values))
+              old-el-cache (->> old-els
+                                (map (juxt :keys identity))
+                                (into {}))
 
-        ;; TODO
-        #_(letfn [(update-body# [old-value# new-value# updated-vars#]
-                    (when (fp/should-update? body# updated-vars#)
-                      (fp/handle-update! body#
-                                         (merge old-state# (bind-values-map# old-value#))
-                                         (merge new-state# (bind-values-map# new-value#))
-                                         updated-vars#)))]
-            
-            (let [old-value# @!last-value#
-                  new-value# (fp/current-value value# new-state#)]
-              (if (not= old-value# new-value#)
-                (do
-                  (reset! !last-value# new-value#)
-                  (update-body# @!last-value# new-value# (set/union updated-vars# (bind-updated-vars# old-value# new-value#))))
-                
-                (update-body# @!last-value# @!last-value# updated-vars#))))))))
+              new-value-cache (->> new-values
+                                   (map (juxt :keys identity))
+                                   (into {}))
+
+              $first-elem (:$el (first old-els))
+              $parent (.-parentNode $first-elem)]
+
+          (prn (first (vals old-el-cache)))
+          
+          (loop [$current-elem $first-elem
+                 [[action id] & more-diff] diff
+                 iteration-limit 10]
+            (when (pos? iteration-limit)
+              (when (= action :kept)
+                (let [{:keys [$!body $el value], old-el-state :state} (get old-el-cache id)
+                      {new-state :state} (get new-value-cache id)]
+                  (when (fp/should-update? $!body (keys new-state))
+                    (fp/handle-update! $!body old-el-cache new-state (keys new-state)))))
+              
+              (when (seq more-diff)
+                (recur $current-elem more-diff (dec iteration-limit)))))
+
+          )))))
