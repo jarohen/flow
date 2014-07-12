@@ -16,6 +16,7 @@
               !show-heading? (atom true)
               !heading (atom "Hello world!")
               change-colors-ch (a/chan)
+              update-numbers-ch (a/chan)
               random-numbers (for [idx (range 5)]
                                {:id idx
                                 :num (rand-int 1000)})
@@ -28,15 +29,15 @@
           (def !foo-heading !foo-heading)
           (def !foo-random-numbers !random-numbers)
 
-          #_(go-loop []
-              (a/<! (a/timeout 1000))
-              (swap! !random-numbers (fn [random-numbers]
-                                       (for [{:keys [id num] :as rn} random-numbers]
-                                         {:id id
-                                          :num (if (zero? (rand-int 3))
-                                                 (rand-int 1000)
-                                                 num)})))
-              (recur))
+          (go-loop []
+            (a/<! update-numbers-ch)
+            (swap! !random-numbers (fn [random-numbers]
+                                     (for [{:keys [id num] :as rn} random-numbers]
+                                       {:id id
+                                        :num (if (zero? (rand-int 3))
+                                               (rand-int 1000)
+                                               num)})))
+            (recur))
           
           (f/root js/document.body
                   (f/el
@@ -64,6 +65,10 @@
                        [:button.btn.btn-default {::f/style {:margin-right "1em"}
                                                  ::f/on {:click (fn [e] (a/put! change-colors-ch :change!))}}
                         "Change colours!"]
+
+                       [:button.btn.btn-default {::f/style {:margin-right "1em"}
+                                                 ::f/on {:click (fn [e] (a/put! update-numbers-ch :change!))}}
+                        "Update numbers!"]
 
                        [:button.btn.btn-default {::f/on {:click #(swap! !show-heading? not)}}
                         "Show/Hide heading!"]
