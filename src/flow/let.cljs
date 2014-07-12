@@ -26,10 +26,7 @@
                                  bind-syms))))
                 
                 (update-body [old-value new-value updated-vars]
-                  (prn "about to update body")
-                  (prn (type $!body))
                   (when (fp/should-update? $!body updated-vars)
-                    (prn "Updating body")
                     (fp/handle-update! $!body
                                        (merge old-state (bind-values-map old-value))
                                        (merge new-state (bind-values-map new-value))
