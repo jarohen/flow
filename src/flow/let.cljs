@@ -37,6 +37,6 @@
             (if (not= old-value new-value)
               (do
                 (reset! !last-value new-value)
-                (update-body @!last-value new-value (doto (set/union updated-vars (bind-updated-vars old-value new-value)) prn)))
+                (update-body @!last-value new-value (set/union updated-vars (bind-updated-vars old-value new-value))))
              
               (update-body @!last-value @!last-value updated-vars))))))))
