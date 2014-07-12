@@ -6,23 +6,21 @@
   :dependencies [[org.clojure/clojure "1.6.0"]
 
                  [ring/ring-core "1.2.0"]
-                 [compojure "1.1.5"]
-                 [hiccup "1.0.4"]
+                 [compojure "1.1.6"]
+                 [hiccup "1.0.5"]
 
-                 [prismatic/dommy "0.1.2"]
+                 [jarohen/flow "0.2.0-SNAPSHOT"]
+                 
+                 [org.clojure/clojurescript "0.0-2268"]
+                 [org.clojure/core.async "0.1.303.0-886421-alpha"]]
 
-                 [org.clojure/core.async "0.1.278.0-76b25b-alpha"]
-                 [org.clojure/clojurescript "0.0-2202"]
-                 [org.clojure/tools.reader "0.8.3"]
-
-                 [jarohen/flow "0.1.0"]
-
-                 [gaka "0.3.0"]]
-
-  :plugins [[jarohen/lein-frodo "0.3.0"]
+  :plugins [[jarohen/lein-frodo "0.3.2"]
+            [jarohen/simple-brepl "0.1.1"]
             [lein-cljsbuild "1.0.3"]
             [lein-pdo "0.1.1"]
-            [com.keminglabs/cljx "0.3.2"]]
+
+            [com.keminglabs/cljx "0.4.0"]
+            [lein-shell "0.4.0"]]
 
   :frodo/config-resource "contacts-config.edn"
 
@@ -30,22 +28,44 @@
 
   :resource-paths ["resources" "target/resources"]
 
-  :cljx {:builds [{:source-paths ["src"]
+  :cljx {:builds [{:source-paths ["common-src"]
                    :output-path "target/generated/clj"
                    :rules :clj}
 
-                  {:source-paths ["src"]
+                  {:source-paths ["common-src"]
                    :output-path "target/generated/cljs"
                    :rules :cljs}]}
 
   :cljsbuild {:builds {:dev
-                       {:source-paths ["src" "target/generated/cljs" "../src" "../target/generated/cljs"]
+                       {:source-paths ["ui-src" "target/generated/cljs"]
                         :compiler {:output-to "target/resources/js/contacts.js"
                                    :output-dir "target/resources/js/"
                                    :optimizations :whitespace
-                                   :pretty-print true}}}}
+                                   :pretty-print true
 
-  :aliases {"dev" ["pdo"
-                   ["cljx" "auto"]
-                   ["cljsbuild" "auto" "dev"]
-                   ["frodo"]]})
+                                   ;; uncomment for source-maps
+                                        ; :source-map "target/resources/js/contacts.js.map"
+                                   }}
+
+                       :prod
+                       {:source-paths ["ui-src" "target/generated/cljs"]
+                        :compiler {:output-to "target/resources/js/contacts.js"
+                                   :optimizations :advanced
+                                   :pretty-print false
+                                   :externs ["externs/jquery.js"]}}}}
+
+  :aliases {"dev" ["do"
+                   ["shell" "mkdir" "-p"
+                    "target/generated/clj"
+                    "target/generated/cljs"
+                    "target/resources"]
+                   ["cljx" "once"]
+                   ["pdo"
+                    ["cljx" "auto"]
+                    ["cljsbuild" "auto" "dev"]
+                    "frodo"]]
+            
+            "start" ["do"
+                     ["cljx" "once"]
+                     ["cljsbuild" "once" "prod"]
+                     ["trampoline" "frodo"]]})

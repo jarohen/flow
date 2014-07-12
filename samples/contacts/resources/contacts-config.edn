@@ -1,4 +1,4 @@
 {:frodo/config {:web {:port 3000
-                      :handler-fn contacts.clj.handler/app}
+                      :app contacts.service.handler/app}
                 :nrepl {:port 7888
                         :brepl-port 9001}}}

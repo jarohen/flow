@@ -1,4 +1,4 @@
-(ns contacts.cljx.formatter
+(ns contacts.formatter
   (:require [clojure.string :as s]))
 
 ;; Copied verbatim from the Om tutorial at
