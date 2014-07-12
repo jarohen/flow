@@ -1,4 +1,4 @@
-(ns flow-sample.cljs.app
+(ns flow-sample.ui.app
   (:require [flow.core :as f :include-macros true]
             [cljs.core.async :as a]
             simple-brepl.client)
@@ -61,7 +61,8 @@
                                             :color secondary}}
                         "If this works, " [:strong "I'll be very happy :)"]]
 
-                       [:button.btn.btn-default {::f/on {:click (fn [e] (a/put! change-colors-ch :change!))}}
+                       [:button.btn.btn-default {::f/style {:margin-right "1em"}
+                                                 ::f/on {:click (fn [e] (a/put! change-colors-ch :change!))}}
                         "Change colours!"]
 
                        [:button.btn.btn-default {::f/on {:click #(swap! !show-heading? not)}}
