@@ -21,7 +21,7 @@
 
 (defmethod compile-value :map [{m :map} opts]
   (let [flattened-map (flatten (seq m))
-        compiled-elems (map #(compile-value % opts))]
+        compiled-elems (map #(compile-value % opts) flattened-map)]
     {:deps (set (mapcat :deps compiled-elems))
      :inline-value (->> compiled-elems
                         (map :inline-value)

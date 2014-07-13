@@ -66,10 +66,13 @@
 (defn set-attr! [$el k v]
   (when @!debug
     (js/console.log "setting attr on" $el ":" (pr-str k) "=" (pr-str v)))
-  
-  (if-not (nil? v)
-    (.setAttribute $el (name k) v)
-    (.removeAttribute $el (name k) v)))
+
+  (if (= k :value)
+    (set! (.-value $el) v)
+    
+    (if-not (nil? v)
+      (.setAttribute $el (name k) v)
+      (.removeAttribute $el (name k) v))))
 
 (let [$null-elem (doto (js/document.createElement "span")
                    (set-style! :display :none))]
