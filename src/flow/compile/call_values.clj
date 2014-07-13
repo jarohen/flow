@@ -35,8 +35,10 @@
     {:deps deps
      :inline-value value}))
 
-(defmethod compile-call-value :fn-decl [{:keys [fn-decl]} opts]
-  {:inline-value fn-decl})
+(defmethod compile-call-value :fn-decl [{:keys [fn-name arities]} opts]
+  {:inline-value `(fn ~@(when fn-name [fn-name])
+                    ~@(for [{:keys [args body]} arities]
+                        `(~args ~(:inline-value (compile-value body opts)))))})
 
 (defmethod compile-value :call [call opts]
   (compile-call-value call opts))

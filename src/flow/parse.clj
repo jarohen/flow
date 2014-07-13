@@ -81,10 +81,27 @@
                     :path path}))
      :body (parse-form body (assoc opts :path (str path "-body")))}))
 
-(defmethod parse-call 'fn* [decl {:keys [path]}]
-  {:call-type :fn-decl
-   :path path
-   :fn-decl decl})
+(defmethod parse-call 'fn* [[_ & decl] {:keys [path]}]
+  (let [[possible-name & more-decl] decl
+        [fn-name decl] (if (symbol? possible-name)
+                         [possible-name more-decl]
+                         [nil decl])]
+    
+    
+    {:call-type :fn-decl
+     :path path
+     :fn-name fn-name
+     :arities (if (every? seq? decl)
+                (for [[[args & body] idx] (map vector decl (range))]
+                  (let [path (str path "-fn-" idx)]
+                    {:path path
+                     :args args
+                     :body (parse-form `(do ~@body) {:path path})}))
+                (let [[args & body] decl
+                      path (str path "-fn")]
+                  [{:path path
+                    :args args
+                    :body (parse-form `(do ~@body) {:path path})}]))}))
 
 (defmethod parse-call 'if [[_ test then else] {:keys [elem? path]}]
   (let [path (str path "-if")]
