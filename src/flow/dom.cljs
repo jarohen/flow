@@ -105,3 +105,12 @@
    :else (js/document.createTextNode (if (string? $el-or-val)
                                        $el-or-val
                                        (pr-str $el-or-val)))))
+
+(defn value [$el]
+  (case (.-type $el)
+    "checkbox" (.-checked $el)
+    (.-value $el)))
+
+(defn bind-value! [!atom]
+  (fn [e]
+    (reset! !atom (value (.-target e)))))

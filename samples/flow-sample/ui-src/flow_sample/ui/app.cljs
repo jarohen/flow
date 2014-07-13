@@ -20,7 +20,8 @@
 
               !random-numbers (atom (for [idx (range 5)]
                                       {:id idx
-                                       :num (rand-int 1000)}))]
+                                       :num (rand-int 1000)}))
+              !input-value (atom 2)]
 
           (def !foo-colors !colors)
           (def !foo-show-heading? !show-heading?)
@@ -83,7 +84,17 @@
                                                (filter (comp even? :num))
                                                (sort-by :num))]
                         [:li num])]])]
-                       
+
+                 [:div
+                  [:div "Input value:" (<<! !input-value)]
+
+                  [:select {::f/on {:change (f/bind-value! !input-value)}
+                            :value (<<! !input-value)}
+                   [:option {:value 1}
+                    "Option 1"]
+                   [:option {:value 2}
+                    "Option 2"]]]
+                 
                  [:div {::f/style {:margin "1em 0"
                                    :color "#000"}}
                   [:h3 "And now for an SVG example:"]

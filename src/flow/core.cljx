@@ -5,7 +5,7 @@
                   [flow.render :refer [render-el]])
   
   #+cljs (:require flow.protocols
-                   flow.dom
+                   [flow.dom :as fd]
                    flow.forms.if
                    flow.forms.let
                    flow.forms.for
@@ -39,3 +39,7 @@
       (recur)))
         
   (.appendChild $container $elem))
+
+#+cljs
+(defn bind-value! [cursor]
+  (fd/bind-value! cursor))
