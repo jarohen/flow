@@ -19,6 +19,10 @@
                       ~@side-effects
                       ~inline-value)}))
 
+(defn with-compiled-values [{:keys [bind value path] :as binding} opts]
+  (assoc binding
+    :compiled-value (compile-value value opts)))
+
 (defmethod compile-call-value :unwrap-cursor [{:keys [cursor path]}
                                               {:keys [dynamic-syms state]}]
   {:deps #{cursor}

@@ -3,40 +3,31 @@
             [flow.protocols :as fp]
             [clojure.set :as set]))
 
-(defn let->el [bind-value $!body quoted-deps bind-syms bind-values-map]
-  (let [!last-value (atom nil)]
+(defn let->el [quoted-deps $!body let-bindings-state]
+  (let [!last-body-state (atom nil)]
                                      
     (reify fp/DynamicElement
       (should-update? [_ updated-vars]
         (u/deps-updated? quoted-deps updated-vars))
 
       (build-element [_ state]
-        (let [initial-value (bind-value state)
-              initial-el (fp/build-element $!body (merge state (bind-values-map initial-value)))]
+        (let [bindings-state (let-bindings-state state)
+              body-state (merge state bindings-state)
+              $initial-el (fp/build-element $!body body-state)]
                                            
-          (reset! !last-value initial-value)
-          initial-el))
+          (reset! !last-body-state body-state)
+          $initial-el))
 
       (handle-update! [_ old-state new-state updated-vars]
-        (letfn [(bind-updated-vars [old-value new-value]
-                  (let [old-map (bind-values-map old-value)
-                        new-map (bind-values-map new-value)]
-                    (set (filter #(not= (get old-map %)
-                                       (get new-map %))
-                                 bind-syms))))
-                
-                (update-body [old-value new-value updated-vars]
-                  (when (fp/should-update? $!body updated-vars)
-                    (fp/handle-update! $!body
-                                       (merge old-state (bind-values-map old-value))
-                                       (merge new-state (bind-values-map new-value))
-                                       updated-vars)))]
-                                           
-          (let [old-value @!last-value
-                new-value (bind-value new-state)]
-            (if (not= old-value new-value)
-              (do
-                (reset! !last-value new-value)
-                (update-body @!last-value new-value (set/union updated-vars (bind-updated-vars old-value new-value))))
-             
-              (update-body @!last-value @!last-value updated-vars))))))))
+        (let [old-body-state @!last-body-state
+              new-body-state (merge new-state (let-bindings-state new-state))
+              
+              updated-vars (keys new-body-state)]
+          
+          (reset! !last-body-state new-body-state)
+
+          (when (fp/should-update? $!body updated-vars)
+            (fp/handle-update! $!body
+                               old-body-state
+                               new-body-state
+                               updated-vars)))))))
