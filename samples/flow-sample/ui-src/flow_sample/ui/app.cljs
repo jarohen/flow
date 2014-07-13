@@ -9,6 +9,25 @@
 (defn rand-color []
   (str "rgb(" (rand-int 256) "," (rand-int 256) "," (rand-int 256) ")"))
 
+(defn render-svg [!colors]
+  (f/el
+    [:div {::f/style {:margin "1em 0"
+                      :color "#000"}}
+     [:h3 "And now for an SVG example:"]
+     (let [{:keys [primary secondary]} (<<! !colors)]
+       [:svg 
+        [:rect {:x 10
+                :y 10
+                :height 100
+                :width 100
+                ::f/style {:stroke primary
+                           :fill secondary}}]
+        [:circle {:cx 60
+                  :cy 60
+                  :r 40
+                  ::f/style {:stroke secondary
+                             :fill primary}}]])]))
+
 (set! (.-onload js/window)
       (fn []
         (let [!colors (atom {:primary "#427"
@@ -94,23 +113,8 @@
                     "Option 1"]
                    [:option {:value 2}
                     "Option 2"]]]
-                 
-                 [:div {::f/style {:margin "1em 0"
-                                   :color "#000"}}
-                  [:h3 "And now for an SVG example:"]
 
-                  [:svg 
-                   [:rect {:x 10
-                           :y 10
-                           :height 100
-                           :width 100
-                           ::f/style {:stroke primary
-                                      :fill secondary}}]
-                   [:circle {:cx 60
-                             :cy 60
-                             :r 40
-                             ::f/style {:stroke secondary
-                                        :fill primary}}]]]])))
+                 (render-svg !colors)])))
 
           (go-loop []
             (a/<! change-colors-ch)
