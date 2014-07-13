@@ -1,4 +1,4 @@
-(ns flow.compile.elements.calls
+(ns flow.compile.calls
   (:require [flow.compile :refer [compile-el compile-value]]
             [flow.bindings :as b]
             [flow.util :as u]
@@ -6,10 +6,46 @@
 
 (alias 'f (doto 'flow.core create-ns))
 (alias 'fp (doto 'flow.protocols create-ns))
+(alias 'fd (doto 'flow.dom create-ns))
 
 (defmulti compile-call
   (fn [call opts]
     (:call-type call)))
+
+(defmethod compile-call :fn-call [{:keys [path args]} {:keys [state old-state new-state updated-vars] :as opts}]
+  (let [compiled-args (map #(compile-value % opts) args)
+        deps (mapcat :deps compiled-args)
+        call-el (symbol path)]
+    {:el `(~call-el)
+     :deps deps
+     :declarations [`(defn ~call-el []
+                       (let [!$el# (atom nil)]
+                         
+                         (reify fp/DynamicElement
+                           (~'should-update? [_# updated-vars#]
+                             (u/deps-updated? ~(u/quote-deps deps) updated-vars#))
+
+                           (~'build-element [_# ~state]
+                             (let [$initial-el# (fd/->node (~@(map :inline-value compiled-args)))]
+                               (reset! !$el# $initial-el#)
+                               $initial-el#))
+
+                           (~'handle-update! [_1# _2# ~new-state _4#]
+                             (let [$new-el# (let [~state ~new-state]
+                                             (fd/->node (~@(map :inline-value compiled-args))))]
+                               (fd/swap-elem! @!$el# $new-el#)
+                               (reset! !$el# $new-el#))))))]}))
+
+(defmethod compile-call :unwrap-cursor [{:keys [cursor path]} opts]
+  (let [el (symbol (str path))
+        deps #{cursor}]
+    
+    {:el `(flow.forms.cursors/cursor->el ~(u/quote-deps deps) (quote ~cursor))
+     :deps #{cursor}}))
+
+(defmethod compile-call :wrap-cursor [{:keys [cursor]} opts]
+  ;; TODO 
+  )
 
 (defmethod compile-call :do [{:keys [path side-effects return]} opts]
   (let [do-el (symbol path)
@@ -37,7 +73,7 @@
                                      (~'handle-update! [_# old-state# new-state# updated-vars#]
                                        (fp/handle-update! downstream-el# old-state# new-state# updated-vars#)))))])})))
 
-(defmethod compile-call :if [{:keys [path test then else]} opts]
+(defmethod compile-call :if [{:keys [path test then else]} {:keys [state] :as opts}]
   (let [if-sym (symbol path)
         compiled-test (compile-value test opts)
         [compiled-then compiled-else] (map #(compile-el % opts) [then else])
@@ -47,10 +83,11 @@
      :deps deps
      :declarations (concat (mapcat :declarations [compiled-test compiled-then compiled-else])
                            [`(defn ~if-sym []
-                               (flow.if/if->el ~(u/quote-deps deps)
-                                               ~(:value compiled-test)
-                                               ~(:el compiled-then)
-                                               ~(:el compiled-else)))])}))
+                               (flow.forms.if/if->el ~(u/quote-deps deps)
+                                                     (fn [~state]
+                                                       ~(:inline-value compiled-test))
+                                                     ~(:el compiled-then)
+                                                     ~(:el compiled-else)))])}))
 
 (defn with-bind-values->map-fn [{:keys [bind destructured-binds] :as compiled-el}]
   (cond-> compiled-el
@@ -60,7 +97,7 @@
                                                                 `[(quote ~bind-sym) ~bind-sym])
                                                               (into {})))))))
 
-(defmethod compile-call :let [{:keys [bindings body]} opts]
+(defmethod compile-call :let [{:keys [bindings body]} {:keys [state] :as opts}]
   (if (empty? bindings)
     (compile-el body opts)
     
@@ -96,15 +133,17 @@
        :deps deps
        :declarations (concat (mapcat :declarations [compiled-value compiled-body])
                              [`(defn ~let-sym []
-                                 (flow.let/let->el ~(:value compiled-value)
-                                                   ~(:el compiled-body)
+                                 (flow.forms.let/let->el (fn [~state]
+                                                           ~(:inline-value compiled-value))
+                                                         
+                                                         ~(:el compiled-body)
 
-                                                   ~(u/quote-deps deps)
+                                                         ~(u/quote-deps deps)
 
-                                                   #{~@(for [bind-sym destructured-binds]
-                                                         `(quote ~bind-sym))}
+                                                         #{~@(for [bind-sym destructured-binds]
+                                                               `(quote ~bind-sym))}
 
-                                                   ~(:bind-values->map compiled-value)))])})))
+                                                         ~(:bind-values->map compiled-value)))])})))
 
 (defn parse-for-bindings [bindings {:keys [dynamic-syms local-syms] :as opts}]
   (reduce (fn [{:keys [compiled-values dynamic-syms local-syms] :as acc} {:keys [bind value path]}]
@@ -112,18 +151,18 @@
                                                                            :dynamic-syms dynamic-syms
                                                                            :local-syms local-syms))
                   destructured-binds (b/destructuring-bind-syms bind)]
-                                              
+              
               (-> acc
                   (update-in [(if (empty? deps) :local-syms :dynamic-syms)] set/union destructured-binds)
                   (update-in [:compiled-values] conj (-> compiled-value
                                                          (assoc :bind bind
                                                                 :destructured-binds destructured-binds)
                                                          with-bind-values->map-fn)))))
-                                                                  
+          
           {:dynamic-syms dynamic-syms
            :local-syms local-syms
            :compiled-values []}
-                
+          
           bindings))
 
 (defn for-deps [compiled-values compiled-body]
@@ -134,20 +173,7 @@
           (:deps compiled-body)
           (reverse compiled-values)))
 
-
-
-(comment
-  (require 'flow.parse)
-  
-  (compile-el (flow.parse/parse-form '(for [x (<<! !color)
-                                            y (range 4)]
-                                        [:div x y])
-                                     {:elem? true
-                                      :path "flow-test"})
-              {})
-  )
-
-(defmethod compile-call :for [{:keys [bindings body path]} opts]
+(defmethod compile-call :for [{:keys [bindings body path]} {:keys [state] :as opts}]
   (let [{:keys [compiled-values dynamic-syms local-syms]} (parse-for-bindings bindings opts)
 
         compiled-body (compile-el body (assoc opts
@@ -160,58 +186,38 @@
 
     {:el `(~for-sym)
      :deps deps
-     :declarations (concat (mapcat :declarations (concat compiled-values [compiled-body]))
+     :declarations (concat (:declarations compiled-body)
                            
                            [`(defn ~for-sym []
-                               ~(let [dynamic-value-syms (for [idx (range (count compiled-values))]
-                                                           (symbol (str for-sym "-dynamic-values-" idx)))
-                                      bind-values-map-syms (for [idx (range (count compiled-values))]
+                               ~(let [bind-values-map-syms (for [idx (range (count compiled-values))]
                                                              (symbol (str for-sym "-bind-values-map-" idx)))]
-                              
-                                  `(let [~@(mapcat (fn [dynamic-value-sym bind-values-map-sym {:keys [value bind-values->map]}]
-                                                     [dynamic-value-sym value
-                                                      bind-values-map-sym bind-values->map])
-                                                   dynamic-value-syms bind-values-map-syms compiled-values)]
+                                  
+                                  `(let [~@(mapcat (fn [bind-values-map-sym {:keys [value bind-values->map]}]
+                                                     [bind-values-map-sym bind-values->map])
+                                                   bind-values-map-syms compiled-values)]
                                      
-                                     (flow.for/for->el ~(u/quote-deps deps)
+                                     (flow.forms.for/for->el ~(u/quote-deps deps)
 
-                                                       ~(let [state (symbol (str for-sym "-state"))]
-                                                          `(fn for-values# [~state]
-                                                             ~(let [values (map #(symbol (str for-sym "-value-" %)) (range (count bindings)))]
-                                                                `(for [~@(mapcat (fn [value dynamic-value-sym bind-values-map-sym]
-                                                                                   `[~value (fp/current-value ~dynamic-value-sym ~state)
-                                                                                     :let [~state (merge ~state (~bind-values-map-sym ~value))]])
-                                                                                 values dynamic-value-syms bind-values-map-syms)]
-                                                                   {:values [~@values]
-                                                                    :keys (map (fn [key-fn# value#]
-                                                                                 (or (when key-fn#
-                                                                                       (key-fn# value#))
-                                                                                     (::f/id value#)
-                                                                                     (:id value#)
-                                                                                     value#))
-                                                                               [~@(map :key-fn compiled-values)]
-                                                                               [~@values])
-                                                                    :state ~state}))))
-                                                       
-                                                       (fn []
-                                                         ~(:el compiled-body))))))])})
-
-  )
-
-(defmethod compile-call :fn-call [{:keys [args]} opts]
-  ;; TODO
-  )
-
-(defmethod compile-call :unwrap-cursor [{:keys [cursor path]} opts]
-  (let [el (symbol (str path))
-        deps #{cursor}]
-    
-    {:el `(flow.cursors/cursor->el ~(u/quote-deps deps) (quote ~cursor))
-     :deps #{cursor}}))
-
-(defmethod compile-call :wrap-cursor [{:keys [cursor]} opts]
-  ;; TODO 
-  )
+                                                             (fn for-values# [~state]
+                                                               ~(let [values (map #(symbol (str for-sym "-value-" %)) (range (count bindings)))]
+                                                                  `(for [~@(mapcat (fn [value bind-values-map-sym {:keys [inline-value]}]
+                                                                                     `[~value ~inline-value
+                                                                                       :let [~state (merge ~state (~bind-values-map-sym ~value))]])
+                                                                                   values bind-values-map-syms compiled-values)]
+                                                                     {:values [~@values]
+                                                                      :keys (map (fn [key-fn# value#]
+                                                                                   (or (when key-fn#
+                                                                                         (key-fn# value#))
+                                                                                       (::f/id value#)
+                                                                                       (:id value#)
+                                                                                       value#))
+                                                                                 [~@(map :key-fn bindings)]
+                                                                                 [~@values])
+                                                                      :state ~state})))
+                                                             
+                                                             (fn []
+                                                               ~(:el compiled-body))))))])}))
 
 (defmethod compile-el :call [call opts]
   (compile-call call opts))
+

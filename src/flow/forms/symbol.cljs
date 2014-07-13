@@ -1,4 +1,4 @@
-(ns flow.symbol
+(ns flow.forms.symbol
   (:require [flow.util :as u]
             [flow.dom :as fd]
             [flow.protocols :as fp]))

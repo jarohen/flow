@@ -1,4 +1,4 @@
-(ns flow.for
+(ns flow.forms.for
   (:require [flow.util :as u]
             [flow.dom :as fd]
             [flow.protocols :as fp]

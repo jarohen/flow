@@ -133,7 +133,8 @@
                                  (parse-form v (update-in opts [:path] str "-" idx "-v"))])
                               (into {}))
                     :path path}
-   
+
+       ;; handles set and vec
        (coll? form) {:type :coll
                      :coll (->> form
                                 (map parse-form)

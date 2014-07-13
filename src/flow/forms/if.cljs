@@ -1,9 +1,9 @@
-(ns flow.if
+(ns flow.forms.if
   (:require [flow.protocols :as fp]
             [flow.dom :as fd]
             [flow.util :as u]))
 
-(defn if->el [quoted-deps ?!test $!then $!else]
+(defn if->el [quoted-deps test-value $!then $!else]
 
   (let [!$placeholder (atom nil)
         !last-test-value (atom nil)]
@@ -13,8 +13,8 @@
         (u/deps-updated? quoted-deps updated-vars))
 
       (build-element [_ state]
-        (let [initial-test-value (fp/current-value ?!test state)
-              $initial-el (if (fp/current-value ?!test state)
+        (let [initial-test-value (test-value state)
+              $initial-el (if initial-test-value
                             (fp/build-element $!then state)
                             (fp/build-element $!else state))]
           (reset! !last-test-value initial-test-value)
@@ -31,7 +31,7 @@
                       (fp/handle-update! $!else old-state new-state updated-vars))))]
         
           (let [old-test-value @!last-test-value
-                new-test-value (fp/current-value ?!test new-state)]
+                new-test-value (test-value new-state)]
             (if (not= (boolean old-test-value) (boolean new-test-value))
               (do
                 (reset! !last-test-value new-test-value)

@@ -1,9 +1,9 @@
-(ns flow.let
+(ns flow.forms.let
   (:require [flow.util :as u]
             [flow.protocols :as fp]
             [clojure.set :as set]))
 
-(defn let->el [?!value $!body quoted-deps bind-syms bind-values-map]
+(defn let->el [bind-value $!body quoted-deps bind-syms bind-values-map]
   (let [!last-value (atom nil)]
                                      
     (reify fp/DynamicElement
@@ -11,7 +11,7 @@
         (u/deps-updated? quoted-deps updated-vars))
 
       (build-element [_ state]
-        (let [initial-value (fp/current-value ?!value state)
+        (let [initial-value (bind-value state)
               initial-el (fp/build-element $!body (merge state (bind-values-map initial-value)))]
                                            
           (reset! !last-value initial-value)
@@ -33,7 +33,7 @@
                                        updated-vars)))]
                                            
           (let [old-value @!last-value
-                new-value (fp/current-value ?!value new-state)]
+                new-value (bind-value new-state)]
             (if (not= old-value new-value)
               (do
                 (reset! !last-value new-value)

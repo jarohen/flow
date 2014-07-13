@@ -1,4 +1,4 @@
-(ns flow.cursors
+(ns flow.forms.cursors
   (:require [flow.protocols :as fp]
             [flow.util :as u]
             [flow.dom :as fd]))

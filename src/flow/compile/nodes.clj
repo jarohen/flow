@@ -1,4 +1,4 @@
-(ns flow.compile.elements.nodes
+(ns flow.compile.nodes
   (:require [flow.compile :refer [compile-el compile-value]]
             [flow.util :as u]
             [flow.bindings :as b]))
@@ -11,81 +11,50 @@
 (defn compile-attr [elem-sym [k v] path
                     {:keys [state old-state new-state updated-vars] :as opts}]
   
-  (let [{:keys [deps inline-value value declarations]} (compile-value v opts)
+  (let [{:keys [deps inline-value]} (compile-value v opts)
         value-sym (symbol (str path "-attrs-" (name k)))]
     {:deps deps
 
-     :el-bindings (when (not-empty deps)
-                    [[value-sym value]])
-     
-     :el-init (if (empty? deps)
-                `[(fd/set-attr! ~elem-sym ~k ~inline-value)]
-                `[(fd/set-attr! ~elem-sym ~k (fp/current-value ~value-sym ~state))])
+     :el-init `[(fd/set-attr! ~elem-sym ~k ~inline-value)]
 
-     :declarations declarations
-     
      :on-update (when (not-empty deps)
                   `[(when (u/deps-updated? ~(u/quote-deps deps) ~updated-vars)
-                      (fd/set-attr! ~elem-sym ~k (fp/current-value ~value-sym ~new-state)))])}))
+                      (let [~state ~new-state]
+                        (fd/set-attr! ~elem-sym ~k ~inline-value)))])}))
 
 (defn compile-style [elem-sym [k v] path {:keys [state new-state updated-vars] :as opts}]
-  (let [{:keys [deps value inline-value declarations]} (compile-value v opts)
+  (let [{:keys [deps inline-value]} (compile-value v opts)
         value-sym (symbol (str path "-style-" (name k)))]
     {:deps deps
 
-     :el-bindings (when (not-empty deps)
-                    [[value-sym value]])
-     
-     :el-init (if (empty? deps)
-                `[(fd/set-style! ~elem-sym ~k ~inline-value)]
-                `[(fd/set-style! ~elem-sym ~k (fp/current-value ~value-sym ~state))])
+     :el-init `[(fd/set-style! ~elem-sym ~k ~inline-value)]
 
-     :declarations declarations
-     
      :on-update (when (not-empty deps)
                   `[(when (u/deps-updated? ~(u/quote-deps deps) ~updated-vars)
-                      (fd/set-style! ~elem-sym ~k (fp/current-value ~value-sym ~new-state)))])}))
+                      (let [~state ~new-state]
+                        (fd/set-style! ~elem-sym ~k ~inline-value)))])}))
 
 (defn compile-classes [elem-sym classes {:keys [state old-state new-state updated-vars] :as opts}]
   (when (seq classes)
-    (let [compiled-classes (map #(-> %
-                                     (compile-value opts)
-                                     (assoc :value-sym (symbol (:path %))))
-                                classes)
+    (let [compiled-classes (map #(compile-value % opts) classes)
           deps (set (mapcat :deps compiled-classes))]
 
       {:deps deps
 
-       :el-bindings (->> compiled-classes
-                         (filter (comp not-empty :deps))
-                         (map (juxt :value-sym :value)))
-       
        :el-init [`(fd/add-classes! ~elem-sym
-                                   (-> (set [~@(for [{:keys [value-sym inline-value deps]} compiled-classes]
-                                                 (if (empty? deps)
-                                                   inline-value
-                                                   `(fp/current-value ~value-sym ~state)))])
+                                   (-> (set [~@(map :inline-value compiled-classes)])
                                        (disj nil)))]
 
-       :declarations (mapcat :declarations compiled-classes)
-       
        :on-update (when (not-empty deps)
-                    (letfn [(classes-for [deps-state-sym]
-                              `(-> (concat (map #(fp/current-value % ~deps-state-sym)
-                                                [~@(->> compiled-classes
-                                                        (filter (comp not-empty :deps))
-                                                        (map :value-sym))])
-                                           
-                                           [~@(->> compiled-classes
-                                                   (filter (comp empty? :deps))
-                                                   (map :inline-value))])
-                                   set
-                                   (disj nil)))]
+                    [`(letfn [(classes-for# [state#]
+                                (let [~state state#]
+                                  (-> (set [~@(map :inline-value compiled-classes)])
+                                      (disj nil))))]
                       
-                      [`(when (u/deps-updated? ~(u/quote-deps deps) ~updated-vars)
+                        (when (u/deps-updated? ~(u/quote-deps deps) ~updated-vars)
                           (fd/update-classes! ~elem-sym
-                                              ~(classes-for old-state)
-                                              ~(classes-for new-state)))]))})))
+                                              (classes-for# (quote ~old-state))
+                                              (classes-for# (quote ~new-state)))))])})))
 
 (defn compile-listener [elem-sym {:keys [event listener]} {:keys [state-sym] :as opts}]
   {:el-init [`(fd/add-listener! ~elem-sym ~event ~(:inline-value (compile-value listener opts)))]})
