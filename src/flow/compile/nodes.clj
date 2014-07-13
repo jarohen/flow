@@ -114,11 +114,11 @@
      :el-init `[~@(when id
                     [`(set! (.-id ~elem-sym) ~id)])
                 
+                ~@(mapcat :el-init compiled-children)
                 ~@(mapcat :el-init compiled-attrs)
                 ~@(mapcat :el-init compiled-styles)
                 ~@(mapcat :el-init compiled-listeners)
-                ~@(:el-init compiled-classes)
-                ~@(mapcat :el-init compiled-children)]
+                ~@(:el-init compiled-classes)]
 
      :deps (set (concat (mapcat :deps compiled-attrs)
                         (mapcat :deps compiled-styles)
