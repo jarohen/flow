@@ -37,74 +37,73 @@
             (recur))
           
           (f/root js/document.body
-                  (f/el
-                    (let [{:keys [primary secondary]} (<<! !colors)]
-                      [:div#test.container.blah {::f/classes ["abc"
-                                                              (when (= primary "#000")
-                                                                "black")]
+            (f/el
+              (let [{:keys [primary secondary]} (<<! !colors)]
+                [:div#test.container.blah {::f/classes ["abc"
+                                                        (when (= primary "#000")
+                                                          "black")]
                                                  
-                                                 :data-test "foo"
+                                           :data-test "foo"
                                                  
-                                                 :data-is-black (boolean (= primary "#000"))}
+                                           :data-is-black (boolean (= primary "#000"))}
 
-                       (let [show-heading? (<<! !show-heading?)]
-                         [:div
-                          (when show-heading?
-                            [:h1 {::f/style {:color secondary
-                                             :padding "0.5em"
-                                             :background-color primary}}
-                             (<<! !heading)])])
+                 (let [show-heading? (<<! !show-heading?)]
+                   [:div
+                    (when show-heading?
+                      [:h1 {::f/style {:color secondary
+                                       :padding "0.5em"
+                                       :background-color primary}}
+                       (<<! !heading)])])
 
-                       [:p.copy {::f/style {:text-align :center
-                                            :color secondary}}
-                        "If this works, " [:strong "I'll be very happy :)"]]
+                 [:p.copy {::f/style {:text-align :center
+                                      :color secondary}}
+                  "If this works, " [:strong "I'll be very happy :)"]]
 
-                       [:button.btn.btn-default {::f/style {:margin-right "1em"}
-                                                 ::f/on {:click (fn [e] (a/put! change-colors-ch :change!))}}
-                        "Change colours!"]
+                 [:button.btn.btn-default {::f/style {:margin-right "1em"}
+                                           ::f/on {:click (fn [e] (a/put! change-colors-ch :change!))}}
+                  "Change colours!"]
 
-                       [:button.btn.btn-default {::f/style {:margin-right "1em"}
-                                                 ::f/on {:click (fn [e] (a/put! update-numbers-ch :change!))}}
-                        "Update numbers!"]
+                 [:button.btn.btn-default {::f/style {:margin-right "1em"}
+                                           ::f/on {:click (fn [e] (a/put! update-numbers-ch :change!))}}
+                  "Update numbers!"]
 
-                       [:button.btn.btn-default {::f/on {:click #(swap! !show-heading? not)}}
-                        "Show/Hide heading!"]
+                 [:button.btn.btn-default {::f/on {:click #(swap! !show-heading? not)}}
+                  "Show/Hide heading!"]
 
-                       [:div {::f/style {:margin "1em 0"
-                                         :color "#000"}}
-                        [:h3 "And now for a 'for' example:"]
+                 [:div {::f/style {:margin "1em 0"
+                                   :color "#000"}}
+                  [:h3 "And now for a 'for' example:"]
 
-                        (let [random-numbers (<<! !random-numbers)]
-                          [:div
-                           [:div "!random-numbers: " random-numbers]
-                           
-                           [:ul {::f/style {:margin-top "1em"}}
-                            (for [{:keys [num]} (->> random-numbers
-                                                     (filter (comp even? :num))
-                                                     (sort-by :num))]
-                              [:li num])]])]
+                  (let [random-numbers (<<! !random-numbers)]
+                    [:div
+                     [:div "!random-numbers: " random-numbers]
+                     
+                     [:ul {::f/style {:margin-top "1em"}}
+                      (for [{:keys [num]} (->> random-numbers
+                                               (filter (comp even? :num))
+                                               (sort-by :num))]
+                        [:li num])]])]
                        
-                       [:div {::f/style {:margin "1em 0"
-                                         :color "#000"}}
-                        [:h3 "And now for an SVG example:"]
+                 [:div {::f/style {:margin "1em 0"
+                                   :color "#000"}}
+                  [:h3 "And now for an SVG example:"]
 
-                        [:svg 
-                         [:rect {:x 10
-                                 :y 10
-                                 :height 100
-                                 :width 100
-                                 ::f/style {:stroke primary
-                                            :fill secondary}}]
-                         [:circle {:cx 60
-                                   :cy 60
-                                   :r 40
-                                   ::f/style {:stroke secondary
-                                              :fill primary}}]]]])))
+                  [:svg 
+                   [:rect {:x 10
+                           :y 10
+                           :height 100
+                           :width 100
+                           ::f/style {:stroke primary
+                                      :fill secondary}}]
+                   [:circle {:cx 60
+                             :cy 60
+                             :r 40
+                             ::f/style {:stroke secondary
+                                        :fill primary}}]]]])))
 
           (go-loop []
             (a/<! change-colors-ch)
             (reset! !foo-colors {:primary (rand-color)
                                  :secondary (rand-color)})
             (recur)))))
-
 
