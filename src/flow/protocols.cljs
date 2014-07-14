@@ -27,3 +27,17 @@
 
   (handle-update! [_ old-state new-state updated-vars]
     nil))
+
+(defprotocol DynamicValue
+  (should-update-value? [_ updated-vars])
+  (initial-value [_ state])
+  (updated-value [_ old-state new-state updated-vars]))
+
+(extend-protocol DynamicValue
+  nil
+  (should-update-value? [_ updated-vars]
+    false)
+  (initial-value [_ state]
+    nil)
+  (updated-value [_ old-state new-state updated-vars]
+    nil))
