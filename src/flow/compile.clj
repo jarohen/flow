@@ -1,9 +1,8 @@
 (ns flow.compile
   (:require [flow.util :as u]
             [clojure.java.io :as io]
-            [clojure.set :as set]))
-
-(alias 'fp (doto 'flow.protocols create-ns))
+            [clojure.set :as set]
+            [flow.protocols :as fp]))
 
 (defmulti compile-el
   (fn [elem opts]
@@ -27,10 +26,10 @@
       {:deps (set/union deps wrapped-deps)
        :declarations (concat declarations
                              [`(defn ~value-sym []
-                                 (let [~downstream-value ~(dynamic-value)]
+                                 (let [~downstream-value-sym ~(dynamic-value)]
                                    (reify fp/DynamicValue
                                      (should-update-value? [_# updated-vars#]
-                                       (u/deps-updated? ~(u/quoted-deps wrapped-deps) updated-vars#))
+                                       (u/deps-updated? ~(u/quote-deps wrapped-deps) updated-vars#))
 
                                      (initial-value [_# ~state]
                                        ~(fp/initial-value-form decorated-value
@@ -45,8 +44,7 @@
                                                                updated-vars)))))])
        :dynamic-value `(~value-sym)})))
 
+
 (require 'flow.compile.nodes)
 (require 'flow.compile.calls)
-
 (require 'flow.compile.simple)
-(require 'flow.compile.call-values)

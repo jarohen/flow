@@ -1,47 +1,20 @@
 (ns flow.compile.calls
-  (:require [flow.compile :refer [compile-el compile-value]]
+  (:require [flow.compile :refer [compile-el compile-value-form]]
             [flow.bindings :as b]
             [flow.util :as u]
-            [clojure.set :as set]))
-
-(alias 'f (doto 'flow.core create-ns))
-(alias 'fp (doto 'flow.protocols create-ns))
-(alias 'fd (doto 'flow.dom create-ns))
+            [clojure.set :as set]
+            [flow.protocols :as fp]))
 
 (defmulti compile-call
   (fn [call opts]
     (:call-type call)))
 
-(defmethod compile-call :fn-call [{:keys [path args]} {:keys [state old-state new-state updated-vars] :as opts}]
-  (let [compiled-args (map #(compile-value % opts) args)
-        deps (mapcat :deps compiled-args)
-        call-el (symbol path)]
-    {:el `(~call-el)
-     :deps deps
-     :declarations [`(defn ~call-el []
-                       (let [!$el# (atom nil)]
-                         
-                         (reify fp/DynamicElement
-                           (~'should-update? [_# updated-vars#]
-                             (u/deps-updated? ~(u/quote-deps deps) updated-vars#))
+(defmulti compile-call-value
+  (fn [{:keys [call-type]} opts]
+    call-type))
 
-                           (~'build-element [_# ~state]
-                             (let [$initial-el# (fd/->node (~@(map :inline-value compiled-args)))]
-                               (reset! !$el# $initial-el#)
-                               $initial-el#))
-
-                           (~'handle-update! [_1# _2# ~new-state _4#]
-                             (let [$new-el# (let [~state ~new-state]
-                                             (fd/->node (~@(map :inline-value compiled-args))))]
-                               (fd/swap-elem! @!$el# $new-el#)
-                               (reset! !$el# $new-el#))))))]}))
-
-(defmethod compile-call :unwrap-cursor [{:keys [cursor path]} opts]
-  (let [el (symbol (str path))
-        deps #{cursor}]
-    
-    {:el `(flow.forms.cursors/cursor->el ~(u/quote-deps deps) (quote ~cursor))
-     :deps #{cursor}}))
+(require 'flow.compile.fn-call)
+(require 'flow.compile.unwrap-cursor)
 
 (defmethod compile-call :do [{:keys [path side-effects return]} opts]
   (let [do-el (symbol path)
@@ -153,3 +126,5 @@
 (defmethod compile-el :call [call opts]
   (compile-call call opts))
 
+(defmethod compile-value-form :call [call opts]
+  (compile-call-value call opts))
