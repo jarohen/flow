@@ -11,7 +11,8 @@
         new-state (symbol (str path "-new-state"))
         updated-vars (symbol (str path "-updated-vars"))
 
-        bindings (fp/bindings compiled-form)]
+        bindings (fp/bindings compiled-form)
+        deps (fp/form-deps compiled-form)]
 
     `(do
        ~@(fp/form-declarations compiled-form)
@@ -37,4 +38,4 @@
                   (swap! ~!state assoc (quote ~dep) (deref ~dep))))
 
            (let [~state @~!state]
-             ~(fp/current-value-form compiled-value state)))))))
+             ~(fp/current-value-form compiled-form state)))))))

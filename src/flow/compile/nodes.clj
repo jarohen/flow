@@ -144,7 +144,7 @@
   (let [{:keys [el-bindings el-return el-build on-update deps declarations]} (compile-node node opts)
         
         el-fn (symbol (str path "-node"))]
-    declarations
+
     {:el `(~el-fn)
      :deps deps
      :declarations (concat declarations
