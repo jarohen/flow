@@ -1,5 +1,5 @@
 (ns flow.bindings
-  (:require [flow.compile :refer [compile-value]]
+  (:require [flow.compile :refer [compile-form]]
             [clojure.set :as set]))
 
 (defn init-bindings [bindings]
@@ -40,7 +40,7 @@
             (let [{:keys [dynamic-syms local-syms]} opts
 
                   {:keys [deps] :as compiled-value}
-                  (compile-value value (assoc opts
+                  (compile-form value (assoc opts
                                          :dynamic-syms dynamic-syms
                                          :local-syms local-syms))
                         

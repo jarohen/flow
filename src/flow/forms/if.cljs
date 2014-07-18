@@ -5,20 +5,20 @@
 
 (defn if->el [quoted-deps test-value $!then $!else]
 
-  (let [!$placeholder (atom nil)
+  (let [!$box (atom nil)
         !last-test-value (atom nil)]
 
-    (reify fp/DynamicElement
+    (reify fp/Box
       (should-update? [_ updated-vars]
         (u/deps-updated? quoted-deps updated-vars))
 
-      (build-element [_ state]
+      (build [_ state]
         (let [initial-test-value (test-value state)
               $initial-el (if initial-test-value
-                            (fp/build-element $!then state)
-                            (fp/build-element $!else state))]
+                            (fp/build $!then state)
+                            (fp/build $!else state))]
           (reset! !last-test-value initial-test-value)
-          (reset! !$placeholder $initial-el)
+          (reset! !$box $initial-el)
           $initial-el))
 
       (handle-update! [_ old-state new-state updated-vars]
@@ -37,9 +37,9 @@
                 (reset! !last-test-value new-test-value)
 
                 (let [$new-el (if new-test-value
-                                (fp/build-element $!then new-state)
-                                (fp/build-element $!else new-state))]
-                  (fd/swap-elem! @!$placeholder $new-el)
-                  (reset! !$placeholder $new-el)))
+                                (fp/build $!then new-state)
+                                (fp/build $!else new-state))]
+                  (fd/swap-elem! @!$box $new-el)
+                  (reset! !$box $new-el)))
               
               (update-branch @!last-test-value))))))))

@@ -1,24 +1,24 @@
 (ns flow.compile.calls
-  (:require [flow.compile :refer [compile-el compile-value-form]]
+  (:require [flow.compile :refer [compile-form]]
             [flow.bindings :as b]
             [flow.util :as u]
             [clojure.set :as set]
             [flow.protocols :as fp]))
 
-(defmulti compile-call
+(defmulti compile-call-form
   (fn [call opts]
     (:call-type call)))
 
-(defmulti compile-call-value
+(defmulti compile-call-form
   (fn [{:keys [call-type]} opts]
     call-type))
 
 (require 'flow.compile.fn-call)
 (require 'flow.compile.unwrap-cursor)
 
-(defmethod compile-call :do [{:keys [path side-effects return]} opts]
+(defmethod compile-call-form :do [{:keys [path side-effects return]} opts]
   (let [do-el (symbol path)
-        compiled-return (compile-el return opts)
+        compiled-return (compile-form return opts)
         deps (:deps compiled-return)]
 
     (if (empty? side-effects)
@@ -31,21 +31,21 @@
                              [`(defn ~do-el []
                                  (let [downstream-el# ~(:el compiled-return)]
                                    
-                                   (reify fp/DynamicElement
+                                   (reify fp/Box
                                      (~'should-update? [_# updated-vars#]
                                        (fp/should-update? downstream-el# updated-vars#))
 
-                                     (~'build-element [_# state#]
+                                     (~'build [_# state#]
                                        ~@side-effects
-                                       (fp/build-element downstream-el#))
+                                       (fp/build downstream-el#))
 
                                      (~'handle-update! [_# old-state# new-state# updated-vars#]
                                        (fp/handle-update! downstream-el# old-state# new-state# updated-vars#)))))])})))
 
-(defmethod compile-call :if [{:keys [path test then else]} {:keys [state] :as opts}]
+(defmethod compile-call-form :if [{:keys [path test then else]} {:keys [state] :as opts}]
   (let [if-sym (symbol path)
-        compiled-test (compile-value test opts)
-        [compiled-then compiled-else] (map #(compile-el % opts) [then else])
+        compiled-test (compile-form test opts)
+        [compiled-then compiled-else] (map #(compile-form % opts) [then else])
         deps (mapcat :deps [compiled-test compiled-then compiled-else])]
 
     {:el `(~if-sym)
@@ -58,10 +58,10 @@
                                                      ~(:el compiled-then)
                                                      ~(:el compiled-else)))])}))
 
-(defmethod compile-call :let [{:keys [bindings body path]} {:keys [state] :as opts}]
+(defmethod compile-call-form :let [{:keys [bindings body path]} {:keys [state] :as opts}]
   (let [{:keys [compiled-bindings opts]} (b/compile-bindings bindings opts)
 
-        compiled-body (compile-el body opts)
+        compiled-body (compile-form body opts)
 
         deps (b/bindings-deps compiled-bindings compiled-body)
 
@@ -84,10 +84,10 @@
                                                                            compiled-bindings)]
                                                              ~state)))))])}))
 
-(defmethod compile-call :for [{:keys [bindings body path]} {:keys [state] :as opts}]
+(defmethod compile-call-form :for [{:keys [bindings body path]} {:keys [state] :as opts}]
   (let [{:keys [compiled-bindings opts]} (b/compile-bindings bindings opts)
 
-        compiled-body (compile-el body opts)
+        compiled-body (compile-form body opts)
 
         deps (b/bindings-deps compiled-bindings compiled-body)
         
@@ -123,8 +123,8 @@
                                                          (fn []
                                                            ~(:el compiled-body)))))])}))
 
-(defmethod compile-el :call [call opts]
-  (compile-call call opts))
+(defmethod compile-form :call [call opts]
+  (compile-call-form call opts))
 
-(defmethod compile-value-form :call [call opts]
-  (compile-call-value call opts))
+(defmethod compile-form :call [call opts]
+  (compile-call-form call opts))

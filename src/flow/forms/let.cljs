@@ -6,14 +6,14 @@
 (defn let->el [quoted-deps $!body let-bindings-state]
   (let [!last-body-state (atom nil)]
                                      
-    (reify fp/DynamicElement
+    (reify fp/Box
       (should-update? [_ updated-vars]
         (u/deps-updated? quoted-deps updated-vars))
 
-      (build-element [_ state]
+      (build [_ state]
         (let [bindings-state (let-bindings-state state)
               body-state (merge state bindings-state)
-              $initial-el (fp/build-element $!body body-state)]
+              $initial-el (fp/build $!body body-state)]
                                            
           (reset! !last-body-state body-state)
           $initial-el))

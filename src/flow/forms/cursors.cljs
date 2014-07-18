@@ -5,11 +5,11 @@
 
 (defn cursor->el [quoted-deps quoted-cursor]
   (let [!$el (atom nil)]
-    (reify fp/DynamicElement
+    (reify fp/Box
       (should-update? [_ updated-vars]
         (u/deps-updated? quoted-deps updated-vars))
 
-      (build-element [_ state]
+      (build [_ state]
         (let [$new-el (fd/->node (get state quoted-cursor))]
           
           (when-let [$old-el @!$el]
@@ -19,4 +19,4 @@
           $new-el))
       
       (handle-update! [this old-state new-state updated-vars]
-        (fp/build-element this new-state)))))
+        (fp/build this new-state)))))

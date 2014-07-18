@@ -6,7 +6,7 @@
 
 (defn for->el [quoted-deps for-values make-body-el]
   (let [!last-els (atom nil)
-        $placeholder (fd/null-elem)]
+        $box (fd/null-elem)]
 
     (letfn [(with-el [{:keys [state $el], value-keys :keys, :as value} el-cache]
               (if-let [{:keys [$!body $el]} (get el-cache value-keys)]
@@ -17,14 +17,14 @@
                 (let [$!body (make-body-el)]
                   (assoc value
                     :$!body $!body
-                    :$el (fp/build-element $!body state)
+                    :$el (fp/build $!body state)
                     :new? true))))]
       
-      (reify fp/DynamicElement
+      (reify fp/Box
         (should-update? [_ updated-vars]
           (u/deps-updated? quoted-deps updated-vars))
 
-        (build-element [_ state]
+        (build [_ state]
           (let [initial-els (->> (for-values state)
                                  (map #(with-el % {}))
                                  (map #(dissoc % :new?)))]
@@ -32,7 +32,7 @@
             (reset! !last-els initial-els)
 
             (or (seq (map :$el initial-els))
-                $placeholder)))
+                $box)))
 
         (handle-update! [_ old-state new-state updated-vars]
           (let [old-els @!last-els
@@ -51,11 +51,11 @@
                                             (map :keys new-els))
 
                 $last-elem (:$el (last old-els))
-                $parent (.-parentNode (or $last-elem $placeholder))]
+                $parent (.-parentNode (or $last-elem $box))]
 
             (when (and (empty? new-els)
                        (not-empty old-els))
-              (fd/insert-child-before! $parent $placeholder $last-elem))
+              (fd/insert-child-before! $parent $box $last-elem))
             
             (doseq [[action id] diff]
               (let [{:keys [$!body $el value], old-el-state :state} (get old-el-cache id)]
@@ -65,7 +65,7 @@
             (loop [[[action id] & more-diff] (reverse diff)
                    $next-sibling (if $last-elem
                                    (.-nextSibling $last-elem)
-                                   $placeholder)]
+                                   $box)]
 
               (when action
                 (case action
@@ -97,7 +97,7 @@
             
             (when (and (empty? old-els)
                        (not-empty new-els))
-              (fd/remove-child! $parent $placeholder))
+              (fd/remove-child! $parent $box))
 
             (reset! !last-els (->> new-els
                                    (map #(dissoc % :new?))))))))))

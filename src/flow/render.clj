@@ -1,32 +1,40 @@
-(ns flow.render)
+(ns flow.render
+  (:require [flow.protocols :as fp]))
 
-(alias 'fp (doto 'flow.protocols create-ns))
-
-(defn render-el [{:keys [el deps declarations]}]
+(defn render-form [compiled-form path]
   (let [!state (gensym "!state")
         notify! (gensym "notify!")
-        handler (gensym "handler")]
+        handler (gensym "handler")
+        
+        state (symbol (str path "-state"))
+        old-state (symbol (str path "-old-state"))
+        new-state (symbol (str path "-new-state"))
+        updated-vars (symbol (str path "-updated-vars"))
+
+        bindings (fp/bindings compiled-form)]
 
     `(do
-       ~@declarations
+       ~@(fp/form-declarations compiled-form)
        
-       (let [el# ~el
-             ~!state (atom {})]
+       (let [~!state (atom {})
+             ~@bindings]
 
-         (letfn [(~notify! [updated-vars# old-state# new-state#]
-                   (when (fp/should-update? el# updated-vars#)
-                     (fp/handle-update! el# old-state# new-state# updated-vars#)))
+         (letfn [(~notify! [~old-state ~new-state ~updated-vars]
+                   ~(when (seq bindings)
+                      `(when ~(fp/should-update-form compiled-form updated-vars)
+                         ~(fp/handle-update-form compiled-form old-state new-state updated-vars))))
                        
                  (~handler [dep-sym#]
                    (fn [_1# _2# old-value# new-value#]
                      (when (not= old-value# new-value#)
-                       (let [old-state# @~!state
-                             new-state# (swap! ~!state assoc dep-sym# new-value#)]
-                         (~notify! #{dep-sym#} old-state# new-state#)))))]
+                       (let [~old-state @~!state
+                             ~new-state (swap! ~!state assoc dep-sym# new-value#)]
+                         (~notify! #{dep-sym#} ~old-state ~new-state)))))]
            
            ~@(for [dep deps]
                `(do
                   (add-watch ~dep ~(str (gensym "watch")) (~handler (quote ~dep)))
                   (swap! ~!state assoc (quote ~dep) (deref ~dep))))
 
-           (fp/build-element el# @~!state))))))
+           (let [~state @~!state]
+             ~(fp/current-value-form compiled-value state)))))))
