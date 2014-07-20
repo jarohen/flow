@@ -6,7 +6,7 @@
 (defn let->el [quoted-deps $!body let-bindings-state]
   (let [!last-body-state (atom nil)]
                                      
-    (reify fp/Box
+    (reify fp/DynamicValue
       (should-update? [_ updated-vars]
         (u/deps-updated? quoted-deps updated-vars))
 

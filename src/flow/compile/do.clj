@@ -6,22 +6,24 @@
             [clojure.set :as set]
             [flow.protocols :as fp]))
 
-#_(defmethod compile-call-form :do [{:keys [path side-effects return]} opts]
-    (let [do-el (symbol path)
-          compiled-return (compile-form return opts)
-          deps (:deps compiled-return)]
+(defmethod compile-call-form :do [{:keys [path side-effects return]} opts]
+  (let [do-el (symbol path)
+        compiled-return (compile-form return opts)]
 
-      (if (empty? side-effects)
-        compiled-return
+    (assert (empty? side-effects) "I can't handle this yet!")
+    
+    (if (empty? side-effects)
+      compiled-return
 
-        {:el `(~do-el)
+      ;; TODO! handle the non-empty side-effects case
+      #_{:el `(~do-el)
          :deps deps
          :declarations (concat (:declarations compiled-return)
 
                                [`(defn ~do-el []
                                    (let [downstream-el# ~(:el compiled-return)]
                                    
-                                     (reify fp/Box
+                                     (reify fp/DynamicValue
                                        (~'should-update? [_# updated-vars#]
                                          (fp/should-update? downstream-el# updated-vars#))
 

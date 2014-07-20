@@ -4,37 +4,32 @@
             [flow.util :as u]
             [flow.protocols :as fp]))
 
-#_(defmethod compile-call-form :fn-call [{:keys [path args]} opts]
-    (let [compiled-args (map #(compile-form % opts) args)
-          deps (mapcat :deps compiled-args)
-          call-box (symbol path)]
-      (assert (or value?
-                  (empty? deps))
-              "")
-      {:deps deps
-       :value (when value?
-                `(~@(map :inline-value compiled-args)))
-     
-       :declarations (concat (mapcat :declarations compiled-args)
-                             [`(defn ~call-box []
-                                 (let [!box# (atom nil)]
-                         
-                                   (reify fp/Box
-                                     (~'should-update? [_# updated-vars#]
-                                       (u/deps-updated? ~(u/quote-deps deps) updated-vars#))
+(defmethod compile-call-form :fn-call [{:keys [path args]} opts]
+  (let [compiled-args (map #(compile-form % opts) args)
+        deps (set (mapcat fp/form-deps compiled-args))
+          
+        !last-call-result (symbol (str "!" path))]
 
-                                     (~'build [_# ~state]
-                                       (let [initial-box# (fd/->node (~@(map :inline-value compiled-args)))]
-                                         (reset! !box# initial-box#)
-                                         initial-box#))
+    (assert (empty? deps) "I don't handle this case yet")
+    
+    (reify fp/CompiledForm
+      (form-deps [_] deps)
+        
+      (bindings [_]
+        (concat (mapcat fp/bindings compiled-args)
+                `[[~!last-call-result (atom nil)]]))
 
-                                     (~'handle-update! [_1# _2# ~new-state _4#]
-                                       (let [$new-el# (let [~state ~new-state]
-                                                        (fd/->node (~@(map :inline-value compiled-args))))]
-                                         (fd/swap-elem! @!$el# $new-el#)
-                                         (reset! !$el# $new-el#))))))])
+      (initial-value-form [_ state-sym]
+        ;; TODO when deps?
+        (when-not (seq deps)
+          `(~@(map #(fp/initial-value-form % state-sym) compiled-args))))
 
-       :box (when box?
-              `(~call-box))}))
+      (updated-value-form [_ old-state-sym new-state-sym updated-vars-sym]
+        `(if (u/deps-updated? ~(u/quote-deps deps) ~updated-vars-sym)
+           (let [new-args# (map second )]
+             )
+
+           (let [last-result# @~!last-call-result]
+             [last-result# last-result#]))))))
 
 

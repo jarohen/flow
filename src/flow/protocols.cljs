@@ -1,29 +1,14 @@
 (ns flow.protocols
   (:require [flow.dom :as fd]))
 
-(defprotocol Box
-  (should-update? [_ updated-vars])
+(defprotocol DynamicValue
   (build [_ state])
-  (handle-update! [_ old-state new-state updated-vars]))
+  (updated-value [_ old-state new-state updated-vars]))
 
-(extend-protocol Box
+(extend-protocol DynamicValue
   nil
-  (should-update? [_ updated-vars]
-    false)
-
-  (build [_ state]
-    (fd/null-elem))
-
-  (handle-update! [_ old-state new-state updated-vars]
+  (build [_ _]
     nil)
 
-
-  js/Text
-  (should-update? [_ updated-vars]
-    false)
-
-  (build [text-node state]
-    text-node)
-
-  (handle-update! [_ old-state new-state updated-vars]
+  (updated-value [_ _ _ _]
     nil))

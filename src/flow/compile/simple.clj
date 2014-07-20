@@ -5,19 +5,15 @@
 
 (alias 'fd (doto 'flow.dom create-ns))
 
-(defn value->el [{:keys [deps inline-value]}]
-  )
-
 ;; PRIMITIVE
 
 (defmethod compile-form :primitive [{:keys [primitive elem?]} opts]
   (reify fp/CompiledForm
     (form-deps [_] nil)
-    (form-declarations [_] nil)
 
-    (bindings [_] nil)
-
-    (current-value-form [_ state-sym]
+    (bindings [_])
+    (initial-value-form [_ _] primitive)
+    (updated-value-form [_ _ _ _]
       primitive)))
 
 ;; MAP
@@ -37,5 +33,3 @@
     (let [compiled-elems (map #(compile-form % opts) coll)]
       {:inline-value `(into ~(empty coll) [~@(map :inline-value compiled-elems)])
        :deps (set (mapcat :deps compiled-elems))}))
-
-

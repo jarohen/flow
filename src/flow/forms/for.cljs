@@ -20,7 +20,7 @@
                     :$el (fp/build $!body state)
                     :new? true))))]
       
-      (reify fp/Box
+      (reify fp/DynamicValue
         (should-update? [_ updated-vars]
           (u/deps-updated? quoted-deps updated-vars))
 

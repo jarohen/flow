@@ -6,29 +6,36 @@
             [clojure.set :as set]
             [flow.protocols :as fp]))
 
-#_(defmethod compile-call-form :let [{:keys [bindings body path]} {:keys [state] :as opts}]
-    (let [{:keys [compiled-bindings opts]} (b/compile-bindings bindings opts)
+(defmethod compile-call-form :let [{:keys [bindings body path]} {:keys [state] :as opts}]
+  (let [{:keys [compiled-bindings opts]} (b/compile-bindings bindings opts)
 
-          compiled-body (compile-form body opts)
+        compiled-body (compile-form body opts)
 
-          deps (b/bindings-deps compiled-bindings compiled-body)
+        deps (b/bindings-deps compiled-bindings compiled-body)
 
-          let-sym (symbol path)]
+        let-sym (symbol path)]
 
-      {:el `(~let-sym)
-       :deps deps
-       :declarations (concat (mapcat :declarations (concat compiled-bindings [compiled-body]))
-                             [`(defn ~let-sym []
-                                 (let [~@(mapcat (juxt :bind-values->map-sym :bind-values->map) compiled-bindings)]
-                                   (flow.forms.let/let->el ~(u/quote-deps deps)
+    (reify fp/CompiledForm
+      (form-deps [_] deps)
 
-                                                           ~(:el compiled-body)
+      (bindings [_]
+        (concat (mapcat fp/bindings (concat compiled-bindings [compiled-body]))))
 
-                                                           (fn let-bindings-state# [~state]
-                                                             (let [~@(mapcat (fn [{:keys [inline-value value-sym bind-values->map-sym]}]
-                                                                               `[~value-sym ~inline-value
-                                                                                 ~state (merge ~state (~bind-values->map-sym ~value-sym))])
+      (initial-value-form [_ state-sym]
+        (let [~@(mapcat (fn [{:keys [value-sym bind-values->map-sym compiled-value]}]
+                          `[~value-sym ~(fp/initial-value-form compiled-value ~state-sym)
+                            ~state-sym (merge ~state-sym (~bind-values->map-sym ~value-sym))])
 
-                                                                             compiled-bindings)]
-                                                               ~state)))))])}))
+                        compiled-bindings)]
+          ~state)))
+    
+    {:declarations (concat (mapcat :declarations (concat compiled-bindings [compiled-body]))
+                           [`(defn ~let-sym []
+                               (let [~@(mapcat (juxt :bind-values->map-sym :bind-values->map) compiled-bindings)]
+                                 (flow.forms.let/let->el ~(u/quote-deps deps)
+
+                                                         ~(:el compiled-body)
+
+                                                         (fn let-bindings-state# [~state]
+                                                           ))))])}))
 

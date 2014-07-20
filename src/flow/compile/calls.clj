@@ -9,8 +9,11 @@
   (fn [call opts]
     (:call-type call)))
 
-#_(require 'flow.compile.fn-call)
-#_(require 'flow.compile.unwrap-cursor)
+(require 'flow.compile.fn-decl)
+(require 'flow.compile.fn-call)
+(require 'flow.compile.do)
+(require 'flow.compile.unwrap-cursor)
+(require 'flow.compile.if)
 
 (defmethod compile-form :call [call opts]
   (compile-call-form call opts))
