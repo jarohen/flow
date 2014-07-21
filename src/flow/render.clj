@@ -25,7 +25,7 @@
                    (let [$old-el# @~!el
                          $new-el# (fd/->node ~(fp/updated-value-form compiled-form new-state updated-vars))]
                      (when-not (= $old-el# $new-el#)
-                       (fd/swap-elem! $old-el# $new-el#))))
+                       (fd/swap-elems! $old-el# $new-el#))))
                  
                  (~handler [dep-sym#]
                    (fn [~'_ ~'_ old-value# new-value#]

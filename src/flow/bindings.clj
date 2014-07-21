@@ -51,7 +51,7 @@
 
                                           (initial-bindings [_ state-sym]
                                             `[[[~value-sym ~(fp/initial-value-form compiled-value state-sym)]]
-
+                                              
                                               [[~state-sym (merge ~state-sym (~bind-values->map-sym ~value-sym))]
                                                
                                                ~@(when (seq deps)

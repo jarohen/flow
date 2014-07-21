@@ -121,7 +121,7 @@
                  $new-child# (fd/->node new-child#)]
              
              (when-not (= $old-child# $new-child#)
-               (fd/swap-elem! @~!child-sym $new-child#)
+               (fd/swap-elems! @~!child-sym $new-child#)
                (reset! ~!child-sym $new-child#)
                $new-child#)))))))
 
