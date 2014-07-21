@@ -1,10 +1,8 @@
 (ns flow.compile.for
-  (:require [flow.compile :refer [compile-form]]
-            [flow.compile.calls :refer [compile-call-form]]
+  (:require [flow.compile.calls :refer [compile-call-form]]
+            [flow.compile :refer [compile-form]]
             [flow.bindings :as b]
-            [flow.util :as u]
-            [clojure.set :as set]
-            [flow.protocols :as fp]))
+            [flow.util :as u]))
 
 (alias 'f (doto 'flow.core create-ns))
 

@@ -1,10 +1,8 @@
 (ns flow.compile.if
-  (:require [flow.compile :refer [compile-form]]
-            [flow.compile.calls :refer [compile-call-form]]
-            [flow.bindings :as b]
-            [flow.util :as u]
-            [clojure.set :as set]
-            [flow.protocols :as fp]))
+  (:require [flow.compile.calls :refer [compile-call-form]]
+            [flow.compile :refer [compile-form]]
+            [flow.protocols :as fp]
+            [flow.util :as u]))
 
 (defmethod compile-call-form :if [{:keys [path test then else]} {:keys [state] :as opts}]
   (let [[compiled-test compiled-then compiled-else] (map #(compile-form % opts) [test then else])

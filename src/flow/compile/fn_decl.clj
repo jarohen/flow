@@ -3,7 +3,6 @@
             [flow.compile :refer [compile-form]]
             [flow.bindings :as b]
             [flow.protocols :as fp]
-            [flow.util :as u]
             [clojure.set :as set]))
 
 (defn compile-arity [{:keys [path args body]} opts]

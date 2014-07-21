@@ -1,6 +1,5 @@
 (ns flow.compile.simple
   (:require [flow.compile :refer [compile-form]]
-            [flow.util :as u]
             [flow.protocols :as fp]))
 
 (alias 'fd (doto 'flow.dom create-ns))

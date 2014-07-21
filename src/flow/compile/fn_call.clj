@@ -1,8 +1,8 @@
 (ns flow.compile.fn-call
-  (:require [flow.compile :refer [compile-form]]
-            [flow.compile.calls :refer [compile-call-form]]
-            [flow.util :as u]
-            [flow.protocols :as fp]))
+  (:require [flow.compile.calls :refer [compile-call-form]]
+            [flow.compile :refer [compile-form]]
+            [flow.protocols :as fp]
+            [flow.util :as u]))
 
 (defmethod compile-call-form :fn-call [{:keys [path args]} opts]
   (let [compiled-args (map #(compile-form % opts) args)

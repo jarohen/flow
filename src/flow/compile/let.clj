@@ -1,10 +1,9 @@
 (ns flow.compile.let
-  (:require [flow.compile :refer [compile-form]]
-            [flow.compile.calls :refer [compile-call-form]]
+  (:require [flow.compile.calls :refer [compile-call-form]]
+            [flow.compile :refer [compile-form]]
             [flow.bindings :as b]
-            [flow.util :as u]
-            [clojure.set :as set]
-            [flow.protocols :as fp]))
+            [flow.protocols :as fp]
+            [flow.util :as u]))
 
 (defmethod compile-call-form :let [{:keys [bindings body path]} {:keys [state] :as opts}]
   (let [{:keys [compiled-bindings opts]} (b/compile-bindings bindings opts)
