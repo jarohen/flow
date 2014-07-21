@@ -15,7 +15,7 @@
           `(get ~state-sym (quote ~sym))
           sym))
 
-      (updated-value-form [_ old-state-sym new-state-sym updated-vars-sym]
+      (updated-value-form [_ new-state-sym updated-vars-sym]
         (if dynamic?
           `(get ~new-state-sym (quote ~sym))
           sym)))))

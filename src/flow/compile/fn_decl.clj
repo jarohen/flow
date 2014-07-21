@@ -17,7 +17,7 @@
       (initial-value-form [_ state-sym]
         `(~args ~(fp/initial-value-form compiled-body state-sym)))
 
-      (updated-value-form [_ old-state-sym new-state-sym updated-vars-sym]
+      (updated-value-form [_ new-state-sym updated-vars-sym]
         ;; TODO
         ))))
 
@@ -35,6 +35,6 @@
                  [fn-name])
            ~@(map #(fp/initial-value-form % state-sym) compiled-arities)))
 
-      (updated-value-form [_ old-state-sym new-state-sym updated-vars-sym]
+      (updated-value-form [_ new-state-sym updated-vars-sym]
         ;; TODO
         ))))

@@ -17,7 +17,6 @@
         build-else-branch (symbol (str "build-" path "-else-branch"))
 
         state (gensym "state")
-        old-state (gensym "old-state")
         new-state (gensym "new-state")
         updated-vars (gensym "updated-vars")]
       
@@ -25,12 +24,11 @@
               `(fn ~build-branch-sym []
                  (let [~@(apply concat (fp/bindings compiled-branch))]
                    (reify fp/DynamicValue
-                     (~'build [_# ~state]
+                     (~'build [~'_ ~state]
                        ~(fp/initial-value-form compiled-branch state))
 
-                     (~'updated-value [_# ~old-state ~new-state ~updated-vars]
+                     (~'updated-value [~'_ ~new-state ~updated-vars]
                        ~(fp/updated-value-form compiled-branch
-                                               old-state
                                                new-state
                                                updated-vars))))))]
         
@@ -58,11 +56,10 @@
              
              initial-value#))
 
-        (updated-value-form [_ old-state new-state updated-vars]
+        (updated-value-form [_ new-state updated-vars]
           (u/with-updated-deps-check deps updated-vars
             `(let [old-test-value# @~!current-test-value
                    new-test-value# ~(fp/updated-value-form compiled-test
-                                                           old-state
                                                            new-state
                                                            updated-vars)]
                
@@ -78,7 +75,6 @@
                    new-value#)
 
                  (let [new-value# (fp/updated-value @~!current-branch
-                                                    ~old-state
                                                     ~new-state
                                                     ~updated-vars)]
                    (reset! ~!current-value new-value#)

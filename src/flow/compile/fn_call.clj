@@ -10,8 +10,6 @@
           
         !last-call-result (symbol (str "!" path))]
 
-    (assert (empty? deps) "I don't handle this case yet")
-    
     (reify fp/CompiledForm
       (form-deps [_] deps)
         
@@ -20,16 +18,16 @@
                 `[[~!last-call-result (atom nil)]]))
 
       (initial-value-form [_ state-sym]
-        ;; TODO when deps?
-        (when-not (seq deps)
-          `(~@(map #(fp/initial-value-form % state-sym) compiled-args))))
+        `(let [initial-result# (~@(map #(fp/initial-value-form % state-sym) compiled-args))]
+           (reset! ~!last-call-result initial-result#)
+           initial-result#))
 
-      (updated-value-form [_ old-state-sym new-state-sym updated-vars-sym]
-        `(if (u/deps-updated? ~(u/quote-deps deps) ~updated-vars-sym)
-           (let [new-args# (map second )]
-             )
+      (updated-value-form [_ new-state-sym updated-vars-sym]
+        (u/with-updated-deps-check deps updated-vars-sym
+          `(let [new-result# (~@(map #(fp/updated-value-form % new-state-sym updated-vars-sym) compiled-args))]
+             (reset! ~!last-call-result new-result#)
+             new-result#)
 
-           (let [last-result# @~!last-call-result]
-             [last-result# last-result#]))))))
+          `@~!last-call-result)))))
 
 

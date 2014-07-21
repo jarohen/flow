@@ -8,7 +8,7 @@
 (declare compile-node)
 
 (defn compile-attr [elem-sym [k v] path
-                    {:keys [state old-state new-state updated-vars] :as opts}]
+                    {:keys [state new-state updated-vars] :as opts}]
   
   (let [compiled-value (compile-form v opts)
         deps (fp/form-deps compiled-value)]
@@ -21,14 +21,11 @@
       (initial-value-form [_ state-sym]
         `(fd/set-attr! ~elem-sym ~k ~(fp/initial-value-form compiled-value state-sym)))
 
-      (updated-value-form [_ old-state-sym new-state-sym updated-vars-sym]
+      (updated-value-form [_ new-state-sym updated-vars-sym]
         (u/with-updated-deps-check deps updated-vars-sym
-          `(when-let [[old-value# new-value#] ~(fp/updated-value-form compiled-value
-                                                                      old-state-sym
-                                                                      new-state-sym
-                                                                      updated-vars-sym)]
-             (when-not (= old-value# new-value#)
-               (fd/set-attr! ~elem-sym ~k new-value#))))))))
+          `(fd/set-attr! ~elem-sym ~k ~(fp/updated-value-form compiled-value
+                                                              new-state-sym
+                                                              updated-vars-sym)))))))
 
 (defn compile-style [elem-sym [k v] path opts]
   (let [compiled-value (compile-form v opts)
@@ -42,14 +39,11 @@
       (initial-value-form [_ state-sym]
         `(fd/set-style! ~elem-sym ~k ~(fp/initial-value-form compiled-value state-sym)))
 
-      (updated-value-form [_ old-state-sym new-state-sym updated-vars-sym]
+      (updated-value-form [_ new-state-sym updated-vars-sym]
         (u/with-updated-deps-check deps updated-vars-sym
-          `(when-let [[old-value# new-value#] ~(fp/updated-value-form compiled-value
-                                                                      old-state-sym
-                                                                      new-state-sym
-                                                                      updated-vars-sym)]
-             (when-not (= old-value# new-value#)
-               (fd/set-style! ~elem-sym ~k new-value#))))))))
+          `(fd/set-style! ~elem-sym ~k ~(fp/updated-value-form compiled-value
+                                                               new-state-sym
+                                                               updated-vars-sym)))))))
 
 (defn compile-classes [elem-sym classes opts]
   (when (seq classes)
@@ -63,22 +57,17 @@
           (map fp/bindings compiled-classes))
 
         (initial-value-form [_ state-sym]
-          `(fd/add-classes! ~elem-sym
+          `(fd/set-classes! ~elem-sym
                             (-> (set [~@(map #(fp/initial-value-form % state-sym)
                                              compiled-classes)])
                                 (disj nil))))
 
-        (updated-value-form [_ old-state-sym new-state-sym updated-vars-sym]
+        (updated-value-form [_ new-state-sym updated-vars-sym]
           (u/with-updated-deps-check deps updated-vars-sym
-            `(let [changed-classes# [~@(map #(fp/updated-value-form % old-state-sym new-state-sym updated-vars-sym) compiled-classes)]
-                   old-classes# (-> (map first changed-classes#)
-                                    set
-                                    (disj nil))
-                   new-classes# (-> (map second changed-classes#)
-                                    set
-                                    (disj nil))]
-               (when-not (= old-classes# new-classes#)
-                 (fd/update-classes! ~elem-sym old-classes# new-classes#)))))))))
+            `(fd/set-classes! ~elem-sym (-> [~@(map #(fp/updated-value-form % new-state-sym updated-vars-sym)
+                                                    compiled-classes)]
+                                            set
+                                            (disj nil)))))))))
 
 (defn compile-listener [elem-sym {:keys [event listener path]} opts]
   (let [compiled-listener (compile-form listener opts)
@@ -101,13 +90,9 @@
                                  ((deref ~!listener-sym) e#))
                               (fp/initial-value-form compiled-listener state-sym))))
 
-      (updated-value-form [_ old-state-sym new-state-sym updated-vars-sym]
+      (updated-value-form [_ new-state-sym updated-vars-sym]
         (u/with-updated-deps-check deps updated-vars-sym
-          `(when-let [[old-value# new-value#] ~(fp/updated-value-form compiled-listener
-                                                                      old-state-sym
-                                                                      new-state-sym
-                                                                      updated-vars-sym)]
-             (reset! ~!listener-sym new-value#)))))))
+          `(reset! ~!listener-sym ~(fp/updated-value-form compiled-listener new-state-sym updated-vars-sym)))))))
 
 (defn compile-child [elem-sym {:keys [path] :as child} opts]
   (let [compiled-child (compile-form child opts)
@@ -129,12 +114,9 @@
            (fd/append-child! ~elem-sym $initial-child#)
            $initial-child#))
 
-      (updated-value-form [_ old-state-sym new-state-sym updated-vars-sym]
+      (updated-value-form [_ new-state-sym updated-vars-sym]
         (u/with-updated-deps-check deps updated-vars-sym
-          `(let [new-child# ~(fp/updated-value-form compiled-child
-                                                    old-state-sym
-                                                    new-state-sym
-                                                    updated-vars-sym)
+          `(let [new-child# ~(fp/updated-value-form compiled-child new-state-sym updated-vars-sym)
                  $old-child# @~!child-sym
                  $new-child# (fd/->node new-child#)]
              
@@ -147,7 +129,6 @@
   (require 'flow.parse)
 
   (let [syms {:state 'flow-test-state
-              :old-state 'flow-test-old-state
               :new-state 'flow-test-new-state
               :updated-vars 'flow-test-updated-vars}]
     (-> (compile-form (flow.parse/parse-form '[:div
@@ -191,11 +172,12 @@
 
            ~elem-sym))
 
-      (updated-value-form [_ old-state-sym new-state-sym updated-vars-sym]
+      (updated-value-form [_ new-state-sym updated-vars-sym]
         (u/with-updated-deps-check deps updated-vars-sym
           `(do
-             ~@(map #(fp/updated-value-form % old-state-sym new-state-sym updated-vars-sym)
+             ~@(map #(fp/updated-value-form % new-state-sym updated-vars-sym)
                     compiled-parts)
              
-             ~elem-sym))))))
+             ~elem-sym)
+          elem-sym)))))
 

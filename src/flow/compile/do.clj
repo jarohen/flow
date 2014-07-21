@@ -24,12 +24,12 @@
                                    (let [downstream-el# ~(:el compiled-return)]
                                    
                                      (reify fp/DynamicValue
-                                       (~'should-update? [_# updated-vars#]
+                                       (~'should-update? [~'_ updated-vars#]
                                          (fp/should-update? downstream-el# updated-vars#))
 
-                                       (~'build [_# state#]
+                                       (~'build [~'_ state#]
                                          ~@side-effects
                                          (fp/build downstream-el#))
 
-                                       (~'handle-update! [_# old-state# new-state# updated-vars#]
-                                         (fp/handle-update! downstream-el# old-state# new-state# updated-vars#)))))])})))
+                                       (~'handle-update! [~'_ new-state# updated-vars#]
+                                         (fp/handle-update! downstream-el# new-state# updated-vars#)))))])})))

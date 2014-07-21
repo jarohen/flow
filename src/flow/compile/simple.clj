@@ -12,7 +12,7 @@
 
     (bindings [_])
     (initial-value-form [_ _] primitive)
-    (updated-value-form [_ _ _ _]
+    (updated-value-form [_ _ _]
       primitive)))
 
 ;; MAP

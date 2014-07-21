@@ -11,5 +11,5 @@
     (initial-value-form [_ state-sym]
       `(get ~state-sym (quote ~cursor)))
 
-    (updated-value-form [_ old-state-sym new-state-sym updated-vars-sym]
+    (updated-value-form [_ new-state-sym updated-vars-sym]
       `(get ~new-state-sym (quote ~cursor)))))

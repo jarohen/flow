@@ -2,6 +2,13 @@
   (:require [clojure.data :as cd]
             [clojure.set :as set]))
 
+(defn updated-keys [m1 m2]
+  ;; we assume m1 and m2 have the same keys - a safe assumption because the bindings don't change
+  (->> (keys m2)
+       (filter #(not= (get m1 %)
+                      (get m2 %)))
+       set))
+
 (defn vector-diff [old-ids new-ids]
   (let [[removed added _] (cd/diff (set old-ids) (set new-ids))]
     {:added added

@@ -1,5 +1,6 @@
 (ns flow.dom
-  (:require [clojure.set :as set]))
+  (:require [clojure.set :as set]
+            [clojure.string :as s]))
 
 (def !debug (atom false))
 
@@ -29,32 +30,8 @@
     (.insertBefore $parent $el $before-sibling)
     (append-child! $parent $el)))
 
-(defn add-class! [$el class-name]
-  (when @!debug
-    (js/console.log "adding class" (pr-str class-name) "to" $el))
-  
-  (.. $el
-      -classList
-      (add class-name)))
-
-(defn remove-class! [$el class-name]
-  (when @!debug
-    (js/console.log "removing class" (pr-str class-name) "from" $el))
-  
-  (.. $el
-      -classList
-      (remove class-name)))
-
-(defn add-classes! [$el classes]
-  (doseq [class-name classes]
-    (add-class! $el class-name)))
-
-(defn update-classes! [$el old-classes new-classes]
-  (doseq [class-name (set/difference new-classes old-classes)]
-    (add-class! $el class-name))
-  
-  (doseq [class-name (set/difference old-classes new-classes)]
-    (remove-class! $el class-name)))
+(defn set-classes! [$el new-classes]
+  (set! (.-className $el) (s/join " " new-classes)))
 
 (defn set-style! [$el k v]
   (when @!debug
@@ -75,7 +52,8 @@
       (.removeAttribute $el (name k) v))))
 
 (let [$null-elem (doto (js/document.createElement "span")
-                   (set-style! :display :none))]
+                   (set-style! :display :none)
+                   (set-attr! :data-flow-placeholder true))]
   (defn null-elem [& [id]]
     (let [$elem (.cloneNode $null-elem)]
       (when id

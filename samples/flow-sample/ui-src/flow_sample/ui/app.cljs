@@ -60,22 +60,32 @@
             (f/el
               [:div.container {::f/style {:margin-top "2em"}}
 
+               
+               
                (when (!<< !show-heading?)
                  [:div
-                  [:h1 {::f/style {:color "#f08" #_(:secondary (!<< !colors))
-                                   :padding "0.5em"
-                                   :background-color "#f80" #_primary}}
-                   (!<< !heading)]])
+                  (let [{:keys [primary secondary]} (!<< !colors)]
+                    [:h1 {::f/style {:color secondary
+                                     :padding "0.5em"
+                                     :background-color primary}}
+                     (!<< !heading)])])
 
-               [:p.copy {::f/style {:text-align :center}}
+               [:p.copy {::f/style {:text-align :center
+                                    :color (:secondary (!<< !colors))}}
                 "If this works, " [:strong "I'll be very happy :)"]]
 
                [:div
-                [:button.btn {::f/on {:click #(js/alert "Hello!")}}
-                 "Click me!"]]
+                [:button.btn.btn-default {::f/style {:margin-right "1em"}
+                                          ::f/on {:click #(js/alert "Hello!")}}
+                 "Click me!"]
 
-               [:button.btn.btn-default {::f/on {:click #(swap! !show-heading? not)}}
-                "Show/Hide heading!"]]
+                [:button.btn.btn-default {::f/style {:margin-right "1em"}
+                                          ::f/on {:click (fn [e] (a/put! change-colors-ch :change!))}}
+                 "Change colours!"]
+
+                [:button.btn.btn-default {::f/style {:margin-right "1em"}
+                                          ::f/on {:click #(swap! !show-heading? not)}}
+                 "Show/Hide heading!"]]]
               
               #_(let [{:keys [primary secondary]} (!<< !colors)]
                   [:div#test.container.blah {::f/classes ["abc"
@@ -138,5 +148,5 @@
             (a/<! change-colors-ch)
             (reset! !foo-colors {:primary (rand-color)
                                  :secondary (rand-color)})
-            #_(recur)))))
+            (recur)))))
 

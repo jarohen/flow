@@ -14,10 +14,7 @@
         {:deps (fp/form-deps compiled-form)
          :bindings (fp/bindings compiled-form)
          :initial-value (fp/initial-value-form compiled-form 'state)
-         :updated-value (fp/updated-value-form compiled-form
-                                               'old-state
-                                               'new-state
-                                               'updated-vars)}))
+         :updated-value (fp/updated-value-form compiled-form 'new-state 'updated-vars)}))
 
 #+clj
 (defmacro el [elem]
