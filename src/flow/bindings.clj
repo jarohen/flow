@@ -18,6 +18,14 @@
                         (symbol? bind) [(symbol (name bind))]))]
     (set (dbs* bind))))
 
+(defn key-fn [value value-sym]
+  (let [manual-key-fn (:flow.core/key-fn (meta value))]
+    `(or ~@(when manual-key-fn
+             `[(~manual-key-fn ~value-sym)])
+         (:flow.core/id ~value-sym)
+         (:id ~value-sym)
+         ~value-sym)))
+
 (defn compile-bindings [bindings opts]
   (reduce (fn [{:keys [compiled-bindings opts] :as acc} {:keys [bind value path]}]
             (let [compiled-value (compile-form value opts)
@@ -27,6 +35,7 @@
 
                   bind-values->map-sym (symbol (str path "-value->map"))
                   !value-sym (symbol (str "!" path "-value"))
+                  key-sym (symbol (str path "-key"))
                   value-sym (symbol (str path "-value"))]
 
               {:compiled-bindings (conj compiled-bindings
@@ -46,10 +55,15 @@
                                           (destructured-syms [_]
                                             destructured-syms)
 
+                                          (value-key [_]
+                                            key-sym)
+
                                           (initial-bindings [_ state-sym]
                                             `[[[~value-sym ~(fp/initial-value-form compiled-value state-sym)]]
                                               
-                                              [[~state-sym (merge ~state-sym (~bind-values->map-sym ~value-sym))]
+                                              [[~key-sym ~(key-fn value value-sym)]
+
+                                               [~state-sym (merge ~state-sym (~bind-values->map-sym ~value-sym))]
                                                
                                                [~'_ (reset! ~!value-sym ~value-sym)]]])
 
@@ -58,7 +72,9 @@
                                                               (fp/updated-value-form compiled-value new-state-sym updated-vars-sym)
                                                               `@~!value-sym)]]
                                               
-                                              [[~new-state-sym (merge ~new-state-sym (~bind-values->map-sym ~value-sym))]
+                                              [[~key-sym ~(key-fn value value-sym)]
+
+                                               [~new-state-sym (merge ~new-state-sym (~bind-values->map-sym ~value-sym))]
 
                                                [~updated-vars-sym (set/union ~updated-vars-sym
                                                                              (flow.diff/updated-keys (~bind-values->map-sym @~!value-sym)

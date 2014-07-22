@@ -26,7 +26,7 @@
     (doseq [[action id] diff]
       (let [$el (get old-el-cache id)]
         (when (= action :moved-out)
-          (fd/remove-child! $parent $el))))
+          (fd/remove! $el))))
 
     (reduce (fn [$next-sibling [action id]]
               (let [$el (get new-el-cache id)]
@@ -51,17 +51,22 @@
       (append-to! [_ $parent]
         (fd/append-child! $parent @!current-els))
       
-      (swap-child! [_ $new-el]
-        (let [$new-el (fd/->node $new-el)]
+      (swap-child! [this $new-el]
+        (let [$new-el (fd/->node (if (seq? $new-el)
+                                   (seq $new-el)
+                                   $new-el))]
           (if-not (seq? $new-el)
             (let [$first-el (first @!current-els)]
               (fd/insert-child-before! (.-parentNode $first-el)
                                        $new-el
                                        $first-el)
               (doseq [$el @!current-els]
-                (fd/remove! $el)))
+                (fd/remove! $el))
+              $new-el)
 
-            (reset! !current-els (swap-elem-seqs! @!current-els $new-el))))))))
+            (do
+              (reset! !current-els (swap-elem-seqs! @!current-els $new-el))
+              this)))))))
 
 (defn upgrade-to-holder [$old-el $new-els]
   (let [$parent (.-parentNode $old-el)]

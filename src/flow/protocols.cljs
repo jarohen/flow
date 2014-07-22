@@ -19,10 +19,10 @@
   (set-flow-id! [_ id]))
 
 (extend-protocol FlowElement
-  js/Element
+  js/Node
 
   (get-flow-id [$el]
-    (.-flowId $el))
+    (or (.-flowId $el) $el))
 
   (set-flow-id! [$el id]
     (set! (.-flowId $el) id)))

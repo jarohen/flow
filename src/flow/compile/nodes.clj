@@ -55,7 +55,7 @@
         (form-deps [_] deps)
 
         (bindings [_]
-          (map fp/bindings compiled-classes))
+          (mapcat fp/bindings compiled-classes))
 
         (initial-value-form [_ state-sym]
           `(fd/set-classes! ~elem-sym

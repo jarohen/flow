@@ -15,6 +15,7 @@
 (require 'flow.compile.unwrap-cursor)
 (require 'flow.compile.if)
 (require 'flow.compile.let)
+(require 'flow.compile.for)
 
 (defmethod compile-form :call [call opts]
   (compile-call-form call opts))
