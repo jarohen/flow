@@ -1,21 +1,11 @@
 (ns flow.holder
   (:require [flow.dom :as fd]
-            [flow.protocols :as fp]))
+            [flow.protocols :as fp]
+            [flow.diff :refer [vector-diff]]))
 
 (defprotocol ElementHolder
-  (append! [_ $parent])
+  (append-to! [_ $parent])
   (swap-child! [_ $new-el]))
-
-(defn ->node [$el-or-val]
-  (cond
-   (nil? $el-or-val) (null-elem)
-   (seq? $el-or-val) (map ->node $el-or-val)
-   
-   (.-nodeType $el-or-val) $el-or-val
-   
-   :else (js/document.createTextNode (if (string? $el-or-val)
-                                       $el-or-val
-                                       (pr-str $el-or-val)))))
 
 (defn swap-elem-seqs! [old-els new-els]
   (let [old-el-cache (->> old-els
@@ -53,12 +43,12 @@
 
             (reverse diff))
     
-    (reset! !current-els new-els)))
+    new-els))
 
 (defn new-multi-holder [$els]
   (let [!current-els (atom $els)]
     (reify ElementHolder
-      (append! [_ $parent]
+      (append-to! [_ $parent]
         (fd/append-child! $parent @!current-els))
       
       (swap-child! [_ $new-el]
@@ -71,18 +61,19 @@
               (doseq [$el @!current-els]
                 (fd/remove! $el)))
 
-            (swap-elem-seqs! @!current-els $new-el)))))))
+            (reset! !current-els (swap-elem-seqs! @!current-els $new-el))))))))
 
 (defn upgrade-to-holder [$old-el $new-els]
-  (doseq [$new-el $new-els]
-    (fd/insert-child-before! $new-el $old-el))
+  (let [$parent (.-parentNode $old-el)]
+    (doseq [$new-el $new-els]
+      (fd/insert-child-before! $parent $new-el $old-el)))
   
   (fd/remove! $old-el)
   (new-multi-holder $new-els))
 
 (extend-protocol ElementHolder
-  js/Element
-  (append! [$el $parent]
+  js/Node
+  (append-to! [$el $parent]
     (fd/append-child! $parent $el))
 
   (swap-child! [$el $new-elem]
@@ -94,8 +85,8 @@
           (.replaceChild $parent $new-elem $el)
           $new-elem)))))
 
-(defn new-element-holder [$parent $el-or-$els]
+(defn new-element-holder [$el-or-$els]
   (let [$el-or-$els (fd/->node $el-or-$els)]
     (if (seq? $el-or-$els)
-      (new-multi-holder $parent $el-or-$els)
+      (new-multi-holder $el-or-$els)
       $el-or-$els)))

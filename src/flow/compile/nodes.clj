@@ -4,6 +4,7 @@
             [flow.util :as u]))
 
 (alias 'fd (doto 'flow.dom create-ns))
+(alias 'fh (doto 'flow.holder create-ns))
 
 (declare compile-node)
 
@@ -98,7 +99,7 @@
   (let [compiled-child (compile-form child opts)
         deps (fp/form-deps compiled-child)
         
-        !child-sym (symbol (str "!" path "-child"))]
+        !holder (symbol (str "!" path "-child"))]
 
     (reify fp/CompiledForm
       (form-deps [_]
@@ -106,24 +107,20 @@
 
       (bindings [_]
         (concat (fp/bindings compiled-child)
-                [[!child-sym `(atom nil)]]))
+                [[!holder `(atom nil)]]))
 
       (initial-value-form [_ state-sym]
-        `(let [$initial-child# (fd/->node ~(fp/initial-value-form compiled-child state-sym))]
-           (reset! ~!child-sym $initial-child#)
-           (fd/append-child! ~elem-sym $initial-child#)
-           $initial-child#))
+        `(let [initial-holder# (fh/new-element-holder ~(fp/initial-value-form compiled-child state-sym))]
+           (reset! ~!holder initial-holder#)
+           (fh/append-to! initial-holder# ~elem-sym)))
 
       (updated-value-form [_ new-state-sym updated-vars-sym]
         (u/with-updated-deps-check deps updated-vars-sym
-          `(let [new-child# ~(fp/updated-value-form compiled-child new-state-sym updated-vars-sym)
-                 $old-child# @~!child-sym
-                 $new-child# (fd/->node new-child#)]
+          `(let [new-child# ~(fp/updated-value-form compiled-child
+                                                    new-state-sym
+                                                    updated-vars-sym)]
              
-             (when-not (= $old-child# $new-child#)
-               (fd/swap-elems! @~!child-sym $new-child#)
-               (reset! ~!child-sym $new-child#)
-               $new-child#)))))))
+             (reset! ~!holder (fh/swap-child! @~!holder new-child#))))))))
 
 (comment
   (require 'flow.parse)

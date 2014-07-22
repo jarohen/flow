@@ -59,9 +59,6 @@
           (f/root js/document.body
             (f/el
               [:div.container {::f/style {:margin-top "2em"}}
-
-               
-               
                (when (!<< !show-heading?)
                  [:div
                   (let [{:keys [primary secondary]} (!<< !colors)]
@@ -70,22 +67,22 @@
                                      :background-color primary}}
                      (!<< !heading)])])
 
-               [:p.copy {::f/style {:text-align :center
-                                    :color (:secondary (!<< !colors))}}
-                "If this works, " [:strong "I'll be very happy :)"]]
+               (let [x 4]
+                 [:p.copy {::f/style {:text-align :center
+                                      :color (:secondary (!<< !colors))}}
+                  "If this works, " [:strong "I'll be very happy :)"]])
 
-               [:div
-                [:button.btn.btn-default {::f/style {:margin-right "1em"}
-                                          ::f/on {:click #(js/alert "Hello!")}}
-                 "Click me!"]
+               [:button.btn.btn-default {::f/style {:margin-right "1em"}
+                                         ::f/on {:click #(js/alert "Hello!")}}
+                "Click me!"]
 
-                [:button.btn.btn-default {::f/style {:margin-right "1em"}
-                                          ::f/on {:click (fn [e] (a/put! change-colors-ch :change!))}}
-                 "Change colours!"]
+               [:button.btn.btn-default {::f/style {:margin-right "1em"}
+                                         ::f/on {:click (fn [e] (a/put! change-colors-ch :change!))}}
+                "Change colours!"]
 
-                [:button.btn.btn-default {::f/style {:margin-right "1em"}
-                                          ::f/on {:click #(swap! !show-heading? not)}}
-                 "Show/Hide heading!"]]]
+               [:button.btn.btn-default {::f/style {:margin-right "1em"}
+                                         ::f/on {:click #(swap! !show-heading? not)}}
+                "Show/Hide heading!"]]
               
               #_(let [{:keys [primary secondary]} (!<< !colors)]
                   [:div#test.container.blah {::f/classes ["abc"

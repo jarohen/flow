@@ -24,7 +24,8 @@
         (parse-form {:elem? true
                      :path el-sym})
         (doto (->> (spit "/tmp/parsed.edn")))
-        (compile-form {:dynamic-syms #{}})
+        (compile-form {:dynamic-syms #{}
+                       :local-syms #{}})
         (doto debug-compiled-form)
         (render-form (str el-sym))
         (doto (->> (spit "/tmp/rendered.edn"))))))

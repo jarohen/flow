@@ -73,3 +73,15 @@
   (defn null-elem []
     (.cloneNode $null-elem)))
 
+(defn ->node [$el-or-val]
+  (cond
+   (nil? $el-or-val) (null-elem)
+   (seq? $el-or-val) (map ->node $el-or-val)
+   
+   (.-nodeType $el-or-val) $el-or-val
+   
+   :else (js/document.createTextNode (if (string? $el-or-val)
+                                       $el-or-val
+                                       (pr-str $el-or-val)))))
+
+

@@ -18,7 +18,7 @@
                         (symbol? bind) [(symbol (name bind))]))]
     (set (dbs* bind))))
 
-(defn compile-bindings [bindings {:keys [dynamic-syms] :as opts}]
+(defn compile-bindings [bindings opts]
   (reduce (fn [{:keys [compiled-bindings opts] :as acc} {:keys [bind value path]}]
             (let [compiled-value (compile-form value opts)
                         
@@ -27,9 +27,7 @@
 
                   bind-values->map-sym (symbol (str path "-value->map"))
                   !value-sym (symbol (str "!" path "-value"))
-                  value-sym (if (symbol? bind)
-                              bind
-                              (symbol (str path "-value")))]
+                  value-sym (symbol (str path "-value"))]
 
               {:compiled-bindings (conj compiled-bindings
                                         (reify bp/CompiledBindings
@@ -37,8 +35,7 @@
 
                                           (bindings [_]
                                             (concat (fp/bindings compiled-value)
-                                                    (when (seq deps)
-                                                      [[!value-sym `(atom nil)]])
+                                                    [[!value-sym `(atom nil)]]
 
                                                     [[bind-values->map-sym `(fn bind-values->map# [value#]
                                                                               (let [~bind value#]
@@ -54,8 +51,7 @@
                                               
                                               [[~state-sym (merge ~state-sym (~bind-values->map-sym ~value-sym))]
                                                
-                                               ~@(when (seq deps)
-                                                   `[[~'_ (reset! ~!value-sym ~value-sym)]])]])
+                                               [~'_ (reset! ~!value-sym ~value-sym)]]])
 
                                           (updated-bindings [_ new-state-sym updated-vars-sym]
                                             `[[[~value-sym ~(u/with-updated-deps-check deps updated-vars-sym
@@ -67,12 +63,13 @@
                                                [~updated-vars-sym (set/union ~updated-vars-sym
                                                                              (flow.diff/updated-keys (~bind-values->map-sym @~!value-sym)
                                                                                                      (~bind-values->map-sym ~value-sym)))]
-                                               
-                                               ~@(when (seq deps)
-                                                   `[[~'_ (reset! ~!value-sym ~value-sym)]])]])))
+                                               [~'_ (reset! ~!value-sym ~value-sym)]]])))
                
-               :opts (cond-> opts
-                       (seq deps) (update-in [:dynamic-syms] set/union destructured-syms))}))
+               :opts (update-in opts
+                                [(if (seq deps)
+                                   :dynamic-syms
+                                   :local-syms)]
+                                set/union destructured-syms)}))
                 
           {:compiled-bindings []
            :opts opts}

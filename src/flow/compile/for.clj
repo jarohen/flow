@@ -26,25 +26,34 @@
                       new-state (symbol (str path "-new-state"))
                       updated-vars (symbol (str path "-updated-vars"))]
                   
-                  `[[~for-sym (reify fp/DynamicValue
-                                (~'build [~'_ ~state]
-                                  (for [~@(->> (for [[value-bindings state-bindings] (->> (mapcat #(bp/initial-bindings % state) compiled-bindings))]
-                                                 [(apply concat value-bindings)
-                                                  :let (apply concat state-bindings)])
-                                               (apply concat))]
-                                    
-                                    ~(fp/initial-value-form compiled-body state)))
+                  `[[~for-sym (let [!body-value-cache# (atom {})
+                                    make-body# (fn []
+                                                 (reify fp/DynamicValue
+                                                   (~'build [~'_ ~state]
+                                                     ~(fp/initial-value-form compiled-body state))
+                                                   (~'updated-value [~'_ ~new-state ~updated-vars]
+                                                     ~(fp/updated-value-form compiled-body new-state updated-vars))))]
+                                
+                                (reify fp/DynamicValue
+                                  (~'build [~'_ ~state]
+                                    (for [~@(->> (for [[value-bindings state-bindings] (->> (mapcat #(bp/initial-bindings % state) compiled-bindings))]
+                                                   [(apply concat value-bindings)
+                                                    :let (apply concat state-bindings)])
+                                                 (apply concat))]
+                                                                        
+                                      ))
 
-                                (~'updated-value [~'_ ~new-state ~updated-vars]
-                                  (let [~@(->> (for [[value-bindings state-bindings] (->> (mapcat #(bp/updated-bindings % new-state updated-vars) compiled-bindings))]
-                                                 [(apply concat value-bindings)
-                                                  :let (apply concat state-bindings)])
-                                               (apply concat))]
-                                    ~(fp/updated-value-form compiled-body new-state updated-vars))))]])))
+                                  (~'updated-value [~'_ ~new-state ~updated-vars]
+                                    (for [~@(->> (for [[value-bindings state-bindings] (->> (mapcat #(bp/updated-bindings % new-state updated-vars) compiled-bindings))]
+                                                   [(apply concat value-bindings)
+                                                    :let (apply concat state-bindings)])
+                                                 (apply concat))]
+                                      (let [keys# [~@(map bp/value-sym compiled-bindings)]]
+                                        ~(fp/updated-value-form compiled-body new-state updated-vars))))))]])))
 
       (initial-value-form [_ state-sym]
-        `(fp/build ~let-sym ~state-sym))
+        `(fp/build ~for-sym ~state-sym))
 
       (updated-value-form [_ new-state-sym updated-vars-sym]
-        `(fp/updated-value ~let-sym ~new-state-sym ~updated-vars-sym)))))
+        `(fp/updated-value ~for-sym ~new-state-sym ~updated-vars-sym)))))
 
