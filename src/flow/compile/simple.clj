@@ -1,19 +1,23 @@
 (ns flow.compile.simple
-  (:require [flow.compile :refer [compile-form]]
+  (:require [flow.compile :refer [compile-form compile-value]]
             [flow.protocols :as fp]))
 
 (alias 'fd (doto 'flow.dom create-ns))
 
 ;; PRIMITIVE
 
-(defmethod compile-form :primitive [{:keys [primitive elem?]} opts]
+(defmethod compile-form :primitive [{:keys [primitive]} opts]
   (reify fp/CompiledForm
     (form-deps [_] nil)
 
     (bindings [_])
     (initial-value-form [_ _] primitive)
-    (updated-value-form [_ _ _]
-      primitive)))
+    (updated-value-form [_ _ _] primitive)))
+
+(defmethod compile-value :primitive [{:keys [primitive]} opts]
+  (reify fp/CompiledValue
+    (value-deps [_] nil)
+    (inline-value [_ state-sym] primitive)))
 
 ;; MAP
 

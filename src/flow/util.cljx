@@ -1,5 +1,6 @@
 (ns flow.util
-  (:require [flow.protocols :as fp]))
+  (:require [flow.protocols :as fp]
+            [clojure.string :as s]))
 
 #+clj
 (defn quote-deps [deps]
@@ -21,3 +22,14 @@
   (when (seq quoted-deps)
     (boolean (some #(contains? quoted-deps %) updated-vars))))
 
+#+clj
+(defn with-more-path [opts more-path]
+  (update-in opts [:path] concat more-path))
+
+#+clj
+(defn path->sym [& path]
+  (->> path
+       (mapcat #(if (coll? %) % [%]))
+       (map name)
+       (s/join "-")
+       symbol))
