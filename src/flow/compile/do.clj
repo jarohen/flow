@@ -1,14 +1,14 @@
 (ns flow.compile.do
-  (:require [flow.compile :refer [compile-form]]
-            [flow.compile.calls :refer [compile-call-form]]
+  (:require [flow.compile :refer [compile-el]]
+            [flow.compile.calls :refer [compile-call-el]]
             [flow.bindings :as b]
             [flow.util :as u]
             [clojure.set :as set]
             [flow.protocols :as fp]))
 
-(defmethod compile-call-form :do [{:keys [path side-effects return]} opts]
+(defmethod compile-call-el :do [{:keys [path side-effects return]} opts]
   (let [do-el (symbol path)
-        compiled-return (compile-form return opts)]
+        compiled-return (compile-el return opts)]
 
     (assert (empty? side-effects) "I can't handle this yet!")
     

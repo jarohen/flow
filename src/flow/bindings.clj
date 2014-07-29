@@ -1,5 +1,5 @@
 (ns flow.bindings
-  (:require [flow.compile :refer [compile-form]]
+  (:require [flow.compile :refer [compile-value]]
             [clojure.set :as set]
             [flow.protocols :as fp]
             [flow.util :as u]
@@ -28,7 +28,7 @@
 
 (defn compile-bindings [bindings opts]
   (reduce (fn [{:keys [compiled-bindings opts] :as acc} {:keys [bind value path]}]
-            (let [compiled-value (compile-form value opts)
+            (let [compiled-value (compile-value value opts)
                         
                   destructured-syms (destructuring-bind-syms bind)
                   deps (fp/form-deps compiled-value)

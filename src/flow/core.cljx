@@ -1,7 +1,7 @@
 (ns flow.core
   #+clj (:require [flow.expand :refer [expand-macros]]
                   [flow.parse :refer [parse-form]]
-                  [flow.compile :refer [compile-form]]
+                  [flow.compile :refer [compile-el]]
                   [flow.render :refer [render-form]]
                   [flow.protocols :as fp])
   
@@ -24,8 +24,9 @@
         (parse-form {:elem? true
                      :path el-sym})
         (doto (->> (spit "/tmp/parsed.edn")))
-        (compile-form {:dynamic-syms #{}
-                       :local-syms #{}})
+        (compile-el {:dynamic-syms #{}
+                     :local-syms #{}
+                     :path el-sym})
         (doto debug-compiled-form)
         (render-form (str el-sym))
         (doto (->> (spit "/tmp/rendered.edn"))))))

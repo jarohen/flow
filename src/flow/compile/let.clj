@@ -1,15 +1,15 @@
 (ns flow.compile.let
-  (:require [flow.compile.calls :refer [compile-call-form]]
-            [flow.compile :refer [compile-form]]
+  (:require [flow.compile.calls :refer [compile-call-el]]
+            [flow.compile :refer [compile-el]]
             [flow.bindings :as b]
             [flow.bindings.protocols :as bp]
             [flow.protocols :as fp]
             [flow.util :as u]))
 
-(defmethod compile-call-form :let [{:keys [bindings body path]} opts]
+(defmethod compile-call-el :let [{:keys [bindings body path]} opts]
   (let [{:keys [compiled-bindings opts]} (b/compile-bindings bindings opts)
 
-        compiled-body (compile-form body opts)
+        compiled-body (compile-el body opts)
 
         deps (b/bindings-deps compiled-bindings compiled-body)
 

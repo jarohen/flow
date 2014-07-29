@@ -1,5 +1,5 @@
 (ns flow.compile.nodes
-  (:require [flow.compile :refer [compile-form compile-value]]
+  (:require [flow.compile :refer [compile-el compile-value]]
             [flow.protocols :as fp]
             [flow.util :as u]))
 
@@ -8,76 +8,69 @@
 
 (declare compile-node)
 
-(defn compile-attr [elem-sym [k v] opts]
+(defn compile-attr [elem-sym [k v] {:keys [path] :as opts}]
   
   (let [compiled-value (compile-value v opts)
-        deps (fp/value-deps compiled-value)
+        deps (fp/form-deps compiled-value)
 
-        set-attr! (u/path->sym "set" (concat path) "attr!")]
+        set-attr! (u/path->sym "set" path "attr!")]
     
     (reify fp/CompiledForm
       (form-deps [_] deps)
 
-      (bindings [_]
-        (let [state-sym (gensym "state")]
-          `[[~set-attr! (fn [~state-sym]
-                          `(fd/set-attr! ~elem-sym ~k ~(fp/inline-value compiled-value state-sym)))]]))
+      (bindings [_] nil)
 
       (initial-value-form [_ state-sym]
-        `(~set-attr! ~state-sym))
+        `(fd/set-attr! ~elem-sym ~k ~(fp/initial-value-form compiled-value state-sym)))
 
       (updated-value-form [_ new-state-sym updated-vars-sym]
         (u/with-updated-deps-check deps updated-vars-sym
-          `(~set-attr! ~state-sym))))))
+          `(fd/set-attr! ~elem-sym ~k ~(fp/updated-value-form compiled-value new-state-sym updated-vars-sym)))))))
 
 (defn compile-style [elem-sym [k v] {:keys [path] :as opts}]
   (let [compiled-value (compile-value v opts)
-        deps (fp/value-deps compiled-value)
+        deps (fp/form-deps compiled-value)
 
-        set-style! (u/path->sym "set" (concat path) "style!")]
+        set-style! (u/path->sym "set" path "style!")]
     
     (reify fp/CompiledForm
       (form-deps [_] deps)
 
-      (bindings [_]
-        (let [state-sym (gensym "state")]
-          `[[~set-style! (fn [~state-sym]
-                           `(fd/set-style! ~elem-sym ~k ~(fp/inline-value compiled-value state-sym)))]]))
+      (bindings [_] nil)
 
       (initial-value-form [_ state-sym]
-        `(~set-style! ~state-sym))
+        `(fd/set-style! ~elem-sym ~k ~(fp/initial-value-form compiled-value state-sym)))
 
       (updated-value-form [_ new-state-sym updated-vars-sym]
         (u/with-updated-deps-check deps updated-vars-sym
-          `(~set-style! ~state-sym))))))
+          `(fd/set-style! ~elem-sym ~k ~(fp/updated-value-form compiled-value new-state-sym updated-vars-sym)))))))
 
 (defn compile-classes [elem-sym classes {:keys [path] :as opts}]
   (when (seq classes)
     (let [compiled-classes (map #(compile-value % opts) classes)
-          deps (set (mapcat fp/value-deps compiled-classes))
+          deps (set (mapcat fp/form-deps compiled-classes))
 
-          set-classes! (u/path->sym "set" (concat path) "classes!")]
+          set-classes! (u/path->sym "set" path "classes!")]
 
       (reify fp/CompiledForm
         (form-deps [_] deps)
 
-        (bindings [_]
-          (let [state-sym (gensym "state")]
-            `[[~set-classes! (fn [~state-sym]
-                               (fd/set-classes! ~elem-sym (-> [~@(map #(fp/inline-value % state-sym) compiled-classes)]
-                                                              set
-                                                              (disj nil))))]]))
+        (bindings [_])
 
         (initial-value-form [_ state-sym]
-          `(~set-classes! ~state-sym))
+          `(fd/set-classes! ~elem-sym (-> [~@(map #(fp/initial-value-form % state-sym) compiled-classes)]
+                                          set
+                                          (disj nil))))
 
         (updated-value-form [_ new-state-sym updated-vars-sym]
           (u/with-updated-deps-check deps updated-vars-sym
-            `(~set-classes! ~new-state-sym)))))))
+            `(fd/set-classes! ~elem-sym (-> [~@(map #(fp/updated-value-form % new-state-sym updated-vars-sym) compiled-classes)]
+                                            set
+                                            (disj nil)))))))))
 
 (defn compile-listener [elem-sym {:keys [event listener]} {:keys [path] :as opts}]
   (let [compiled-listener (compile-value listener opts)
-        deps (fp/value-deps compiled-listener)
+        deps (fp/form-deps compiled-listener)
 
         !listener-sym (u/path->sym "!" path event "listener")]
     
@@ -93,17 +86,17 @@
                            ~(if (seq deps)
                               `(fn [e#]
                                  ((deref ~!listener-sym) e#))
-                              (fp/inline-value compiled-listener state-sym))))
+                              (fp/initial-value-form compiled-listener state-sym))))
 
       (updated-value-form [_ new-state-sym updated-vars-sym]
         (u/with-updated-deps-check deps updated-vars-sym
-          `(reset! ~!listener-sym ~(fp/inline-value compiled-listener new-state-sym)))))))
+          `(reset! ~!listener-sym ~(fp/updated-value-form compiled-listener new-state-sym updated-vars-sym)))))))
 
 (defn compile-child [elem-sym {:keys [path] :as child} opts]
-  (let [compiled-child (compile-form child opts)
+  (let [compiled-child (compile-el child opts)
         deps (fp/form-deps compiled-child)
         
-        !holder (symbol (str "!" path "-child"))]
+        !holder (u/path->sym "!" path "child")]
 
     (reify fp/CompiledForm
       (form-deps [_]
@@ -132,7 +125,7 @@
   (let [syms {:state 'flow-test-state
               :new-state 'flow-test-new-state
               :updated-vars 'flow-test-updated-vars}]
-    (-> (compile-form (flow.parse/parse-form '[:div
+    (-> (compile-el (flow.parse/parse-form '[:div
                                                [:h1 "Show heading is:" (pr-str (!<< !show-heading))]]
                                              {:elem? true
                                               :path "flow-test"})
@@ -140,10 +133,10 @@
         #_(render-el syms)))
   )
 
-(defmethod compile-form :node [{:keys [tag id style classes attrs children listeners path]} opts]
+(defmethod compile-el :node [{:keys [tag id style classes attrs children listeners path]} opts]
   (let [elem-sym (symbol path)
-        compiled-attrs (map #(compile-attr elem-sym % path opts) attrs)
-        compiled-styles (map #(compile-style elem-sym % path opts) style)
+        compiled-attrs (map #(compile-attr elem-sym % opts) attrs)
+        compiled-styles (map #(compile-style elem-sym % opts) style)
         compiled-classes (compile-classes elem-sym classes opts)
         compiled-children (map #(compile-child elem-sym % opts) children)
         compiled-listeners (map #(compile-listener elem-sym % opts) listeners)

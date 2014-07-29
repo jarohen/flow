@@ -1,11 +1,11 @@
 (ns flow.compile.fn-call
-  (:require [flow.compile.calls :refer [compile-call-form]]
-            [flow.compile :refer [compile-form]]
+  (:require [flow.compile.calls :refer [compile-call-el]]
+            [flow.compile :refer [compile-el]]
             [flow.protocols :as fp]
             [flow.util :as u]))
 
-(defmethod compile-call-form :fn-call [{:keys [path args]} opts]
-  (let [compiled-args (map #(compile-form % opts) args)
+(defmethod compile-call-el :fn-call [{:keys [path args]} opts]
+  (let [compiled-args (map #(compile-el % opts) args)
         deps (set (mapcat fp/form-deps compiled-args))
           
         !last-call-result (symbol (str "!" path))]

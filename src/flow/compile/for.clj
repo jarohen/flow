@@ -1,6 +1,6 @@
 (ns flow.compile.for
-  (:require [flow.compile.calls :refer [compile-call-form]]
-            [flow.compile :refer [compile-form]]
+  (:require [flow.compile.calls :refer [compile-call-el]]
+            [flow.compile :refer [compile-el]]
             [flow.bindings :as b]
             [flow.bindings.protocols :as bp]
             [flow.protocols :as fp]
@@ -8,10 +8,10 @@
 
 (alias 'f (doto 'flow.core create-ns))
 
-(defmethod compile-call-form :for [{:keys [bindings body path]} opts]
+(defmethod compile-call-el :for [{:keys [bindings body path]} opts]
   (let [{:keys [compiled-bindings opts]} (b/compile-bindings bindings opts)
 
-        compiled-body (compile-form body opts)
+        compiled-body (compile-el body opts)
 
         deps (b/bindings-deps compiled-bindings compiled-body)
 

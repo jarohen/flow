@@ -1,12 +1,12 @@
 (ns flow.compile.simple
-  (:require [flow.compile :refer [compile-form compile-value]]
+  (:require [flow.compile :refer [compile-el compile-value]]
             [flow.protocols :as fp]))
 
 (alias 'fd (doto 'flow.dom create-ns))
 
 ;; PRIMITIVE
 
-(defmethod compile-form :primitive [{:keys [primitive]} opts]
+(defmethod compile-value :primitive [{:keys [primitive]} opts]
   (reify fp/CompiledForm
     (form-deps [_] nil)
 
@@ -14,16 +14,14 @@
     (initial-value-form [_ _] primitive)
     (updated-value-form [_ _ _] primitive)))
 
-(defmethod compile-value :primitive [{:keys [primitive]} opts]
-  (reify fp/CompiledValue
-    (value-deps [_] nil)
-    (inline-value [_ state-sym] primitive)))
+(defmethod compile-el :primitive [form opts]
+  (compile-value form opts))
 
 ;; MAP
 
-#_(defmethod compile-form :map [{m :map} opts]
+#_(defmethod compile-el :map [{m :map} opts]
     (let [flattened-map (flatten (seq m))
-          compiled-elems (map #(compile-form % opts) flattened-map)]
+          compiled-elems (map #(compile-el % opts) flattened-map)]
       {:deps (set (mapcat :deps compiled-elems))
        :inline-value (->> compiled-elems
                           (map :inline-value)
@@ -32,7 +30,7 @@
 
 ;; COLL
 
-#_(defmethod compile-form :coll [{:keys [coll]} opts]
-    (let [compiled-elems (map #(compile-form % opts) coll)]
+#_(defmethod compile-el :coll [{:keys [coll]} opts]
+    (let [compiled-elems (map #(compile-el % opts) coll)]
       {:inline-value `(into ~(empty coll) [~@(map :inline-value compiled-elems)])
        :deps (set (mapcat :deps compiled-elems))}))

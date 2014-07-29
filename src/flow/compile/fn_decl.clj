@@ -1,12 +1,12 @@
 (ns flow.compile.fn-decl
-  (:require [flow.compile.calls :refer [compile-call-form]]
-            [flow.compile :refer [compile-form]]
+  (:require [flow.compile.calls :refer [compile-call-el]]
+            [flow.compile :refer [compile-el]]
             [flow.bindings :as b]
             [flow.protocols :as fp]
             [clojure.set :as set]))
 
 (defn compile-arity [{:keys [path args body]} opts]
-  (let [compiled-body (compile-form body (update-in opts [:dynamic-syms]
+  (let [compiled-body (compile-el body (update-in opts [:dynamic-syms]
                                                     set/difference
                                                     (set (mapcat b/destructuring-bind-syms args))))]
     (reify fp/CompiledForm
@@ -21,7 +21,7 @@
         ;; TODO
         ))))
 
-(defmethod compile-call-form :fn-decl [{:keys [path fn-name arities]} opts]
+(defmethod compile-call-el :fn-decl [{:keys [path fn-name arities]} opts]
   (let [compiled-arities (map #(compile-arity % opts) arities)
         deps (set (mapcat fp/form-deps compiled-arities))]
     (reify fp/CompiledForm
