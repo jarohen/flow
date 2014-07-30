@@ -7,15 +7,15 @@
 ;; PRIMITIVE
 
 (defmethod compile-value :primitive [{:keys [primitive]} opts]
-  (reify fp/CompiledForm
-    (form-deps [_] nil)
-
-    (bindings [_])
-    (initial-value-form [_ _] primitive)
-    (updated-value-form [_ _ _] primitive)))
+  )
 
 (defmethod compile-el :primitive [form opts]
-  (compile-value form opts))
+  (reify fp/CompiledElement
+    (elem-deps [_] nil)
+
+    (bindings [_])
+    (initial-el-form [_ _] primitive)
+    (updated-el-form [_ _ _] primitive)))
 
 ;; MAP
 

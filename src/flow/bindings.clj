@@ -31,7 +31,7 @@
             (let [compiled-value (compile-value value opts)
                         
                   destructured-syms (destructuring-bind-syms bind)
-                  deps (fp/form-deps compiled-value)
+                  deps (fp/elem-deps compiled-value)
 
                   bind-values->map-sym (symbol (str path "-value->map"))
                   !value-sym (symbol (str "!" path "-value"))
@@ -59,7 +59,7 @@
                                             key-sym)
 
                                           (initial-bindings [_ state-sym]
-                                            `[[[~value-sym ~(fp/initial-value-form compiled-value state-sym)]]
+                                            `[[[~value-sym ~(fp/initial-el-form compiled-value state-sym)]]
                                               
                                               [[~key-sym ~(key-fn value value-sym)]
 
@@ -69,7 +69,7 @@
 
                                           (updated-bindings [_ new-state-sym updated-vars-sym]
                                             `[[[~value-sym ~(u/with-updated-deps-check deps updated-vars-sym
-                                                              (fp/updated-value-form compiled-value new-state-sym updated-vars-sym)
+                                                              (fp/updated-el-form compiled-value new-state-sym updated-vars-sym)
                                                               `@~!value-sym)]]
                                               
                                               [[~key-sym ~(key-fn value value-sym)]
@@ -97,5 +97,5 @@
             (-> deps-acc
                 (set/difference (bp/destructured-syms compiled-binding))
                 (set/union (bp/value-deps compiled-binding))))
-          (fp/form-deps compiled-body)
+          (fp/elem-deps compiled-body)
           (reverse compiled-bindings)))

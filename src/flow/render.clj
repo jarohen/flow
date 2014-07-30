@@ -1,29 +1,30 @@
 (ns flow.render
-  (:require [flow.protocols :as fp]))
+  (:require [flow.protocols :as fp]
+            [flow.util :as u]))
 
 (alias 'fd (doto 'flow.dom create-ns))
 
-(defn render-form [compiled-form path]
-  (let [!state (gensym "!state")
-        notify! (gensym "notify!")
-        handler (gensym "handler")
+(defn render-el [compiled-elem path]
+  (let [!state (u/path->sym "!" path "state")
+        notify! (u/path->sym path "notify!")
+        handler (u/path->sym path "handler")
 
-        !el (gensym "!el")
+        !el (u/path->sym "!" path "el")
         
-        state (symbol (str path "-state"))
-        new-state (symbol (str path "-new-state"))
-        updated-vars (symbol (str path "-updated-vars"))
+        state (u/path->sym path "state")
+        new-state (u/path->sym path "new-state")
+        updated-vars (u/path->sym path "updated-vars")
 
-        deps (fp/form-deps compiled-form)]
+        deps (fp/elem-deps compiled-elem)]
 
     `(do
        (let [~!state (atom {})
              ~!el (atom nil)
-             ~@(apply concat (fp/bindings compiled-form))]
+             ~@(apply concat (fp/bindings compiled-elem))]
                   
          (letfn [(~notify! [~new-state ~updated-vars]
                    (let [$old-el# @~!el
-                         $new-el# (fd/->node ~(fp/updated-value-form compiled-form new-state updated-vars))]
+                         $new-el# (fd/->node ~(fp/updated-el-form compiled-elem new-state updated-vars))]
                      (when-not (= $old-el# $new-el#)
                        (fd/swap-elems! $old-el# $new-el#))))
                  
@@ -39,7 +40,7 @@
                   (add-watch ~dep ~(str (gensym "watch")) (~handler (quote ~dep)))))
 
            (let [~state @~!state
-                 $initial-el# (fd/->node ~(fp/initial-value-form compiled-form state))]
+                 $initial-el# (fd/->node ~(fp/initial-el-form compiled-elem state))]
              
              (reset! ~!el $initial-el#)
              $initial-el#))))))

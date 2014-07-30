@@ -15,8 +15,8 @@
 
         let-sym (symbol path)]
 
-    (reify fp/CompiledForm
-      (form-deps [_] deps)
+    (reify fp/CompiledElement
+      (elem-deps [_] deps)
 
       (bindings [_]
         (concat (mapcat bp/bindings compiled-bindings)
@@ -31,16 +31,16 @@
                                   (let [~@(->> (mapcat #(bp/initial-bindings % state) compiled-bindings)
                                                (apply concat)
                                                (apply concat))]
-                                    ~(fp/initial-value-form compiled-body state)))
+                                    ~(fp/initial-el-form compiled-body state)))
 
                                 (~'updated-value [~'_ ~new-state ~updated-vars]
                                   (let [~@(->> (mapcat #(bp/updated-bindings % new-state updated-vars) compiled-bindings)
                                                (apply concat)
                                                (apply concat))]
-                                    ~(fp/updated-value-form compiled-body new-state updated-vars))))]])))
+                                    ~(fp/updated-el-form compiled-body new-state updated-vars))))]])))
 
-      (initial-value-form [_ state-sym]
+      (initial-el-form [_ state-sym]
         `(fp/build ~let-sym ~state-sym))
 
-      (updated-value-form [_ new-state-sym updated-vars-sym]
+      (updated-el-form [_ new-state-sym updated-vars-sym]
         `(fp/updated-value ~let-sym ~new-state-sym ~updated-vars-sym)))))

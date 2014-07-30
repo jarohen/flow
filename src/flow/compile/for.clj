@@ -17,8 +17,8 @@
 
         for-sym (symbol path)]
 
-    (reify fp/CompiledForm
-      (form-deps [_] deps)
+    (reify fp/CompiledElement
+      (elem-deps [_] deps)
 
       (bindings [_]
         (concat (mapcat bp/bindings compiled-bindings)
@@ -33,9 +33,9 @@
                                                  (let [~@(apply concat (fp/bindings compiled-body))]
                                                    (reify fp/DynamicValue
                                                      (~'build [~'_ ~state]
-                                                       ~(fp/initial-value-form compiled-body state))
+                                                       ~(fp/initial-el-form compiled-body state))
                                                      (~'updated-value [~'_ ~new-state ~updated-vars]
-                                                       ~(fp/updated-value-form compiled-body new-state updated-vars)))))]
+                                                       ~(fp/updated-el-form compiled-body new-state updated-vars)))))]
                                 
                                 (reify fp/DynamicValue
                                   (~'build [~'_ ~state]
@@ -73,8 +73,8 @@
                                       (reset! !body-value-cache# @!new-cache#)
                                       new-values#))))]])))
 
-      (initial-value-form [_ state-sym]
+      (initial-el-form [_ state-sym]
         `(fp/build ~for-sym ~state-sym))
 
-      (updated-value-form [_ new-state-sym updated-vars-sym]
+      (updated-el-form [_ new-state-sym updated-vars-sym]
         `(fp/updated-value ~for-sym ~new-state-sym ~updated-vars-sym)))))
