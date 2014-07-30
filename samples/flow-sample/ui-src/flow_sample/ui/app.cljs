@@ -117,8 +117,9 @@
                         [:li num])]])]
 
                  [:div
-                  [:select {::f/on {:change (f/bind-value! !filter)}
-                            :value (!<< !filter)}
+                  [:select.form-control {::f/on {:change (f/bind-value! !filter)}
+                                         :value (!<< !filter)
+                                         ::f/style {:width "6em"}}
                    [:option {:value "odd"}
                     "Odd"]
                    [:option {:value "even"}
