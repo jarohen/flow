@@ -138,13 +138,13 @@
   )
 
 (defmethod compile-el :node [{:keys [tag id style classes attrs children listeners]} {:keys [path] :as opts}]
-  (let [elem-sym (u/path->sym path)
-        compiled-attrs (map #(compile-attr elem-sym % opts) attrs)
-        compiled-styles (map #(compile-style elem-sym % opts) style)
-        compiled-classes (compile-classes elem-sym classes opts)
-        compiled-children (map #(compile-child elem-sym %1 (u/with-more-path opts ["child" (str %2)]))
+  (let [elem-sym (u/path->sym path tag)
+        compiled-attrs (map #(compile-attr elem-sym % (u/with-more-path opts [tag])) attrs)
+        compiled-styles (map #(compile-style elem-sym % (u/with-more-path opts [tag])) style)
+        compiled-classes (compile-classes elem-sym classes (u/with-more-path opts [tag]))
+        compiled-children (map #(compile-child elem-sym %1 (u/with-more-path opts [tag (str %2)]))
                                children (range))
-        compiled-listeners (map #(compile-listener elem-sym % opts) listeners)
+        compiled-listeners (map #(compile-listener elem-sym % (u/with-more-path opts [tag])) listeners)
 
         compiled-parts (concat compiled-children
                                compiled-attrs
