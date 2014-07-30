@@ -41,7 +41,7 @@
               !random-numbers (atom (for [idx (range 5)]
                                       {:id idx
                                        :num (rand-int 1000)}))
-              !filter (atom :even)]
+              !filter (atom "even")]
 
           (def !foo-colors !colors)
           (def !foo-show-heading? !show-heading?)
@@ -109,7 +109,7 @@
                    
                      [:ul {::f/style {:margin-top "1em"}}
                       (for [{:keys [num]} (->> random-numbers
-                                               (filter (comp (if (= :even selected-filter)
+                                               (filter (comp (if (= "even" selected-filter)
                                                                even?
                                                                odd?)
                                                              :num))
@@ -119,9 +119,9 @@
                  [:div
                   [:select {::f/on {:change (f/bind-value! !filter)}
                             :value (!<< !filter)}
-                   [:option {:value :odd}
+                   [:option {:value "odd"}
                     "Odd"]
-                   [:option {:value :even}
+                   [:option {:value "even"}
                     "Even"]]]
 
                  (render-svg !colors)])))
