@@ -6,14 +6,14 @@
             [flow.protocols :as fp]
             [flow.util :as u]))
 
-(defmethod compile-call-el :let [{:keys [bindings body path]} opts]
+(defmethod compile-call-el :let [{:keys [bindings body]} {:keys [path] :as opts}]
   (let [{:keys [compiled-bindings opts]} (b/compile-bindings bindings opts)
 
-        compiled-body (compile-el body opts)
+        compiled-body (compile-el body (u/with-more-path opts ["let" "body"]))
 
         deps (b/bindings-deps compiled-bindings compiled-body)
 
-        let-sym (symbol path)]
+        let-sym (u/path->sym path "let")]
 
     (reify fp/CompiledElement
       (elem-deps [_] deps)
@@ -22,9 +22,9 @@
         (concat (mapcat bp/bindings compiled-bindings)
                 (fp/bindings compiled-body)
 
-                (let [state (symbol (str path "-state"))
-                      new-state (symbol (str path "-new-state"))
-                      updated-vars (symbol (str path "-updated-vars"))]
+                (let [state (u/path->sym path "state")
+                      new-state (u/path->sym path "new-state")
+                      updated-vars (u/path->sym path "updated-vars")]
                   
                   `[[~let-sym (reify fp/DynamicValue
                                 (~'build [~'_ ~state]

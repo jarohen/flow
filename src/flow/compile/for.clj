@@ -8,14 +8,14 @@
 
 (alias 'f (doto 'flow.core create-ns))
 
-(defmethod compile-call-el :for [{:keys [bindings body path]} opts]
+(defmethod compile-call-el :for [{:keys [bindings body]} {:keys [path] :as opts}]
   (let [{:keys [compiled-bindings opts]} (b/compile-bindings bindings opts)
 
         compiled-body (compile-el body opts)
 
         deps (b/bindings-deps compiled-bindings compiled-body)
 
-        for-sym (symbol path)]
+        for-sym (u/path->sym path "for")]
 
     (reify fp/CompiledElement
       (elem-deps [_] deps)
@@ -24,9 +24,9 @@
         (concat (mapcat bp/bindings compiled-bindings)
                 
 
-                (let [state (symbol (str path "-state"))
-                      new-state (symbol (str path "-new-state"))
-                      updated-vars (symbol (str path "-updated-vars"))]
+                (let [state (u/path->sym path "for" "state")
+                      new-state (u/path->sym path "for" "new-state")
+                      updated-vars (u/path->sym path "for" "updated-vars")]
                   
                   `[[~for-sym (let [!body-value-cache# (atom {})
                                     make-body# (fn []

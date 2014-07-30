@@ -7,9 +7,11 @@
 ;; PRIMITIVE
 
 (defmethod compile-value :primitive [{:keys [primitive]} opts]
-  )
+  (reify fp/CompiledValue
+    (value-deps [_] nil)
+    (inline-value-form [_ _] primitive)))
 
-(defmethod compile-el :primitive [form opts]
+(defmethod compile-el :primitive [{:keys [primitive]} opts]
   (reify fp/CompiledElement
     (elem-deps [_] nil)
 

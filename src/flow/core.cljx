@@ -1,6 +1,6 @@
 (ns flow.core
   #+clj (:require [flow.expand :refer [expand-macros]]
-                  [flow.parse :refer [parse-el]]
+                  [flow.parse :refer [parse-form]]
                   [flow.compile :refer [compile-el]]
                   [flow.render :refer [render-el]]
                   [flow.protocols :as fp])
@@ -11,10 +11,10 @@
 #+clj
 (defn debug-compiled-el [compiled-el]
   (spit "/tmp/compiled.edn"
-        {:deps (fp/el-deps compiled-el)
+        {:deps (fp/elem-deps compiled-el)
          :bindings (fp/bindings compiled-el)
-         :initial-value (fp/initial-el-el compiled-el 'state)
-         :updated-value (fp/updated-el-el compiled-el 'new-state 'updated-vars)}))
+         :initial-value (fp/initial-el-form compiled-el 'state)
+         :updated-value (fp/updated-el-form compiled-el 'new-state 'updated-vars)}))
 
 #+clj
 (defmacro el [elem]
@@ -25,7 +25,7 @@
         (doto (->> (spit "/tmp/parsed.edn")))
         (compile-el {:dynamic-syms #{}
                      :local-syms #{}
-                     :path el-sym})
+                     :path [el-sym]})
         (doto debug-compiled-el)
         (render-el (str el-sym))
         (doto (->> (spit "/tmp/rendered.edn"))))))
