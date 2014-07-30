@@ -99,25 +99,29 @@
         !holder (u/path->sym "!" path "child")]
 
     (reify fp/CompiledElement
-      (elem-deps [_]
-        deps)
+      (elem-deps [_] deps)
 
       (bindings [_]
         (concat (fp/bindings compiled-child)
-                [[!holder `(atom nil)]]))
+                (when (seq deps)
+                  [[!holder `(atom nil)]])))
 
       (initial-el-form [_ state-sym]
-        `(let [initial-holder# (fh/new-element-holder ~(fp/initial-el-form compiled-child state-sym))]
-           (reset! ~!holder initial-holder#)
-           (fh/append-to! initial-holder# ~elem-sym)))
+        (if (seq deps)
+          `(let [initial-holder# (fh/new-element-holder ~(fp/initial-el-form compiled-child state-sym))]
+             (reset! ~!holder initial-holder#)
+             (fh/append-to! initial-holder# ~elem-sym))
+          
+          `(fd/append-child! ~elem-sym (fd/->node ~(fp/initial-el-form compiled-child state-sym)))))
 
       (updated-el-form [_ new-state-sym updated-vars-sym]
-        (u/with-updated-deps-check deps updated-vars-sym
-          `(let [new-child# ~(fp/updated-el-form compiled-child
-                                                    new-state-sym
-                                                    updated-vars-sym)]
-             
-             (reset! ~!holder (fh/swap-child! @~!holder new-child#))))))))
+        (when (seq deps)
+          (u/with-updated-deps-check deps updated-vars-sym
+            `(let [new-child# ~(fp/updated-el-form compiled-child
+                                                   new-state-sym
+                                                   updated-vars-sym)]
+               
+               (reset! ~!holder (fh/swap-child! @~!holder new-child#)))))))))
 
 (comment
   (require 'flow.parse)
