@@ -84,8 +84,11 @@
       (initial-el-form [_ state-sym]
         `(fd/add-listener! ~elem-sym ~event
                            ~(if (seq deps)
-                              `(fn [e#]
-                                 ((deref ~!listener-sym) e#))
+                              `(do
+                                 (reset! ~!listener-sym ~(fp/inline-value-form compiled-listener state-sym))
+                                 (fn [e#]
+                                   ((deref ~!listener-sym) e#)))
+                              
                               (fp/inline-value-form compiled-listener state-sym))))
 
       (updated-el-form [_ new-state-sym updated-vars-sym]
