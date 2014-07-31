@@ -109,9 +109,10 @@
                    
                      [:ul {::f/style {:margin-top "1em"}}
                       (for [{:keys [num]} (->> random-numbers
-                                               (filter (comp (if (= "even" selected-filter)
-                                                               even?
-                                                               odd?)
+                                               (filter (comp (case selected-filter
+                                                               "even" even?
+                                                               "odd" odd?
+                                                               "all" identity)
                                                              :num))
                                                (sort-by :num))]
                         [:li num])]])]
@@ -123,7 +124,9 @@
                    [:option {:value "odd"}
                     "Odd"]
                    [:option {:value "even"}
-                    "Even"]]]
+                    "Even"]
+                   [:option {:value "all"}
+                    "All"]]]
 
                  (render-svg !colors)])))
 

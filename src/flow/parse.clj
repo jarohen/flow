@@ -93,6 +93,15 @@
    :side-effects (butlast body)
    :return (parse-form (last body) opts)})
 
+(defmethod parse-call 'case [[_ case-expr & cases] opts]
+  {:call-type :case
+   :case-expr (parse-form case-expr (assoc opts :elem? false))
+   :cases (for [[test expr] (partition 2 cases)]
+            {:test test
+             :expr (parse-form expr opts)})
+   :default (when (odd? (count cases))
+              (parse-form (last cases) opts))})
+
 (defmethod parse-call '!<< [[_ cursor] _]
   {:call-type :unwrap-cursor
    :cursor cursor})
@@ -133,4 +142,3 @@
               :primitive form})
       
       (assoc :elem? elem?)))
-
