@@ -93,14 +93,15 @@
    :side-effects (butlast body)
    :return (parse-form (last body) opts)})
 
-(defmethod parse-call 'case [[_ case-expr & cases] opts]
+(defmethod parse-call 'case [[_ case-expr & clauses] opts]
   {:call-type :case
    :case-expr (parse-form case-expr (assoc opts :elem? false))
-   :cases (for [[test expr] (partition 2 cases)]
-            {:test test
-             :expr (parse-form expr opts)})
-   :default (when (odd? (count cases))
-              (parse-form (last cases) opts))})
+   :clauses (for [[[test expr] idx] (map vector (partition 2 clauses) (range))]
+              {:test test
+               :expr (parse-form expr opts)
+               :idx idx})
+   :default (when (odd? (count clauses))
+              (parse-form (last clauses) opts))})
 
 (defmethod parse-call '!<< [[_ cursor] _]
   {:call-type :unwrap-cursor

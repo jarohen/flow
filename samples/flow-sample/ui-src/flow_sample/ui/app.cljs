@@ -105,7 +105,17 @@
                         selected-filter (!<< !filter)]
                     [:div
                      [:p "!random-numbers: " random-numbers]
-                     [:p "filter: " selected-filter]
+                     [:p "filter: " (case selected-filter
+                                      "even" (let [even-count (count (filter (comp even? :num) random-numbers))]
+                                               [:span "Only the " even-count
+                                                " even" (when (not= 1 even-count)
+                                                          "s")])
+                                      "odd" (let [odd-count (count (filter (comp odd? :num) random-numbers))]
+                                              [:span "Only the " odd-count
+                                               " odd" (when (not= 1 odd-count)
+                                                        "s")])
+                                      (let [all-count (count random-numbers)]
+                                        [:span "All " all-count]))]
                    
                      [:ul {::f/style {:margin-top "1em"}}
                       (for [{:keys [num]} (->> random-numbers

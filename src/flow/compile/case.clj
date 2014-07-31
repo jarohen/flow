@@ -4,90 +4,104 @@
             [flow.protocols :as fp]
             [flow.util :as u]))
 
-#_(defmethod compile-call-el :case [{:keys [test then else]} {:keys [path] :as opts}]
-    (let [compiled-test (compile-value test opts)
-          compiled-then (compile-el then (u/with-more-path opts ["then"]))
-          compiled-else (compile-el else (u/with-more-path opts ["else"]))
+(defmethod compile-call-el :case [{:keys [case-expr clauses default]} {:keys [path] :as opts}]
+  (let [path (concat path ["case"])
 
-          deps (set (concat (fp/value-deps compiled-test)
-                            (mapcat fp/elem-deps [compiled-then compiled-else])))
+        compiled-case-expr (compile-value case-expr (u/with-more-path opts ["case" "expr"]))
+        compiled-clauses (map #(assoc %
+                                 :compiled-clause (compile-el (:expr %) (u/with-more-path opts ["case" (str (:idx %))]))
+                                 :builder-sym (u/path->sym "build" path (str (:idx %))))
+                              clauses)
+        compiled-default (when default
+                           {:compiled-clause (compile-el default (u/with-more-path opts ["case" "default"]))
+                            :builder-sym (u/path->sym "build" path "default")})
 
-          !current-test-value (u/path->sym "!" path "current-test-value")
-          !current-branch (u/path->sym "!" path "current-branch")
-          !current-value (u/path->sym "!" path "current-value")
+        deps (set (concat (fp/value-deps compiled-case-expr)
+                          (mapcat (comp fp/elem-deps :compiled-clause) compiled-clauses)
+                          (fp/elem-deps (:compiled-clause compiled-default))))
 
-          build-then-branch (u/path->sym "build" path "then-branch")
-          build-else-branch (u/path->sym "build" path "else-branch")
+        !current-expr-value (u/path->sym "!" path "current-expr-value")
+        !current-clause (u/path->sym "!" path "current-clause")
+        !current-value (u/path->sym "!" path "current-value")
 
-          state (gensym "state")
-          new-state (gensym "new-state")
-          updated-vars (gensym "updated-vars")]
-      
-      (letfn [(build-branch-fn [build-clause-sym compiled-clause]
-                `(fn ~build-clause-sym []
-                   (let [~@(apply concat (fp/bindings compiled-clause))]
-                     (reify fp/DynamicValue
-                       (~'build [~'_ ~state]
-                         ~(fp/initial-el-form compiled-clause state))
-
-                       (~'updated-value [~'_ ~new-state ~updated-vars]
-                         ~(fp/updated-el-form compiled-clause new-state updated-vars))))))]
+        current-clause (u/path->sym path "current-clause")
         
-        (reify fp/CompiledElement
-          (elem-deps [_] deps)
+        state (gensym "state")
+        new-state (gensym "new-state")
+        updated-vars (gensym "updated-vars")]
+      
+    (letfn [(build-clause-fn [build-clause-sym compiled-clause]
+              `(fn ~build-clause-sym []
+                 (let [~@(apply concat (fp/bindings compiled-clause))]
+                   (reify fp/DynamicValue
+                     (~'build [~'_ ~state]
+                       ~(fp/initial-el-form compiled-clause state))
 
-          (bindings [_]
-            `[[~!current-test-value (atom nil)]
-              [~!current-branch (atom nil)]
-              [~!current-value (atom nil)]
-              [~build-then-branch ~(build-branch-fn build-then-branch compiled-then)]
-              [~build-else-branch ~(build-branch-fn build-else-branch compiled-else)]])
+                     (~'updated-value [~'_ ~new-state ~updated-vars]
+                       ~(fp/updated-el-form compiled-clause new-state updated-vars))))))]
+        
+      (reify fp/CompiledElement
+        (elem-deps [_] deps)
 
-          (initial-el-form [_ state-sym]
-            `(let [test-value# ~(fp/inline-value-form compiled-test state-sym)
-                   initial-branch# (if test-value#
-                                     (~build-then-branch)
-                                     (~build-else-branch))
-                   initial-value# (fp/build initial-branch# ~state-sym)]
+        (bindings [_]
+          `[[~!current-expr-value (atom nil)]
+            [~!current-clause (atom nil)]
+            [~!current-value (atom nil)]
 
-               (reset! ~!current-test-value (boolean test-value#))
-               (reset! ~!current-branch initial-branch#)
-               (reset! ~!current-value initial-value#)
+            ~@(for [{:keys [compiled-clause builder-sym]} (concat compiled-clauses
+                                                                  (when compiled-default
+                                                                    [compiled-default]))]
+                [builder-sym (build-clause-fn builder-sym compiled-clause)])
+
+            [~current-clause (fn [expr-value#]
+                               (case expr-value#
+                                 ~@(->> (for [{:keys [test builder-sym]} compiled-clauses]
+                                          [test `(~builder-sym)])
+                                        (apply concat))
+
+                                 ~@(when-let [{:keys [builder-sym]} compiled-default]
+                                     [`(~builder-sym)])))]])
+
+        (initial-el-form [_ state-sym]
+          `(let [expr-value# ~(fp/inline-value-form compiled-case-expr state-sym)
+                 initial-clause# (~current-clause expr-value#)
+                 initial-value# (fp/build initial-clause# ~state-sym)]
+
+             (reset! ~!current-expr-value expr-value#)
+             (reset! ~!current-clause initial-clause#)
+             (reset! ~!current-value initial-value#)
              
-               initial-value#))
+             initial-value#))
 
-          (updated-el-form [_ new-state updated-vars]
-            (u/with-updated-deps-check deps updated-vars
-              `(let [old-test-value# @~!current-test-value
-                     new-test-value# ~(fp/inline-value-form compiled-test new-state)]
+        (updated-el-form [_ new-state-sym updated-vars-sym]
+          (u/with-updated-deps-check deps updated-vars-sym
+            `(let [old-expr-value# @~!current-expr-value
+                   new-expr-value# ~(fp/inline-value-form compiled-case-expr new-state-sym)]
                
-                 (if (not= (boolean old-test-value#) (boolean new-test-value#))
-                   (let [new-branch# (if new-test-value#
-                                       (~build-then-branch)
-                                       (~build-else-branch))
-                         new-value# (fp/build new-branch# ~new-state)]
+               (if (not= old-expr-value# new-expr-value#)
+                 (let [new-clause# (~current-clause new-expr-value#)
+                       new-value# (fp/build new-clause# ~new-state-sym)]
+                   (reset! ~!current-expr-value new-expr-value#)
+                   (reset! ~!current-clause new-clause#)
+                   (reset! ~!current-value new-value#)
+                   new-value#)
 
-                     (reset! ~!current-test-value new-test-value#)
-                     (reset! ~!current-branch new-branch#)
-                     (reset! ~!current-value new-value#)
-                     new-value#)
+                 (let [new-value# (fp/updated-value @~!current-clause
+                                                    ~new-state-sym
+                                                    ~updated-vars-sym)]
+                   (reset! ~!current-value new-value#)
+                   new-value#)))
 
-                   (let [new-value# (fp/updated-value @~!current-branch
-                                                      ~new-state
-                                                      ~updated-vars)]
-                     (reset! ~!current-value new-value#)
-                     new-value#)))
+            `@~!current-value))))))
 
-              `@~!current-value))))))
-
-(defmethod compile-call-value :case [{:keys [case-expr cases default]} opts]
+(defmethod compile-call-value :case [{:keys [case-expr clauses default]} opts]
   (let [compiled-case-expr (compile-value case-expr opts)
-        compiled-cases (map #(update-in % [:expr] compile-value opts) cases)
+        compiled-clauses (map #(update-in % [:expr] compile-value opts) clauses)
         compiled-default (when default
                            (compile-value default opts))
 
         deps (set (mapcat fp/value-deps (concat [compiled-case-expr]
-                                                (map :expr compiled-cases)
+                                                (map :expr compiled-clauses)
                                                 [compiled-default])))]
 
     (reify fp/CompiledValue
@@ -96,7 +110,7 @@
       (inline-value-form [_ state-sym]
         `(case ~(fp/inline-value-form compiled-case-expr state-sym)
 
-           ~@(->> (for [{:keys [test expr]} compiled-cases]
+           ~@(->> (for [{:keys [test expr]} compiled-clauses]
                     [test (fp/inline-value-form expr state-sym)])
                   (apply concat))
 
