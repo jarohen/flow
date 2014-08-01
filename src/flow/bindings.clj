@@ -96,5 +96,5 @@
             (-> deps-acc
                 (set/difference (bp/destructured-syms compiled-binding))
                 (set/union (bp/value-deps compiled-binding))))
-          (fp/elem-deps compiled-body)
+          (fp/identity-deps compiled-body)
           (reverse compiled-bindings)))

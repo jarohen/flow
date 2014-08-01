@@ -1,17 +1,17 @@
 (ns flow.protocols)
 
-(defprotocol CompiledElement
-  (elem-deps [_])
+(defprotocol CompiledIdentity
+  (identity-deps [_])
   (bindings [_])
-  (initial-el-form [_ state-sym])
-  (updated-el-form [_ new-state-sym updated-vars-sym]))
+  (initial-form [_ state-sym])
+  (updated-form [_ new-state-sym updated-vars-sym]))
 
-(extend-protocol CompiledElement
+(extend-protocol CompiledIdentity
   nil
-  (elem-deps [_] nil)
+  (identity-deps [_] nil)
   (bindings [_] nil)
-  (initial-el-form [_ state-sym] nil)
-  (updated-el-form [_ new-state-sym updated-vars-sym] nil))
+  (initial-form [_ state-sym] nil)
+  (updated-form [_ new-state-sym updated-vars-sym] nil))
 
 (defprotocol CompiledValue
   (value-deps [_])

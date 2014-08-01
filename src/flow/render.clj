@@ -15,7 +15,7 @@
         new-state (u/path->sym path "new-state")
         updated-vars (u/path->sym path "updated-vars")
 
-        deps (fp/elem-deps compiled-elem)]
+        deps (fp/identity-deps compiled-elem)]
 
     `(do
        (let [~!state (atom {})
@@ -24,7 +24,7 @@
                   
          (letfn [(~notify! [~new-state ~updated-vars]
                    (let [$old-el# @~!el
-                         $new-el# (fd/->node ~(fp/updated-el-form compiled-elem new-state updated-vars))]
+                         $new-el# (fd/->node ~(fp/updated-form compiled-elem new-state updated-vars))]
                      (when-not (= $old-el# $new-el#)
                        (fd/swap-elems! $old-el# $new-el#))))
                  
@@ -40,7 +40,7 @@
                   (add-watch ~dep ~(str (gensym "watch")) (~handler (quote ~dep)))))
 
            (let [~state @~!state
-                 $initial-el# (fd/->node ~(fp/initial-el-form compiled-elem state))]
+                 $initial-el# (fd/->node ~(fp/initial-form compiled-elem state))]
              
              (reset! ~!el $initial-el#)
              $initial-el#))))))

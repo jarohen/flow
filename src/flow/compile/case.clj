@@ -1,24 +1,24 @@
 (ns flow.compile.case
-  (:require [flow.compile.calls :refer [compile-call-el compile-call-value]]
-            [flow.compile :refer [compile-el compile-value]]
+  (:require [flow.compile.calls :refer [compile-call-identity compile-call-value]]
+            [flow.compile :refer [compile-identity compile-value]]
             [flow.protocols :as fp]
             [flow.util :as u]))
 
-(defmethod compile-call-el :case [{:keys [case-expr clauses default]} {:keys [path] :as opts}]
+(defmethod compile-call-identity :case [{:keys [case-expr clauses default]} {:keys [path] :as opts}]
   (let [path (concat path ["case"])
 
         compiled-case-expr (compile-value case-expr (u/with-more-path opts ["case" "expr"]))
         compiled-clauses (map #(assoc %
-                                 :compiled-clause (compile-el (:expr %) (u/with-more-path opts ["case" (str (:idx %))]))
+                                 :compiled-clause (compile-identity (:expr %) (u/with-more-path opts ["case" (str (:idx %))]))
                                  :builder-sym (u/path->sym "build" path (str (:idx %))))
                               clauses)
         compiled-default (when default
-                           {:compiled-clause (compile-el default (u/with-more-path opts ["case" "default"]))
+                           {:compiled-clause (compile-identity default (u/with-more-path opts ["case" "default"]))
                             :builder-sym (u/path->sym "build" path "default")})
 
         deps (set (concat (fp/value-deps compiled-case-expr)
-                          (mapcat (comp fp/elem-deps :compiled-clause) compiled-clauses)
-                          (fp/elem-deps (:compiled-clause compiled-default))))
+                          (mapcat (comp fp/identity-deps :compiled-clause) compiled-clauses)
+                          (fp/identity-deps (:compiled-clause compiled-default))))
 
         !current-expr-value (u/path->sym "!" path "current-expr-value")
         !current-clause (u/path->sym "!" path "current-clause")
@@ -35,13 +35,13 @@
                  (let [~@(apply concat (fp/bindings compiled-clause))]
                    (reify fp/DynamicValue
                      (~'build [~'_ ~state]
-                       ~(fp/initial-el-form compiled-clause state))
+                       ~(fp/initial-form compiled-clause state))
 
                      (~'updated-value [~'_ ~new-state ~updated-vars]
-                       ~(fp/updated-el-form compiled-clause new-state updated-vars))))))]
+                       ~(fp/updated-form compiled-clause new-state updated-vars))))))]
         
-      (reify fp/CompiledElement
-        (elem-deps [_] deps)
+      (reify fp/CompiledIdentity
+        (identity-deps [_] deps)
 
         (bindings [_]
           `[[~!current-expr-value (atom nil)]
@@ -62,7 +62,7 @@
                                  ~@(when-let [{:keys [builder-sym]} compiled-default]
                                      [`(~builder-sym)])))]])
 
-        (initial-el-form [_ state-sym]
+        (initial-form [_ state-sym]
           `(let [expr-value# ~(fp/inline-value-form compiled-case-expr state-sym)
                  initial-clause# (~current-clause expr-value#)
                  initial-value# (fp/build initial-clause# ~state-sym)]
@@ -73,7 +73,7 @@
              
              initial-value#))
 
-        (updated-el-form [_ new-state-sym updated-vars-sym]
+        (updated-form [_ new-state-sym updated-vars-sym]
           (u/with-updated-deps-check deps updated-vars-sym
             `(let [old-expr-value# @~!current-expr-value
                    new-expr-value# ~(fp/inline-value-form compiled-case-expr new-state-sym)]

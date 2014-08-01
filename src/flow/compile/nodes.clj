@@ -1,5 +1,5 @@
 (ns flow.compile.nodes
-  (:require [flow.compile :refer [compile-el compile-value]]
+  (:require [flow.compile :refer [compile-identity compile-value]]
             [flow.protocols :as fp]
             [flow.util :as u]))
 
@@ -15,15 +15,15 @@
 
         set-attr! (u/path->sym "set" path "attr!")]
     
-    (reify fp/CompiledElement
-      (elem-deps [_] deps)
+    (reify fp/CompiledIdentity
+      (identity-deps [_] deps)
 
       (bindings [_] nil)
 
-      (initial-el-form [_ state-sym]
+      (initial-form [_ state-sym]
         `(fd/set-attr! ~elem-sym ~k ~(fp/inline-value-form compiled-value state-sym)))
 
-      (updated-el-form [_ new-state-sym updated-vars-sym]
+      (updated-form [_ new-state-sym updated-vars-sym]
         (u/with-updated-deps-check deps updated-vars-sym
           `(fd/set-attr! ~elem-sym ~k ~(fp/inline-value-form compiled-value new-state-sym )))))))
 
@@ -33,15 +33,15 @@
 
         set-style! (u/path->sym "set" path "style!")]
     
-    (reify fp/CompiledElement
-      (elem-deps [_] deps)
+    (reify fp/CompiledIdentity
+      (identity-deps [_] deps)
 
       (bindings [_] nil)
 
-      (initial-el-form [_ state-sym]
+      (initial-form [_ state-sym]
         `(fd/set-style! ~elem-sym ~k ~(fp/inline-value-form compiled-value state-sym)))
 
-      (updated-el-form [_ new-state-sym updated-vars-sym]
+      (updated-form [_ new-state-sym updated-vars-sym]
         (u/with-updated-deps-check deps updated-vars-sym
           `(fd/set-style! ~elem-sym ~k ~(fp/inline-value-form compiled-value new-state-sym)))))))
 
@@ -52,75 +52,76 @@
 
           set-classes! (u/path->sym "set" path "classes!")]
 
-      (reify fp/CompiledElement
-        (elem-deps [_] deps)
+      (reify fp/CompiledIdentity
+        (identity-deps [_] deps)
 
         (bindings [_])
 
-        (initial-el-form [_ state-sym]
+        (initial-form [_ state-sym]
           `(fd/set-classes! ~elem-sym (-> [~@(map #(fp/inline-value-form % state-sym) compiled-classes)]
                                           set
                                           (disj nil))))
 
-        (updated-el-form [_ new-state-sym updated-vars-sym]
+        (updated-form [_ new-state-sym updated-vars-sym]
           (u/with-updated-deps-check deps updated-vars-sym
             `(fd/set-classes! ~elem-sym (-> [~@(map #(fp/inline-value-form % new-state-sym) compiled-classes)]
                                             set
                                             (disj nil)))))))))
 
 (defn compile-listener [elem-sym {:keys [event listener]} {:keys [path] :as opts}]
-  (let [compiled-listener (compile-value listener opts)
-        deps (fp/value-deps compiled-listener)
+  (let [compiled-listener (compile-identity listener opts)
+        deps (fp/identity-deps compiled-listener)
 
         !listener-sym (u/path->sym "!" path event "listener")]
     
-    (reify fp/CompiledElement
-      (elem-deps [_] deps)
+    (reify fp/CompiledIdentity
+      (identity-deps [_] deps)
 
       (bindings [_]
-        (when (seq deps)
-          `[[~!listener-sym (atom nil)]]))
+        (concat (fp/bindings compiled-listener)
+                (when (seq deps)
+                  `[[~!listener-sym (atom nil)]])))
 
-      (initial-el-form [_ state-sym]
+      (initial-form [_ state-sym]
         `(fd/add-listener! ~elem-sym ~event
                            ~(if (seq deps)
                               `(do
-                                 (reset! ~!listener-sym ~(fp/inline-value-form compiled-listener state-sym))
+                                 (reset! ~!listener-sym ~(fp/initial-form compiled-listener state-sym))
                                  (fn [e#]
                                    ((deref ~!listener-sym) e#)))
                               
-                              (fp/inline-value-form compiled-listener state-sym))))
+                              (fp/initial-form compiled-listener state-sym))))
 
-      (updated-el-form [_ new-state-sym updated-vars-sym]
+      (updated-form [_ new-state-sym updated-vars-sym]
         (u/with-updated-deps-check deps updated-vars-sym
-          `(reset! ~!listener-sym ~(fp/inline-value-form compiled-listener new-state-sym)))))))
+          `(reset! ~!listener-sym ~(fp/updated-form compiled-listener new-state-sym updated-vars-sym)))))))
 
 (defn compile-child [elem-sym child {:keys [path] :as opts}]
-  (let [compiled-child (compile-el child opts)
-        deps (fp/elem-deps compiled-child)
+  (let [compiled-child (compile-identity child opts)
+        deps (fp/identity-deps compiled-child)
         
         !holder (u/path->sym "!" path "child")]
 
-    (reify fp/CompiledElement
-      (elem-deps [_] deps)
+    (reify fp/CompiledIdentity
+      (identity-deps [_] deps)
 
       (bindings [_]
         (concat (fp/bindings compiled-child)
                 (when (seq deps)
                   [[!holder `(atom nil)]])))
 
-      (initial-el-form [_ state-sym]
+      (initial-form [_ state-sym]
         (if (seq deps)
-          `(let [initial-holder# (fh/new-element-holder ~(fp/initial-el-form compiled-child state-sym))]
+          `(let [initial-holder# (fh/new-element-holder ~(fp/initial-form compiled-child state-sym))]
              (reset! ~!holder initial-holder#)
              (fh/append-to! initial-holder# ~elem-sym))
           
-          `(fd/append-child! ~elem-sym (fd/->node ~(fp/initial-el-form compiled-child state-sym)))))
+          `(fd/append-child! ~elem-sym (fd/->node ~(fp/initial-form compiled-child state-sym)))))
 
-      (updated-el-form [_ new-state-sym updated-vars-sym]
+      (updated-form [_ new-state-sym updated-vars-sym]
         (when (seq deps)
           (u/with-updated-deps-check deps updated-vars-sym
-            `(let [new-child# ~(fp/updated-el-form compiled-child
+            `(let [new-child# ~(fp/updated-form compiled-child
                                                    new-state-sym
                                                    updated-vars-sym)]
                
@@ -132,7 +133,7 @@
   (let [syms {:state 'flow-test-state
               :new-state 'flow-test-new-state
               :updated-vars 'flow-test-updated-vars}]
-    (-> (compile-el (flow.parse/parse-form '[:div
+    (-> (compile-identity (flow.parse/parse-form '[:div
                                                [:h1 "Show heading is:" (pr-str (<< !show-heading))]]
                                              {:elem? true
                                               :path "flow-test"})
@@ -140,7 +141,7 @@
         #_(render-el syms)))
   )
 
-(defmethod compile-el :node [{:keys [tag id style classes attrs children listeners]} {:keys [path] :as opts}]
+(defmethod compile-identity :node [{:keys [tag id style classes attrs children listeners]} {:keys [path] :as opts}]
   (let [elem-sym (u/path->sym path tag)
         compiled-attrs (map #(compile-attr elem-sym % (u/with-more-path opts [tag])) attrs)
         compiled-styles (map #(compile-style elem-sym % (u/with-more-path opts [tag])) style)
@@ -155,29 +156,29 @@
                                compiled-listeners
                                [compiled-classes])
 
-        deps (set (mapcat fp/elem-deps compiled-parts))]
+        deps (set (mapcat fp/identity-deps compiled-parts))]
 
-    (reify fp/CompiledElement
-      (elem-deps [_]
+    (reify fp/CompiledIdentity
+      (identity-deps [_]
         deps)
 
       (bindings [_]
         `[[~elem-sym (fd/new-element ~tag)]
           ~@(mapcat fp/bindings compiled-parts)])
 
-      (initial-el-form [_ state-sym]
+      (initial-form [_ state-sym]
         `(do
            ~@(when id
                [`(set! (.-id ~elem-sym) ~id)])
            
-           ~@(map #(fp/initial-el-form % state-sym) compiled-parts)
+           ~@(map #(fp/initial-form % state-sym) compiled-parts)
 
            ~elem-sym))
 
-      (updated-el-form [_ new-state-sym updated-vars-sym]
+      (updated-form [_ new-state-sym updated-vars-sym]
         (u/with-updated-deps-check deps updated-vars-sym
           `(do
-             ~@(map #(fp/updated-el-form % new-state-sym updated-vars-sym)
+             ~@(map #(fp/updated-form % new-state-sym updated-vars-sym)
                     compiled-parts)
              
              ~elem-sym)

@@ -1,16 +1,16 @@
 (ns flow.compile.do
-  (:require [flow.compile :refer [compile-el compile-value]]
-            [flow.compile.calls :refer [compile-call-el compile-call-value]]
+  (:require [flow.compile :refer [compile-identity compile-value]]
+            [flow.compile.calls :refer [compile-call-identity compile-call-value]]
             [flow.bindings :as b]
             [flow.util :as u]
             [clojure.set :as set]
             [flow.protocols :as fp]))
 
-(defmethod compile-call-el :do [{:keys [side-effects return]} {:keys [path] :as opts}]
+(defmethod compile-call-identity :do [{:keys [side-effects return]} {:keys [path] :as opts}]
   (let [do-el (u/path->sym path "do")
         compiled-side-effects (map #(compile-value %1 (u/with-more-path opts ["do" (str %2)]))
                                    side-effects (range))
-        compiled-return (compile-el return (cond-> opts
+        compiled-return (compile-identity return (cond-> opts
                                              side-effects (u/with-more-path ["do-return"])))]
 
     (assert (empty? side-effects) "I can't handle this yet!")

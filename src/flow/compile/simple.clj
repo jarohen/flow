@@ -1,5 +1,5 @@
 (ns flow.compile.simple
-  (:require [flow.compile :refer [compile-el compile-value]]
+  (:require [flow.compile :refer [compile-identity compile-value]]
             [flow.protocols :as fp]))
 
 (alias 'fd (doto 'flow.dom create-ns))
@@ -11,13 +11,13 @@
     (value-deps [_] nil)
     (inline-value-form [_ _] primitive)))
 
-(defmethod compile-el :primitive [{:keys [primitive]} opts]
-  (reify fp/CompiledElement
-    (elem-deps [_] nil)
+(defmethod compile-identity :primitive [{:keys [primitive]} opts]
+  (reify fp/CompiledIdentity
+    (identity-deps [_] nil)
 
     (bindings [_])
-    (initial-el-form [_ _] primitive)
-    (updated-el-form [_ _ _] primitive)))
+    (initial-form [_ _] primitive)
+    (updated-form [_ _ _] primitive)))
 
 ;; MAP
 
@@ -35,16 +35,16 @@
              (map #(apply vector %))
              (into {}))))))
 
-(defmethod compile-el :map [form opts]
+(defmethod compile-identity :map [form opts]
   (let [compiled-map (compile-value form opts)]
-    (reify fp/CompiledElement
-      (elem-deps [_] (fp/value-deps compiled-map))
+    (reify fp/CompiledIdentity
+      (identity-deps [_] (fp/value-deps compiled-map))
       (bindings [_] nil)
 
-      (initial-el-form [_ state-sym]
+      (initial-form [_ state-sym]
         (fp/inline-value-form compiled-map state-sym))
 
-      (updated-el-form [_ new-state-sym updated-vars-sym]
+      (updated-form [_ new-state-sym updated-vars-sym]
         (fp/inline-value-form compiled-map new-state-sym)))))
 
 ;; COLL
@@ -58,14 +58,14 @@
       (inline-value-form [_ state-sym]
         `(into ~(empty coll) [~@(map #(fp/inline-value-form % state-sym) compiled-values)])))))
 
-(defmethod compile-el :coll [form opts]
+(defmethod compile-identity :coll [form opts]
   (let [compiled-coll (compile-value form opts)]
-    (reify fp/CompiledElement
-      (elem-deps [_] (fp/value-deps compiled-coll))
+    (reify fp/CompiledIdentity
+      (identity-deps [_] (fp/value-deps compiled-coll))
       (bindings [_] nil)
 
-      (initial-el-form [_ state-sym]
+      (initial-form [_ state-sym]
         (fp/inline-value-form compiled-coll state-sym))
 
-      (updated-el-form [_ new-state-sym updated-vars-sym]
+      (updated-form [_ new-state-sym updated-vars-sym]
         (fp/inline-value-form compiled-coll new-state-sym)))))

@@ -1,7 +1,7 @@
 (ns flow.compile.calls
-  (:require [flow.compile :refer [compile-el compile-value]]))
+  (:require [flow.compile :refer [compile-identity compile-value]]))
 
-(defmulti compile-call-el
+(defmulti compile-call-identity
   (fn [call opts]
     (:call-type call)))
 
@@ -19,8 +19,8 @@
 (require 'flow.compile.let)
 (require 'flow.compile.for)
 
-(defmethod compile-el :call [call opts]
-  (compile-call-el call opts))
+(defmethod compile-identity :call [call opts]
+  (compile-call-identity call opts))
 
 (defmethod compile-value :call [call opts]
   (compile-call-value call opts))

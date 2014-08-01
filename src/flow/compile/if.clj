@@ -1,16 +1,16 @@
 (ns flow.compile.if
-  (:require [flow.compile.calls :refer [compile-call-el compile-call-value]]
-            [flow.compile :refer [compile-el compile-value]]
+  (:require [flow.compile.calls :refer [compile-call-identity compile-call-value]]
+            [flow.compile :refer [compile-identity compile-value]]
             [flow.protocols :as fp]
             [flow.util :as u]))
 
-(defmethod compile-call-el :if [{:keys [test then else]} {:keys [path] :as opts}]
+(defmethod compile-call-identity :if [{:keys [test then else]} {:keys [path] :as opts}]
   (let [compiled-test (compile-value test opts)
-        compiled-then (compile-el then (u/with-more-path opts ["then"]))
-        compiled-else (compile-el else (u/with-more-path opts ["else"]))
+        compiled-then (compile-identity then (u/with-more-path opts ["then"]))
+        compiled-else (compile-identity else (u/with-more-path opts ["else"]))
 
         deps (set (concat (fp/value-deps compiled-test)
-                          (mapcat fp/elem-deps [compiled-then compiled-else])))
+                          (mapcat fp/identity-deps [compiled-then compiled-else])))
 
         !current-test-value (u/path->sym "!" path "current-test-value")
         !current-branch (u/path->sym "!" path "current-branch")
@@ -28,13 +28,13 @@
                  (let [~@(apply concat (fp/bindings compiled-branch))]
                    (reify fp/DynamicValue
                      (~'build [~'_ ~state]
-                       ~(fp/initial-el-form compiled-branch state))
+                       ~(fp/initial-form compiled-branch state))
 
                      (~'updated-value [~'_ ~new-state ~updated-vars]
-                       ~(fp/updated-el-form compiled-branch new-state updated-vars))))))]
+                       ~(fp/updated-form compiled-branch new-state updated-vars))))))]
         
-      (reify fp/CompiledElement
-        (elem-deps [_] deps)
+      (reify fp/CompiledIdentity
+        (identity-deps [_] deps)
 
         (bindings [_]
           `[[~!current-test-value (atom nil)]
@@ -43,7 +43,7 @@
             [~build-then-branch ~(build-branch-fn build-then-branch compiled-then)]
             [~build-else-branch ~(build-branch-fn build-else-branch compiled-else)]])
 
-        (initial-el-form [_ state-sym]
+        (initial-form [_ state-sym]
           `(let [test-value# ~(fp/inline-value-form compiled-test state-sym)
                  initial-branch# (if test-value#
                                    (~build-then-branch)
@@ -56,7 +56,7 @@
              
              initial-value#))
 
-        (updated-el-form [_ new-state updated-vars]
+        (updated-form [_ new-state updated-vars]
           (u/with-updated-deps-check deps updated-vars
             `(let [old-test-value# @~!current-test-value
                    new-test-value# ~(fp/inline-value-form compiled-test new-state)]

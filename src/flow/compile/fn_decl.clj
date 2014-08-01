@@ -1,6 +1,6 @@
 (ns flow.compile.fn-decl
-  (:require [flow.compile.calls :refer [compile-call-el compile-call-value]]
-            [flow.compile :refer [compile-value]]
+  (:require [flow.compile.calls :refer [compile-call-identity compile-call-value]]
+            [flow.compile :refer [compile-identity compile-value]]
             [flow.bindings :as b]
             [flow.protocols :as fp]
             [clojure.set :as set]))
@@ -20,6 +20,24 @@
 
       (inline-value-form [_ state-sym]
         `(~args ~(fp/inline-value-form compiled-body state-sym))))))
+
+(defmethod compile-call-identity :fn-decl [{:keys [path fn-name arities]} opts]
+  (let [compiled-arities (map #(compile-arity % opts) arities)
+        deps (set (mapcat fp/value-deps compiled-arities))]
+    (reify fp/CompiledIdentity
+      (identity-deps [_] deps)
+
+      (bindings [_] nil)
+      
+      (initial-form [_ state-sym]
+        `(fn ~@(when fn-name
+                 [fn-name])
+           ~@(map #(fp/inline-value-form % state-sym) compiled-arities)))
+      
+      (updated-form [_ new-state-sym updated-vars-sym]
+        `(fn ~@(when fn-name
+                 [fn-name])
+           ~@(map #(fp/inline-value-form % new-state-sym) compiled-arities))))))
 
 (defmethod compile-call-value :fn-decl [{:keys [path fn-name arities]} opts]
   (let [compiled-arities (map #(compile-arity % opts) arities)
