@@ -13,6 +13,7 @@
 (require 'flow.compile.fn-call)
 (require 'flow.compile.do)
 (require 'flow.compile.unwrap-cursor)
+(require 'flow.compile.wrap-cursor)
 (require 'flow.compile.if)
 (require 'flow.compile.case)
 (require 'flow.compile.let)
