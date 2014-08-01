@@ -133,7 +133,7 @@
               :new-state 'flow-test-new-state
               :updated-vars 'flow-test-updated-vars}]
     (-> (compile-el (flow.parse/parse-form '[:div
-                                               [:h1 "Show heading is:" (pr-str (!<< !show-heading))]]
+                                               [:h1 "Show heading is:" (pr-str (<< !show-heading))]]
                                              {:elem? true
                                               :path "flow-test"})
                       syms)

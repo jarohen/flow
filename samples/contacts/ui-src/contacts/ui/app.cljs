@@ -17,7 +17,7 @@
               [:div.container
                [:h1 "My address book"]
                [:ul
-                (for [contact (!<< !contacts)]
+                (for [contact (<< !contacts)]
                   [:li
                    (cf/display-name contact)
                    #_[:button.btn.btn-danger {::f/on {:click (let [!contact (!>> contact)]

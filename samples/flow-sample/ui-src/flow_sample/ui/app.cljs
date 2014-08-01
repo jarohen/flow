@@ -15,7 +15,7 @@
                       :color "#000"}}
      [:h3 "And now for an SVG example:"]
 
-     (let [{:keys [primary secondary]} (!<< !colors)]
+     (let [{:keys [primary secondary]} (<< !colors)]
        [:svg 
         [:rect {:x 10
                 :y 10
@@ -59,7 +59,7 @@
           
           (f/root js/document.body
             (f/el
-              (let [{:keys [primary secondary]} (!<< !colors)]
+              (let [{:keys [primary secondary]} (<< !colors)]
                 [:div#test.container.blah {::f/classes ["abc"
                                                         (when (= primary "#000")
                                                           "black")]
@@ -70,15 +70,15 @@
                                                  
                                            :data-is-black (boolean (= primary "#000"))}
                
-                 (when (!<< !show-heading?)
+                 (when (<< !show-heading?)
                    [:div
                     [:h1 {::f/style {:color secondary
                                      :padding "0.5em"
                                      :background-color primary}}
-                     (!<< !heading)]])
+                     (<< !heading)]])
 
                  [:p.copy {::f/style {:text-align :center
-                                      :color (:secondary (!<< !colors))}}
+                                      :color (:secondary (<< !colors))}}
                   "If this works, " [:strong "I'll be very happy :)"]]
 
                  [:button.btn.btn-default {::f/style {:margin-right "1em"}
@@ -101,8 +101,8 @@
                                    :color "#000"}}
                   [:h3 "And now for a 'for' example:"]
 
-                  (let [random-numbers (!<< !random-numbers)
-                        selected-filter (!<< !filter)]
+                  (let [random-numbers (<< !random-numbers)
+                        selected-filter (<< !filter)]
                     [:div
                      [:p "!random-numbers: " random-numbers]
                      [:p "filter: " (case selected-filter
@@ -129,7 +129,7 @@
 
                  [:div
                   [:select.form-control {::f/on {:change (f/bind-value! !filter)}
-                                         :value (!<< !filter)
+                                         :value (<< !filter)
                                          ::f/style {:width "6em"}}
                    [:option {:value "odd"}
                     "Odd"]

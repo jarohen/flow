@@ -103,11 +103,11 @@
    :default (when (odd? (count clauses))
               (parse-form (last clauses) opts))})
 
-(defmethod parse-call '!<< [[_ cursor] _]
+(defmethod parse-call '<< [[_ cursor] _]
   {:call-type :unwrap-cursor
    :cursor cursor})
 
-(defmethod parse-call '!>> [[_ cursor] _]
+(defmethod parse-call '!<< [[_ cursor] _]
   {:call-type :wrap-cursor
    :cursor cursor})
 
