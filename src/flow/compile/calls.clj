@@ -9,15 +9,18 @@
   (fn [call opts]
     (:call-type call)))
 
-(require 'flow.compile.fn-decl)
-(require 'flow.compile.fn-call)
-(require 'flow.compile.do)
+(defmethod compile-call-identity :default [call opts]
+  (compile-call-value call opts))
+
+#_(require 'flow.compile.fn-decl)
+#_(require 'flow.compile.fn-call)
+#_(require 'flow.compile.do)
 (require 'flow.compile.unwrap-cursor)
-(require 'flow.compile.wrap-cursor)
-(require 'flow.compile.if)
-(require 'flow.compile.case)
-(require 'flow.compile.let)
-(require 'flow.compile.for)
+#_(require 'flow.compile.wrap-cursor)
+#_(require 'flow.compile.if)
+#_(require 'flow.compile.case)
+#_(require 'flow.compile.let)
+#_(require 'flow.compile.for)
 
 (defmethod compile-identity :call [call opts]
   (compile-call-identity call opts))

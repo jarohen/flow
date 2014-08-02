@@ -8,6 +8,9 @@
   (fn [form opts]
     (:type form)))
 
+(defmethod compile-identity :default [form opts]
+  (compile-value form opts))
+
 (require 'flow.compile.nodes)
 (require 'flow.compile.calls)
 (require 'flow.compile.simple)

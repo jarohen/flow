@@ -2,19 +2,21 @@
   #+clj (:require [flow.expand :refer [expand-macros]]
                   [flow.parse :refer [parse-form]]
                   [flow.compile :refer [compile-identity]]
-                  [flow.render :refer [render-el]]
+                  [flow.render :refer [render-elem]]
                   [flow.protocols :as fp])
   
   #+cljs (:require flow.protocols
+                   flow.state
+                   flow.render
                    [flow.dom :as fd]))
 
 #+clj
 (defn debug-compiled-el [compiled-el]
   (spit "/tmp/compiled.edn"
-        {:deps (fp/identity-deps compiled-el)
-         :bindings (fp/bindings compiled-el)
-         :initial-value (fp/initial-form compiled-el 'state)
-         :updated-value (fp/updated-form compiled-el 'new-state 'updated-vars)}))
+        {:hard-deps (fp/hard-deps compiled-el)
+         :soft-deps (fp/soft-deps compiled-el)
+         :declarations (fp/declarations compiled-el)
+         :build-form (fp/build-form compiled-el)}))
 
 #+clj
 (defmacro el [elem]
@@ -27,7 +29,7 @@
                            :local-syms #{}
                            :path [el-sym]})
         (doto debug-compiled-el)
-        (render-el (str el-sym))
+        (render-elem)
         (doto (->> (spit "/tmp/rendered.edn"))))))
 
 #+cljs
