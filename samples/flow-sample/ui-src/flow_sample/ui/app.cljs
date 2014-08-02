@@ -72,16 +72,33 @@
           (f/root js/document.body
             (f/el
               [:div#test.container.blah {::f/classes ["abc"
-                                                      #_(when (= (:primary (<< !colors)) "#000")
-                                                          "black")]
+                                                      (when (= (:primary (<< !colors)) "#000")
+                                                        "black")]
                                                                                       
                                          ::f/style {:margin-top "2em"}
                                                  
                                          :data-test "foo"
                                                  
-                                         ;;:data-is-black (boolean (= primary "#000"))
-                                         }
-               [:p (<< !heading)]]
+                                         :data-is-black (boolean (= (:primary (<< !colors)) "#000"))}
+
+               [:p.copy {::f/style {:text-align :center
+                                    :color (:secondary (<< !colors))}}
+                "If this works, " [:strong "I'll be very happy :)"]]
+
+               [:button.btn.btn-default {::f/style {:margin-right "1em"}
+                                         ::f/on {:click #(js/alert (str "Hello! " (pr-str (<< !colors))))}}
+                "Click me!"]
+
+               [:button.btn.btn-default {::f/style {:margin-right "1em"}
+                                         ::f/on {:click (fn [e] (a/put! change-colors-ch :change!))}}
+                "Change colours!"]
+               
+               #_(when (<< !show-heading?)
+                   [:div
+                    [:h1 {::f/style {:color secondary
+                                     :padding "0.5em"
+                                     :background-color primary}}
+                     (<< !heading)]])]
 
               #_(let [{:keys [primary secondary]} (<< !colors)]
                   [:div#test.container.blah {::f/classes ["abc"
