@@ -17,13 +17,14 @@
                         (symbol? bind) [(symbol (name bind))]))]
     (set (dbs* bind))))
 
->#_(defn key-fn [value value-sym]
+(comment
+  (defn key-fn [value value-sym]
     (let [manual-key-fn (:flow.core/key-fn (meta value))]
       `(or ~@(when manual-key-fn
                `[(~manual-key-fn ~value-sym)])
            (:flow.core/id ~value-sym)
            (:id ~value-sym)
-           ~value-sym)))
+           ~value-sym))))
 
 (defn compile-binding [{:keys [bind value idx]} opts]
   (let [compiled-identity (compile-identity value (u/with-more-path opts [(str idx)]))
@@ -35,6 +36,7 @@
 
     {:compiled-binding {:hard-deps hard-deps
                         :soft-deps soft-deps
+                        :deps (set/union hard-deps soft-deps)
 
                         :declarations (fp/declarations compiled-identity)
                         :bound-syms destructured-syms

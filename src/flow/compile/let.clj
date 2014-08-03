@@ -24,7 +24,8 @@
                 (fp/declarations compiled-body)
                 `[(defn ~let-sym []
                     (flow.forms.let/build-let [~@(map #(-> %
-                                                           (dissoc :declarations :bound-syms :key-fn)
+                                                           (dissoc :declarations :key-fn)
+                                                           (update-in [:bound-syms] u/quote-syms)
                                                            (update-in [:hard-deps] u/quote-syms)
                                                            (update-in [:soft-deps] u/quote-syms)
                                                            (update-in [:deps] u/quote-syms))
