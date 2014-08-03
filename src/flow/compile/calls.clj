@@ -19,7 +19,7 @@
 (require 'flow.compile.unwrap-cursor)
 #_(require 'flow.compile.wrap-cursor)
 (require 'flow.compile.if)
-#_(require 'flow.compile.case)
+(require 'flow.compile.case)
 #_(require 'flow.compile.let)
 #_(require 'flow.compile.for)
 
