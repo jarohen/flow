@@ -20,8 +20,8 @@
                    (when (not= old-value new-value)
                      (let [new-state (swap! !state assoc dep-sym new-value)
                            $old-el @!$el
-                           [$new-el new-update-fn] (binding [fs/*state* (assoc new-state
-                                                                          :updated-vars #{dep-sym})]
+                           [$new-el new-update-fn] (binding [fs/*state* (fs/with-updated-vars new-state
+                                                                          #{dep-sym})]
                                                      (@!update-fn))]
 
                        (when-not (= $old-el $new-el)

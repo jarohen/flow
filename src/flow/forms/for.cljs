@@ -1,5 +1,5 @@
 (ns flow.forms.for
-  (:require [flow.util :as u]
+  (:require [flow.state :as fs]
             [flow.dom :as fd]
             [flow.protocols :as fp]
             [flow.diff :refer [vector-diff]]))
@@ -22,7 +22,7 @@
       
         (reify fp/DynamicValue
           (should-update? [_ updated-vars]
-            (u/deps-updated? quoted-deps updated-vars))
+            (fs/deps-updated? quoted-deps updated-vars))
 
           (build [_ state]
             (let [initial-els (->> (for-values state)

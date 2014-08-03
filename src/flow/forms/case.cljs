@@ -1,10 +1,10 @@
 (ns flow.forms.case
-  (:require [flow.util :as u]))
+  (:require [flow.state :as fs]))
 
 (defn build-case [compiled-case-expr expr->compiled-clause]
   (letfn [(update-case [current-expr-value current-clause current-value update-fn]
             (letfn [(update-clause []
-                      (if (u/deps-updated? (:deps current-clause))
+                      (if (fs/deps-updated? (:deps current-clause))
                         (let [[new-value new-update-fn] (update-fn)]
                           [new-value (update-case current-expr-value
                                                   current-clause
@@ -16,7 +16,7 @@
                                                          current-expr-value
                                                          update-fn)]))]
               (fn []
-                (if (u/deps-updated? (:deps compiled-case-expr))
+                (if (fs/deps-updated? (:deps compiled-case-expr))
                   (let [new-expr-value ((:value-fn compiled-case-expr))]
                     (if (not= current-expr-value new-expr-value)
                       (let [new-clause (expr->compiled-clause new-expr-value)

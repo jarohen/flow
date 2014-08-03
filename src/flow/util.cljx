@@ -1,7 +1,6 @@
 (ns flow.util
   (:require [flow.protocols :as fp]
-            [clojure.string :as s]
-            #+cljs [flow.state :as fs]))
+            [clojure.string :as s]))
 
 #+clj (alias 'fs (doto 'flow.state create-ns))
 
@@ -11,15 +10,10 @@
     `#{~@(for [dep deps]
            `(quote ~dep))}))
 
-#+cljs
-(defn deps-updated? [quoted-deps]
-  (when (seq quoted-deps)
-    (boolean (some #(contains? quoted-deps %) (:updated-vars fs/*state*)))))
-
 #+clj
 (defn with-updated-deps-check [deps quoted-then & [quoted-else]]
   (if (seq deps)
-    `(if (deps-updated? ~(quote-deps deps))
+    `(if (fs/deps-updated? ~(quote-deps deps))
        ~quoted-then
        ~quoted-else)
     

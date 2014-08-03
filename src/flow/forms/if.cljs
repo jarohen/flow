@@ -1,10 +1,10 @@
 (ns flow.forms.if
-  (:require [flow.util :as u]))
+  (:require [flow.state :as fs]))
 
 (defn build-if [compiled-test compiled-then compiled-else]
   (letfn [(update-if [current-test-value current-branch current-value update-fn]
             (letfn [(update-branch []
-                      (if (u/deps-updated? (:deps current-branch))
+                      (if (fs/deps-updated? (:deps current-branch))
                         (let [[new-value new-update-fn] (update-fn)]
                           [new-value (update-if current-test-value
                                                 current-branch
@@ -16,7 +16,7 @@
                                                   current-value
                                                   update-fn)]))]
               (fn []
-                (if (u/deps-updated? (:deps compiled-test))
+                (if (fs/deps-updated? (:deps compiled-test))
                   (let [new-test-value ((:value-fn compiled-test))]
                     (if (not= (boolean current-test-value)
                               (boolean new-test-value))
