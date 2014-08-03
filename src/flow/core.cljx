@@ -8,6 +8,7 @@
   #+cljs (:require flow.protocols
                    flow.state
                    flow.render
+                   flow.forms.if
                    [flow.dom :as fd]))
 
 #+clj
