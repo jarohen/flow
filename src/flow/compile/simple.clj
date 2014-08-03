@@ -14,27 +14,27 @@
 
 ;; MAP
 
-#_(defmethod compile-value :map [{m :map} opts]
-    (let [flattened-map (flatten (seq m))
-          compiled-values (map #(compile-value % opts) flattened-map)]
-      (reify fp/CompiledValue
-        (value-deps [_]
-          (set (mapcat fp/value-deps compiled-values)))
+(defmethod compile-value :map [{m :map} opts]
+  (let [flattened-map (flatten (seq m))
+        compiled-values (map #(compile-value % opts) flattened-map)]
+    (reify fp/CompiledValue
+      (value-deps [_]
+        (set (mapcat fp/value-deps compiled-values)))
 
-        (inline-value-form [_]
-          (->> compiled-values
-               (map fp/inline-value-form)
-               (partition 2)
-               (map #(apply vector %))
-               (into {}))))))
+      (inline-value-form [_]
+        (->> compiled-values
+             (map fp/inline-value-form)
+             (partition 2)
+             (map #(apply vector %))
+             (into {}))))))
 
 ;; COLL
 
-#_(defmethod compile-value :coll [{:keys [coll]} opts]
-    (let [compiled-values (map #(compile-value % opts) coll)]
-      (reify fp/CompiledValue
-        (value-deps [_]
-          (set (mapcat fp/value-deps compiled-values)))
+(defmethod compile-value :coll [{:keys [coll]} opts]
+  (let [compiled-values (map #(compile-value % opts) coll)]
+    (reify fp/CompiledValue
+      (value-deps [_]
+        (set (mapcat fp/value-deps compiled-values)))
 
-        (inline-value-form [_]
-          `(into ~(empty coll) [~@(map fp/inline-value-form compiled-values)])))))
+      (inline-value-form [_]
+        `(into ~(empty coll) [~@(map fp/inline-value-form compiled-values)])))))
