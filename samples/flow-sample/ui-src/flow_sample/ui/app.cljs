@@ -38,21 +38,20 @@
               ::f/on {:change (f/bind-value! !color)}}]]))
 
 (defn update-random-numbers! [!random-numbers update-numbers-ch]
-  (do
-    (reset! !random-numbers (for [idx (range 200)]
-                              {:id idx
-                               :num (rand-int 1000)}))
+  (reset! !random-numbers (for [idx (range 100)]
+                            {:id idx
+                             :num (rand-int 1000)}))
   
-    (go-loop []
-      (a/<! update-numbers-ch)
-      (swap! !random-numbers (fn [random-numbers]
-                               (for [{:keys [id num] :as rn} random-numbers]
-                                 {:id id
-                                  :num (rand-int 1000)})))
+  (go-loop []
+    (a/<! update-numbers-ch)
+    (swap! !random-numbers (fn [random-numbers]
+                             (for [{:keys [id num] :as rn} random-numbers]
+                               {:id id
+                                :num (rand-int 1000)})))
 
-      (recur))
+    (recur))
 
-    !random-numbers))
+  !random-numbers)
 
 (defn update-colors! [!colors change-colors-ch]
   (go-loop []
@@ -96,16 +95,16 @@
                                                  
                                            :data-is-black (boolean (= primary "#000"))}
 
-                 #_(when (<< !show-heading?)
-                     [:div
-                      [:h1 {::f/style {:color secondary
-                                       :padding "0.5em"
-                                       :background-color primary}}
-                       (<< !heading)]])
+                 (when (<< !show-heading?)
+                   [:div
+                    [:h1 {::f/style {:color secondary
+                                     :padding "0.5em"
+                                     :background-color primary}}
+                     (<< !heading)]])
                
-                 #_[:p.copy {::f/style {:text-align :center
-                                        :color secondary}}
-                    "If this works, " [:strong "I'll be very happy :)"]]
+                 [:p.copy {::f/style {:text-align :center
+                                      :color secondary}}
+                  "If this works, " [:strong "I'll be very happy :)"]]
 
                  [:button.btn.btn-default {::f/style {:margin-right "1em"}
                                            ::f/on {:click #(js/alert (str "Hello! " (pr-str colors)))}}
@@ -131,38 +130,38 @@
                         selected-filter (<< !filter)]
                     [:div
                      [:p "!random-numbers: " (vec random-numbers)]
-                     #_[:p "filter: " (case selected-filter
-                                        "even" (let [even-count (count (filter (comp even? :num) random-numbers))]
-                                                 [:span "Only the " even-count
-                                                  " even" (when (not= 1 even-count)
-                                                            "s")])
-                                        "odd" (let [odd-count (count (filter (comp odd? :num) random-numbers))]
-                                                [:span "Only the " odd-count
-                                                 " odd" (when (not= 1 odd-count)
+                     [:p "filter: " (case selected-filter
+                                      "even" (let [even-count (count (filter (comp even? :num) random-numbers))]
+                                               [:span "Only the " even-count
+                                                " even" (when (not= 1 even-count)
                                                           "s")])
-                                        (let [all-count (count random-numbers)]
-                                          [:span "All " all-count]))]
+                                      "odd" (let [odd-count (count (filter (comp odd? :num) random-numbers))]
+                                              [:span "Only the " odd-count
+                                               " odd" (when (not= 1 odd-count)
+                                                        "s")])
+                                      (let [all-count (count random-numbers)]
+                                        [:span "All " all-count]))]
                    
                      [:ul {::f/style {:margin-top "1em"}}
                       (for [{:keys [id num]} (->> random-numbers
-                                               (filter (comp (case selected-filter
-                                                               "even" even?
-                                                               "odd" odd?
-                                                               "all" identity)
-                                                             :num))
-                                               (sort-by :num))]
+                                                  (filter (comp (case selected-filter
+                                                                  "even" even?
+                                                                  "odd" odd?
+                                                                  "all" identity)
+                                                                :num))
+                                                  (sort-by :num))]
                         [:li num " (" id ")"])]])]
 
-                 #_[:div
-                    [:select.form-control {::f/on {:change (f/bind-value! !filter)}
-                                           :value (<< !filter)
-                                           ::f/style {:width "6em"}}
-                     [:option {:value "odd"}
-                      "Odd"]
-                     [:option {:value "even"}
-                      "Even"]
-                     [:option {:value "all"}
-                      "All"]]]
+                 [:div
+                  [:select.form-control {::f/on {:change (f/bind-value! !filter)}
+                                         :value (<< !filter)
+                                         ::f/style {:width "6em"}}
+                   [:option {:value "odd"}
+                    "Odd"]
+                   [:option {:value "even"}
+                    "Even"]
+                   [:option {:value "all"}
+                    "All"]]]
 
                  #_[:div
                     [:h3 "Pick your colours:"]
