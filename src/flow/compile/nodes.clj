@@ -44,51 +44,29 @@
 
 (defn compile-listener [elem-sym {:keys [event listener]} {:keys [path] :as opts}]
   (let [compiled-listener (compile-identity listener opts)
-        !listener-sym (u/path->sym "!" path event "listener")]
+        !listener-sym (u/path->sym "!" path event "listener")
 
-    (cond
-     (satisfies? fp/CompiledValue compiled-listener)
-     (let [deps (fp/value-deps compiled-listener)]
-       {:soft-deps deps
+        deps (set (concat (fp/hard-deps compiled-listener)
+                          (fp/soft-deps compiled-listener)))]
+    {:soft-deps deps
 
-        :bindings (when (seq deps)
-                    `[[~!listener-sym (atom nil)]])
+     :declarations (fp/declarations compiled-listener)
 
-        :initial-form `(fd/add-listener! ~elem-sym ~event
-                                         ~(if (seq deps)
-                                            `(let [initial-listener# ~(fp/inline-value-form compiled-listener)]
-                                               (reset! ~!listener-sym initial-listener#)
-                                               (fn [e#]
-                                                 ((deref ~!listener-sym) e#)))
-                                            
-                                            (fp/inline-value-form compiled-listener)))
+     :bindings (when (seq deps)
+                 `[[~!listener-sym (atom nil)]])
 
-        :update-form (u/with-updated-deps-check deps
-                       `(reset! ~!listener-sym ~(fp/inline-value-form compiled-listener)))})
+     :initial-form `(fd/add-listener! ~elem-sym ~event
+                                      ~(if (seq deps)
+                                         `(let [[initial-listener# update-fn#] ~(fp/build-form compiled-listener)]
+                                            (reset! ~!listener-sym [initial-listener# update-fn#])
+                                            (fn [e#]
+                                              ((first (deref ~!listener-sym)) e#)))
+                                         
+                                         `(first ~(fp/build-form compiled-listener))))
 
-     
-     (satisfies? fp/CompiledIdentity compiled-listener)
-     (let [deps (set (concat (fp/hard-deps compiled-listener)
-                             (fp/soft-deps compiled-listener)))]
-       {:soft-deps deps
-
-        :declarations (fp/declarations compiled-listener)
-
-        :bindings (when (seq deps)
-                    `[[~!listener-sym (atom nil)]])
-
-        :initial-form `(fd/add-listener! ~elem-sym ~event
-                                         ~(if (seq deps)
-                                            `(let [[initial-listener# update-fn#] ~(fp/build-form compiled-listener)]
-                                               (reset! ~!listener-sym [initial-listener# update-fn#])
-                                               (fn [e#]
-                                                 ((first (deref ~!listener-sym)) e#)))
-                                          
-                                            `(first ~(fp/build-form compiled-listener))))
-
-        :update-form (comment
-                       (u/with-updated-deps-check deps
-                         `(reset! ~!listener-sym ~(fp/updated-form compiled-listener))))}))))
+     :update-form (u/with-updated-deps-check deps
+                    `(let [[old-listener# update-fn#] @~!listener-sym]
+                       (reset! ~!listener-sym (update-fn#))))}))
 
 (defn compile-child [elem-sym child {:keys [path] :as opts}]
   (if (= :node (:type child))
@@ -96,59 +74,35 @@
                (fn [form]
                  `(fd/append-child! ~elem-sym ~form)))
 
-    (let [compiled-child (compile-identity child opts)]
-      (cond
-       (satisfies? fp/CompiledValue compiled-child)
-       (let [deps (fp/value-deps compiled-child)
-             !current-el (u/path->sym "!current" path "el")]
-         
-         {:soft-deps deps
-          :bindings (when (seq deps)
-                      `[[~!current-el (atom nil)]])
+    (let [compiled-child (compile-identity child opts)
 
-          :initial-form (if (seq deps)
-                          `(let [initial-holder# (fh/new-element-holder ~(fp/inline-value-form compiled-child))]
-                             (reset! ~!current-el initial-holder#)
-                             (fh/append-to! initial-holder# ~elem-sym)
-                             initial-holder#)
-                          
-                          `(fd/append-child! ~elem-sym (fd/->node ~(fp/inline-value-form compiled-child))))
-          
-          :update-form (u/with-updated-deps-check deps
-                         `(let [old-holder# @~!current-el
-                                new-holder# (fh/new-element-holder ~(fp/inline-value-form compiled-child))]
-                            (reset! ~!current-el new-holder#)
-                            (fh/swap-child! old-holder# new-holder#)
-                            new-holder#))})
+          hard-deps (fp/hard-deps compiled-child)
+          soft-deps (fp/soft-deps compiled-child)
+          deps (set (concat hard-deps soft-deps))
+           
+          !current-el (u/path->sym "!current" path "el")]
+
+      {:soft-deps deps
+
+       :declarations (fp/declarations compiled-child)
+
+       :bindings `[[~!current-el (atom nil)]]
        
-       (satisfies? fp/CompiledIdentity compiled-child)
-       (let [hard-deps (fp/hard-deps compiled-child)
-             soft-deps (fp/soft-deps compiled-child)
-             deps (set (concat hard-deps soft-deps))
-        
-             !current-el (u/path->sym "!current" path "el")]
+       :initial-form `(let [[initial-value# update-fn#] ~(fp/build-form compiled-child)
+                            initial-holder# (fh/new-element-holder initial-value#)]
+                        (reset! ~!current-el [initial-holder# update-fn#])
+                        (fh/append-to! initial-holder# ~elem-sym)
+                        initial-holder#)
 
-         {:soft-deps deps
-
-          :declarations (fp/declarations compiled-child)
-
-          :bindings `[[~!current-el (atom nil)]]
-          
-          :initial-form `(let [[initial-value# update-fn#] (fp/build-form compiled-child)
-                               initial-holder# (fh/new-element-holder initial-value#)]
-                           (reset! ~!current-el [initial-holder# update-fn#])
-                           (fh/append-to! initial-holder# ~elem-sym)
-                           initial-holder#)
-
-          :update-form (u/with-updated-deps-check deps
-                         `(let [[old-holder# update-fn#] @~!current-el
-                                [new-holder# update-fn#] (update-fn#)]
-                            (reset! ~!current-el [new-holder# update-fn#])
-                           
-                            (when (u/deps-updated? ~(u/quote-deps hard-deps))
-                              (fh/swap-child! old-holder# new-holder#))
-                           
-                            new-holder#))})))))
+       :update-form (u/with-updated-deps-check deps
+                      `(let [[old-holder# update-fn#] @~!current-el
+                             [new-holder# update-fn#] (update-fn#)]
+                         (reset! ~!current-el [new-holder# update-fn#])
+                         
+                         (when (u/deps-updated? ~(u/quote-deps hard-deps))
+                           (fh/swap-child! old-holder# new-holder#))
+                         
+                         new-holder#))})))
 
 (defn compile-node [{:keys [tag id style classes attrs children listeners]} {:keys [path] :as opts}]
   (let [elem-sym (u/path->sym path tag)

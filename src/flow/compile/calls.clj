@@ -1,5 +1,6 @@
 (ns flow.compile.calls
-  (:require [flow.compile :refer [compile-identity compile-value]]))
+  (:require [flow.compile :refer [compile-identity compile-value]]
+            [flow.util :as u]))
 
 (defmulti compile-call-identity
   (fn [call opts]
@@ -10,7 +11,7 @@
     (:call-type call)))
 
 (defmethod compile-call-identity :default [call opts]
-  (compile-call-value call opts))
+  (u/value->identity (compile-call-value call opts)))
 
 (require 'flow.compile.fn-decl)
 (require 'flow.compile.fn-call)

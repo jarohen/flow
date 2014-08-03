@@ -36,3 +36,19 @@
        (map name)
        (s/join "-")
        symbol))
+
+#+cljs
+(defn value->build-fn [f]
+  (letfn [(update-fn []
+            [(f) update-fn])]
+    (update-fn)))
+
+#+clj
+(defn value->identity [compiled-value]
+  (reify fp/CompiledIdentity
+    (hard-deps [_] (fp/value-deps compiled-value))
+    (soft-deps [_] nil)
+    (declarations [_] nil)
+    (build-form [_]
+      `(value->build-fn (fn []
+                          ~(fp/inline-value-form compiled-value))))))
