@@ -25,11 +25,12 @@
                 `[(defn ~let-sym []
                     (flow.forms.let/build-let [~@(map #(-> %
                                                            (dissoc :declarations :bound-syms :key-fn)
-                                                           (update-in [:hard-deps] u/quote-deps)
-                                                           (update-in [:soft-deps] u/quote-deps))
+                                                           (update-in [:hard-deps] u/quote-syms)
+                                                           (update-in [:soft-deps] u/quote-syms)
+                                                           (update-in [:deps] u/quote-syms))
                                                       compiled-bindings)]
                                    
-                                              {:deps ~(u/quote-deps (set/union (fp/hard-deps compiled-body)
+                                              {:deps ~(u/quote-syms (set/union (fp/hard-deps compiled-body)
                                                                                (fp/soft-deps compiled-body)))
                                                :build-fn (fn []
                                                            ~(fp/build-form compiled-body))}))]))

@@ -27,14 +27,14 @@
       (declarations [_]
         (concat (mapcat fp/declarations compiled-clauses)
                 (letfn [(clause->map [compiled-clause]
-                          {:deps (u/quote-deps (concat (fp/hard-deps compiled-clause)
+                          {:deps (u/quote-syms (concat (fp/hard-deps compiled-clause)
                                                        (fp/soft-deps compiled-clause)))
                            :build-fn `(fn []
                                         ~(fp/build-form compiled-clause))})]
                   
                   `[(defn ~case-sym []
                       (flow.forms.case/build-case
-                       {:deps ~(u/quote-deps (fp/value-deps compiled-case-expr))
+                       {:deps ~(u/quote-syms (fp/value-deps compiled-case-expr))
                         :value-fn (fn []
                                     ~(fp/inline-value-form compiled-case-expr))}
 

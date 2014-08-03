@@ -5,7 +5,7 @@
 #+clj (alias 'fs (doto 'flow.state create-ns))
 
 #+clj
-(defn quote-deps [deps]
+(defn quote-syms [deps]
   (when (seq deps)
     `#{~@(for [dep deps]
            `(quote ~dep))}))
@@ -13,7 +13,7 @@
 #+clj
 (defn with-updated-deps-check [deps quoted-then & [quoted-else]]
   (if (seq deps)
-    `(if (fs/deps-updated? ~(quote-deps deps))
+    `(if (fs/deps-updated? ~(quote-syms deps))
        ~quoted-then
        ~quoted-else)
     

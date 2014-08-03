@@ -19,13 +19,13 @@
       (declarations [_]
         (concat (mapcat fp/declarations [compiled-then compiled-else])
                 (letfn [(branch->map [compiled-branch]
-                          {:deps (u/quote-deps (concat (fp/hard-deps compiled-branch)
+                          {:deps (u/quote-syms (concat (fp/hard-deps compiled-branch)
                                                        (fp/soft-deps compiled-branch)))
                            :build-fn `(fn []
                                         ~(fp/build-form compiled-branch))})]
                   `[(defn ~if-sym []
                       (flow.forms.if/build-if
-                       {:deps ~(u/quote-deps (fp/value-deps compiled-test))
+                       {:deps ~(u/quote-syms (fp/value-deps compiled-test))
                         :value-fn (fn []
                                     ~(fp/inline-value-form compiled-test))}
                        
