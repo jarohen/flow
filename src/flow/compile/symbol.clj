@@ -16,6 +16,3 @@
         (if (or dynamic? local?)
           `(get fs/*state* (quote ~sym))
           sym)))))
-
-(defmethod compile-identity :symbol [form opts]
-  (compile-value form opts))
