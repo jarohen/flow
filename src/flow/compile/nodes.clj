@@ -97,10 +97,9 @@
        :update-form (u/with-updated-deps-check deps
                       `(let [[old-holder# update-fn#] @~!current-el
                              [new-value# update-fn#] (update-fn#)
-                             new-holder# (fh/new-element-holder new-value#)]
+                             new-holder# (fh/swap-child! old-holder# new-value#)]
                          
                          (reset! ~!current-el [new-holder# update-fn#])
-                         (fh/swap-child! old-holder# new-holder#)
                          
                          new-holder#))})))
 
