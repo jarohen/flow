@@ -38,7 +38,7 @@
               ::f/on {:change (f/bind-value! !color)}}]]))
 
 (defn update-random-numbers! [!random-numbers update-numbers-ch]
-  (reset! !random-numbers (for [idx (range 100)]
+  (reset! !random-numbers (for [idx (range 5)]
                             {:id idx
                              :num (rand-int 1000)}))
   
@@ -150,7 +150,7 @@
                                                                   "all" identity)
                                                                 :num))
                                                   (sort-by :num))]
-                        [:li num " (" id ")"])]])]
+                        [:li num])]])]
 
                  [:div
                   [:select.form-control {::f/on {:change (f/bind-value! !filter)}

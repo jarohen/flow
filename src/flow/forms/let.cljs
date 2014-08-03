@@ -36,7 +36,7 @@
                                    [current-state update-fn])}))
           
           {:state fs/*state*
-           :updated-vars (fs/updated-vars)
+           :updated-vars (fs/updated-vars fs/*state*)
            :new-bindings []}
 
           (map vector compiled-bindings current-bindings)))

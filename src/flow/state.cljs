@@ -8,8 +8,8 @@
       (binding [*state* closed-state]
         (apply f args)))))
 
-(defn updated-vars []
-  (:updated-vars (meta *state*)))
+(defn updated-vars [state]
+  (:updated-vars (meta state)))
 
 (defn with-updated-vars [state updated-vars]
   (with-meta state
@@ -17,4 +17,4 @@
 
 (defn deps-updated? [quoted-deps]
   (when (seq quoted-deps)
-    (boolean (some #(contains? quoted-deps %) (updated-vars)))))
+    (boolean (some #(contains? quoted-deps %) (updated-vars *state*)))))
