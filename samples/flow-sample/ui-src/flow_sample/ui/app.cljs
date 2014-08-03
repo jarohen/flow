@@ -85,39 +85,40 @@
 
           (f/root js/document.body
             (f/el
-              [:div#test.container.blah {::f/classes ["abc"
-                                                      (when (= (:primary (<< !colors)) "#000")
-                                                        "black")]
+              (let [{:keys [primary secondary] :as colors} (<< !colors)]
+                [:div#test.container.blah {::f/classes ["abc"
+                                                        (when (= primary "#000")
+                                                          "black")]
                                                                                       
-                                         ::f/style {:margin-top "2em"}
+                                           ::f/style {:margin-top "2em"}
                                                  
-                                         :data-test "foo"
+                                           :data-test "foo"
                                                  
-                                         :data-is-black (boolean (= (:primary (<< !colors)) "#000"))}
+                                           :data-is-black (boolean (= primary "#000"))}
 
-               (when (<< !show-heading?)
-                 [:div
-                  [:h1 {::f/style {:color (:secondary (<< !colors))
-                                   :padding "0.5em"
-                                   :background-color (:primary (<< !colors))}}
-                   (<< !heading)]])
+                 (when (<< !show-heading?)
+                   [:div
+                    [:h1 {::f/style {:color secondary
+                                     :padding "0.5em"
+                                     :background-color primary}}
+                     (<< !heading)]])
                
-               [:p.copy {::f/style {:text-align :center
-                                    :color (:secondary (<< !colors))}}
-                "If this works, " [:strong "I'll be very happy :)"]]
+                 [:p.copy {::f/style {:text-align :center
+                                      :color secondary}}
+                  "If this works, " [:strong "I'll be very happy :)"]]
 
-               [:button.btn.btn-default {::f/style {:margin-right "1em"}
-                                         ::f/on {:click #(js/alert (str "Hello! " (pr-str (<< !colors))))}}
-                "Click me!"]
+                 [:button.btn.btn-default {::f/style {:margin-right "1em"}
+                                           ::f/on {:click #(js/alert (str "Hello! " (pr-str colors)))}}
+                  "Click me!"]
 
-               [:button.btn.btn-default {::f/style {:margin-right "1em"}
-                                         ::f/on {:click (fn [e] (a/put! change-colors-ch :change!))}}
-                "Change colours!"]
+                 [:button.btn.btn-default {::f/style {:margin-right "1em"}
+                                           ::f/on {:click (fn [e] (a/put! change-colors-ch :change!))}}
+                  "Change colours!"]
 
-               [:button.btn.btn-default {::f/style {:margin-right "1em"}
-                                         ::f/on {:click #(swap! !show-heading? not)}}
-                "Show/Hide heading!"]
-               ]
+                 [:button.btn.btn-default {::f/style {:margin-right "1em"}
+                                           ::f/on {:click #(swap! !show-heading? not)}}
+                  "Show/Hide heading!"]
+                 ])
 
               #_(let [{:keys [primary secondary]} (<< !colors)]
                   [:div#test.container.blah {::f/classes ["abc"

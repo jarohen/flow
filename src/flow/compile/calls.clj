@@ -20,7 +20,7 @@
 #_(require 'flow.compile.wrap-cursor)
 (require 'flow.compile.if)
 (require 'flow.compile.case)
-#_(require 'flow.compile.let)
+(require 'flow.compile.let)
 #_(require 'flow.compile.for)
 
 (defmethod compile-identity :call [call opts]

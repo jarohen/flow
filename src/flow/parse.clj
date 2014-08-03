@@ -50,9 +50,10 @@
 
 (defmethod parse-call 'let [[_ bindings & body] {:keys [elem?]}]
   {:call-type :let
-   :bindings (for [[bind value] (partition 2 bindings)]
+   :bindings (for [[[bind value] idx] (map vector (partition 2 bindings) (range))]
                {:bind bind
-                :value (parse-form value {:elem? false})})
+                :value (parse-form value {:elem? false})
+                :idx idx})
    
    :body (parse-form `(do ~@body) {:elem? elem?})})
 

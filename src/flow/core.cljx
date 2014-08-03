@@ -9,6 +9,7 @@
                    flow.state
                    flow.render
                    flow.forms.if
+                   flow.forms.let
                    [flow.dom :as fd]))
 
 #+clj

@@ -1,35 +1,44 @@
 (ns flow.compile.let
-  (:require [flow.compile.calls :refer [compile-call-identity]]
+  (:require [flow.compile.calls :refer [compile-call-identity compile-call-value]]
             [flow.compile :refer [compile-identity]]
             [flow.bindings :as b]
-            [flow.bindings.protocols :as bp]
             [flow.protocols :as fp]
-            [flow.util :as u]))
+            [flow.util :as u]
+            [clojure.set :as set]))
 
 (defmethod compile-call-identity :let [{:keys [bindings body]} {:keys [path] :as opts}]
   (let [{:keys [compiled-bindings opts]} (b/compile-bindings bindings opts)
 
         compiled-body (compile-identity body (u/with-more-path opts ["let" "body"]))
 
-        deps (b/bindings-deps compiled-bindings compiled-body)
+        {:keys [hard-deps soft-deps]} (b/bindings-deps compiled-bindings compiled-body)
 
         let-sym (u/path->sym path "let")]
 
     (reify fp/CompiledIdentity
-      (identity-deps [_] deps)
+      (hard-deps [_] hard-deps)
+      (soft-deps [_] soft-deps)
 
-      (bindings [_]
-        (concat (mapcat bp/bindings compiled-bindings)
-                (fp/bindings compiled-body)))
+      (declarations [_]
+        (concat (mapcat :declarations compiled-bindings)
+                (fp/declarations compiled-body)
+                `[(defn ~let-sym []
+                    (flow.forms.let/build-let [~@(map #(-> %
+                                                           (dissoc :declarations :bound-syms :key-fn)
+                                                           (update-in [:hard-deps] u/quote-deps)
+                                                           (update-in [:soft-deps] u/quote-deps))
+                                                      compiled-bindings)]
+                                   
+                                              {:deps ~(u/quote-deps (set/union (fp/hard-deps compiled-body)
+                                                                               (fp/soft-deps compiled-body)))
+                                               :build-fn (fn []
+                                                           ~(fp/build-form compiled-body))}))]))
 
-      (initial-form [_ state-sym]
-        `(let [~@(->> (mapcat #(bp/initial-bindings % state-sym) compiled-bindings)
-                      (apply concat)
-                      (apply concat))]
-           ~(fp/initial-form compiled-body state-sym)))
+      (build-form [_]
+        `(~let-sym)))))
 
-      (updated-form [_ new-state-sym updated-vars-sym]
-        `(let [~@(->> (mapcat #(bp/updated-bindings % new-state-sym updated-vars-sym) compiled-bindings)
-                      (apply concat)
-                      (apply concat))]
-           ~(fp/updated-form compiled-body new-state-sym updated-vars-sym))))))
+(defmethod compile-call-value :let [{:keys [bindings body]} opts]
+  ;; TODO going to require some changes to bindings (or a different
+  ;; compile-bindings fn) because 'compile-bindings' currently expects
+  ;; this to be an identity
+  (throw (Exception. "not implemented")))
