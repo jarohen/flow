@@ -21,7 +21,7 @@
 (require 'flow.compile.if)
 (require 'flow.compile.case)
 (require 'flow.compile.let)
-#_(require 'flow.compile.for)
+(require 'flow.compile.for)
 
 (defmethod compile-identity :call [call opts]
   (compile-call-identity call opts))
