@@ -3,23 +3,24 @@
             [flow.protocols :as fp]
             [flow.util :as u]))
 
+(alias 'fs (doto 'flow.state create-ns))
+
 (defmethod compile-call-identity :wrap-cursor [{:keys [cursor]} {:keys [path] :as opts}]
-  (let [!wrapped-atom (u/path->sym "!" path "value")
+  (let [wrap-sym (u/path->sym "wrap" path (str (gensym (str cursor))))
         deps #{cursor}]
+    
     (reify fp/CompiledIdentity
-      (identity-deps [_] deps)
-      (bindings [_]
-        `[[~!wrapped-atom (atom nil)]])
+      (hard-deps [_] nil)
+      (soft-deps [_] deps)
 
-      (initial-form [_ state-sym]
-        `(let [initial-value# (get ~state-sym (quote ~cursor))]
-           (reset! ~!wrapped-atom initial-value#)
-           ~!wrapped-atom))
+      (declarations [_]
+        [`(defn ~wrap-sym []
+            (let [!atom# (atom (get fs/*state* (quote ~cursor)))]
+              (letfn [(update-wrapped-atom# []
+                        (reset! !atom# (get fs/*state* (quote ~cursor)))
+                        [!atom# update-wrapped-atom#])]
+                
+                [!atom# update-wrapped-atom#])))])
 
-      (updated-form [_ new-state-sym updated-vars-sym]
-        (u/with-updated-deps-check deps updated-vars-sym
-          `(do
-             (reset! ~!wrapped-atom (get ~new-state-sym (quote ~cursor)))
-             ~!wrapped-atom)
-          
-          !wrapped-atom)))))
+      (build-form [_]
+        `(~wrap-sym)))))

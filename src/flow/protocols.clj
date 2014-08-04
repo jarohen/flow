@@ -1,23 +1,25 @@
 (ns flow.protocols)
 
 (defprotocol CompiledIdentity
-  (identity-deps [_])
-  (bindings [_])
-  (initial-form [_ state-sym])
-  (updated-form [_ new-state-sym updated-vars-sym]))
+  (hard-deps [_])
+  (soft-deps [_])
+
+  (declarations [_])
+  (build-form [_]))
 
 (extend-protocol CompiledIdentity
   nil
-  (identity-deps [_] nil)
-  (bindings [_] nil)
-  (initial-form [_ state-sym] nil)
-  (updated-form [_ new-state-sym updated-vars-sym] nil))
+  (hard-deps [_] nil)
+  (soft-deps [_] nil)
+
+  (declarations [_] nil)
+  (build-form [_] nil))
 
 (defprotocol CompiledValue
   (value-deps [_])
-  (inline-value-form [_ state-sym]))
+  (inline-value-form [_]))
 
 (extend-protocol CompiledValue
   nil
   (value-deps [_] nil)
-  (inline-value-form [_ state-sym] nil))
+  (inline-value-form [_] nil))

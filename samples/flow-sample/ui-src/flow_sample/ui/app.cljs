@@ -3,7 +3,7 @@
             [cljs.core.async :as a]
             [garden.color :as c]
             simple-brepl.client)
-  (:require-macros [cljs.core.async.macros :refer [go-loop]]))
+  (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
 (enable-console-print!)
 
@@ -37,18 +37,44 @@
               :value (<< !color)
               ::f/on {:change (f/bind-value! !color)}}]]))
 
+(defn update-random-numbers! [!random-numbers update-numbers-ch]
+  (reset! !random-numbers (for [idx (range 5)]
+                            {:id idx
+                             :num (rand-int 1000)}))
+  
+  (go-loop []
+    (a/<! update-numbers-ch)
+    (swap! !random-numbers (fn [random-numbers]
+                             (for [{:keys [id num] :as rn} random-numbers]
+                               {:id id
+                                :num (rand-int 1000)})))
+
+    (recur))
+
+  !random-numbers)
+
+(defn update-colors! [!colors change-colors-ch]
+  (go-loop []
+    (a/<! change-colors-ch)
+    (reset! !colors {:primary (rand-color)
+                     :secondary (rand-color)})
+    (recur))
+
+  !colors)
+
 (set! (.-onload js/window)
       (fn []
-        (let [!colors (atom {:primary (rand-color)
-                             :secondary (rand-color)})
-              !show-heading? (atom true)
-              !heading (atom "Hello world!")
-              change-colors-ch (a/chan)
+        (let [change-colors-ch (a/chan)
               update-numbers-ch (a/chan)
 
-              !random-numbers (atom (for [idx (range 5)]
-                                      {:id idx
-                                       :num (rand-int 1000)}))
+              !colors (doto (atom {:primary (rand-color)
+                                   :secondary (rand-color)})
+                        (update-colors! change-colors-ch))
+              !show-heading? (atom true)
+              !heading (atom "Hello world!")
+
+              !random-numbers (doto (atom nil)
+                                (update-random-numbers! update-numbers-ch))
               !filter (atom "even")]
 
           (def !foo-colors !colors)
@@ -56,18 +82,9 @@
           (def !foo-heading !foo-heading)
           (def !foo-random-numbers !random-numbers)
 
-          (go-loop []
-            (a/<! update-numbers-ch)
-            (swap! !random-numbers (fn [random-numbers]
-                                     (for [{:keys [id num] :as rn} random-numbers]
-                                       {:id id
-                                        :num (rand-int 1000)})))
-
-            (recur))
-          
           (f/root js/document.body
             (f/el
-              (let [{:keys [primary secondary]} (<< !colors)]
+              (let [{:keys [primary secondary] :as colors} (<< !colors)]
                 [:div#test.container.blah {::f/classes ["abc"
                                                         (when (= primary "#000")
                                                           "black")]
@@ -77,20 +94,20 @@
                                            :data-test "foo"
                                                  
                                            :data-is-black (boolean (= primary "#000"))}
-               
+
                  (when (<< !show-heading?)
                    [:div
                     [:h1 {::f/style {:color secondary
                                      :padding "0.5em"
                                      :background-color primary}}
                      (<< !heading)]])
-
+               
                  [:p.copy {::f/style {:text-align :center
-                                      :color (:secondary (<< !colors))}}
+                                      :color secondary}}
                   "If this works, " [:strong "I'll be very happy :)"]]
 
                  [:button.btn.btn-default {::f/style {:margin-right "1em"}
-                                           ::f/on {:click #(js/alert "Hello!")}}
+                                           ::f/on {:click #(js/alert (str "Hello! " (pr-str colors)))}}
                   "Click me!"]
 
                  [:button.btn.btn-default {::f/style {:margin-right "1em"}
@@ -112,7 +129,8 @@
                   (let [random-numbers (<< !random-numbers)
                         selected-filter (<< !filter)]
                     [:div
-                     [:p "!random-numbers: " random-numbers]
+                     [:p "!random-numbers: " (vec random-numbers)]
+                     
                      [:p "filter: " (case selected-filter
                                       "even" (let [even-count (count (filter (comp even? :num) random-numbers))]
                                                [:span "Only the " even-count
@@ -126,13 +144,13 @@
                                         [:span "All " all-count]))]
                    
                      [:ul {::f/style {:margin-top "1em"}}
-                      (for [{:keys [num]} (->> random-numbers
-                                               (filter (comp (case selected-filter
-                                                               "even" even?
-                                                               "odd" odd?
-                                                               "all" identity)
-                                                             :num))
-                                               (sort-by :num))]
+                      (for [{:keys [id num]} (->> random-numbers
+                                                  (filter (comp (case selected-filter
+                                                                  "even" even?
+                                                                  "odd" odd?
+                                                                  "all" identity)
+                                                                :num))
+                                                  (sort-by :num))]
                         [:li num])]])]
 
                  [:div
@@ -153,11 +171,5 @@
                   
                   [:p "Secondary:" (render-colour-picker (!<< secondary))]]
                  
-                 (render-svg !colors)])))
-
-          (go-loop []
-            (a/<! change-colors-ch)
-            (reset! !foo-colors {:primary (rand-color)
-                                 :secondary (rand-color)})
-            (recur)))))
+                 (render-svg !colors)]))))))
 

@@ -1,9 +1,10 @@
 (ns flow.bindings
-  (:require [flow.compile :refer [compile-value]]
-            [clojure.set :as set]
-            [flow.protocols :as fp]
+  (:require [flow.compile :refer [compile-identity compile-value]]
             [flow.util :as u]
-            [flow.bindings.protocols :as bp]))
+            [flow.protocols :as fp]
+            [clojure.set :as set]))
+
+(alias 'fs (doto 'flow.state create-ns))
 
 (defn destructuring-bind-syms [bind]
   (letfn [(dbs* [bind] (cond
@@ -18,83 +19,110 @@
                         (symbol? bind) [(symbol (name bind))]))]
     (set (dbs* bind))))
 
-(defn key-fn [value value-sym]
-  (let [manual-key-fn (:flow.core/key-fn (meta value))]
-    `(or ~@(when manual-key-fn
-             `[(~manual-key-fn ~value-sym)])
-         (:flow.core/id ~value-sym)
-         (:id ~value-sym)
-         ~value-sym)))
+(defn compile-identity-binding [{:keys [bind value idx]} opts]
+  (let [compiled-identity (compile-identity value (u/with-more-path opts [(str idx)]))
+        
+        hard-deps (fp/hard-deps compiled-identity)
+        soft-deps (fp/soft-deps compiled-identity)
 
-(defn compile-bindings [bindings {:keys [path] :as opts}]
-  (reduce (fn [{:keys [compiled-bindings opts] :as acc} [{:keys [bind value]} idx]]
-            (let [binding-path (u/path->sym path "binding" (str idx))
-                  compiled-value (compile-value value opts)
-                        
-                  destructured-syms (destructuring-bind-syms bind)
-                  deps (fp/value-deps compiled-value)
+        destructured-syms (destructuring-bind-syms bind)]
 
-                  bind-values->map-sym (u/path->sym binding-path "value->map")
-                  !value-sym (u/path->sym "!" binding-path "value")
-                  key-sym (u/path->sym binding-path "key")
-                  value-sym (u/path->sym binding-path "value")]
+    {:compiled-binding {:hard-deps hard-deps
+                        :soft-deps soft-deps
+                        :deps (set/union hard-deps soft-deps)
+
+                        :declarations (fp/declarations compiled-identity)
+                        :bound-syms destructured-syms
+
+                        :manual-key-fn (:flow.core/key-fn (meta value))
+
+                        :value->state `(fn [~bind]
+                                         ~(->> (for [bind-sym destructured-syms]
+                                                 `[(quote ~bind-sym) ~bind-sym])
+                                               (into {})))
+                        :build-binding `(fn []
+                                          ~(fp/build-form compiled-identity))}
+
+     :opts (update-in opts
+                      [(if (seq hard-deps)
+                         :dynamic-syms
+                         :local-syms)]
+                      set/union destructured-syms)}))
+
+(defn compile-identity-bindings [bindings opts]
+  (reduce (fn [{:keys [compiled-bindings opts] :as acc} binding]
+            (let [{:keys [compiled-binding opts]} (compile-identity-binding binding opts)]
 
               {:compiled-bindings (conj compiled-bindings
-                                        (reify bp/CompiledBindings
-                                          (value-deps [_] deps)
-
-                                          (bindings [_]
-                                            [[!value-sym `(atom nil)]
-                                             [bind-values->map-sym `(fn bind-values->map# [value#]
-                                                                      (let [~bind value#]
-                                                                        ~(->> (for [bind-sym destructured-syms]
-                                                                                `[(quote ~bind-sym) ~bind-sym])
-                                                                              (into {}))))]])
-
-                                          (destructured-syms [_]
-                                            destructured-syms)
-
-                                          (value-key [_]
-                                            key-sym)
-
-                                          (initial-bindings [_ state-sym]
-                                            `[[[~value-sym ~(fp/inline-value-form compiled-value state-sym)]]
-                                              
-                                              [[~key-sym ~(key-fn value value-sym)]
-
-                                               [~state-sym (merge ~state-sym (~bind-values->map-sym ~value-sym))]
-                                               
-                                               [~'_ (reset! ~!value-sym ~value-sym)]]])
-
-                                          (updated-bindings [_ new-state-sym updated-vars-sym]
-                                            `[[[~value-sym ~(u/with-updated-deps-check deps updated-vars-sym
-                                                              (fp/inline-value-form compiled-value new-state-sym)
-                                                              `@~!value-sym)]]
-                                              
-                                              [[~key-sym ~(key-fn value value-sym)]
-
-                                               [~new-state-sym (merge ~new-state-sym (~bind-values->map-sym ~value-sym))]
-
-                                               [~updated-vars-sym (set/union ~updated-vars-sym
-                                                                             (flow.diff/updated-keys (~bind-values->map-sym @~!value-sym)
-                                                                                                     (~bind-values->map-sym ~value-sym)))]
-                                               [~'_ (reset! ~!value-sym ~value-sym)]]])))
+                                        compiled-binding)
                
-               :opts (update-in opts
-                                [(if (seq deps)
-                                   :dynamic-syms
-                                   :local-syms)]
-                                set/union destructured-syms)}))
+               :opts opts}))
                 
           {:compiled-bindings []
            :opts opts}
                 
-          (map vector bindings (range))))
+          bindings))
 
-(defn bindings-deps [compiled-bindings compiled-body]
-  (reduce (fn [deps-acc compiled-binding]
+(defn identity-bindings-deps [compiled-bindings compiled-body]
+  (reduce (fn [{:keys [hard-deps soft-deps] :as deps-acc} {:keys [bound-syms] :as compiled-binding}]
             (-> deps-acc
-                (set/difference (bp/destructured-syms compiled-binding))
-                (set/union (bp/value-deps compiled-binding))))
-          (fp/identity-deps compiled-body)
+                (update-in [:hard-deps] set/difference (:bound-syms compiled-binding))
+                (update-in [:soft-deps] set/difference (:bound-syms compiled-binding))
+                (update-in [:hard-deps] set/union (when (seq (set/intersection bound-syms hard-deps))
+                                                    (:hard-deps compiled-binding)))
+                (update-in [:soft-deps] set/union (when (seq (set/intersection bound-syms (set/union hard-deps soft-deps)))
+                                                    (concat (:soft-deps compiled-binding)
+                                                            (:hard-deps compiled-binding))))))
+
+          {:hard-deps (fp/hard-deps compiled-body)
+           :soft-deps (fp/soft-deps compiled-body)}
+          
+          (reverse compiled-bindings)))
+
+(defn compile-value-binding [{:keys [bind value idx]} {:keys [state-sym] :as opts}]
+  (let [compiled-value (compile-value value opts)
+        
+        deps (fp/value-deps compiled-value)
+
+        destructured-syms (destructuring-bind-syms bind)]
+
+    {:compiled-binding {:deps deps
+                        :bound-syms destructured-syms
+
+                        :value-bindings `[[~bind (binding [fs/*state* ~state-sym]
+                                                   ~(fp/inline-value-form compiled-value))]]
+                        :state-bindings `[[~state-sym (merge ~state-sym
+                                                             ~(->> (for [bind-sym destructured-syms]
+                                                                     `[(quote ~bind-sym) ~bind-sym])
+                                                                   (into {})))]]}
+
+     :opts (update-in opts
+                      [(if (seq deps)
+                         :dynamic-syms
+                         :local-syms)]
+                      set/union destructured-syms)}))
+
+(defn compile-value-bindings [bindings opts]
+  (reduce (fn [{:keys [compiled-bindings opts] :as acc} binding]
+            (let [{:keys [compiled-binding opts]} (compile-value-binding binding opts)]
+
+              {:compiled-bindings (conj compiled-bindings
+                                        compiled-binding)
+               
+               :opts opts}))
+                
+          {:compiled-bindings []
+           :opts opts}
+                
+          bindings))
+
+(defn value-bindings-deps [compiled-bindings compiled-body]
+  (reduce (fn [deps {:keys [bound-syms] :as compiled-binding}]
+            (-> deps
+                (set/difference (:bound-syms compiled-binding))
+                (set/union (when (seq (set/intersection bound-syms deps))
+                             (:deps compiled-binding)))))
+
+          (fp/value-deps compiled-body)
+          
           (reverse compiled-bindings)))
