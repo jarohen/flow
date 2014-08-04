@@ -1,20 +1,45 @@
 (ns flow.core
-  (:require [flow.for :as f :include-macros true]
-            [flow.let :as l :include-macros true]
-            [flow.el :as el :include-macros true]))
+  #+clj (:require [flow.expand :refer [expand-macros]]
+                  [flow.parse :refer [parse-form]]
+                  [flow.compile :refer [compile-el]]
+                  [flow.render :refer [render-el]])
+  
+  #+cljs (:require flow.protocols
+                   [flow.dom :as fd]
+                   flow.forms.if
+                   flow.forms.let
+                   flow.forms.for
+                   flow.forms.symbol
+                   flow.forms.cursors))
 
 #+clj
-(defmacro let<< [bindings & body]
-  `(l/let<< ~bindings ~@body))
+(defmacro el [elem]
+  (let [el-sym (gensym "flow-el")
+        syms {:state (symbol (str el-sym "-state"))
+              :old-state (symbol (str el-sym "-old-state"))
+              :new-state (symbol (str el-sym "-new-state"))
+              :updated-vars (symbol (str el-sym "-updated-vars"))
+              :dynamic-syms #{}
+              :local-syms #{}}]
+    
+    (-> (expand-macros elem &env)
+        (parse-form {:elem? true
+                     :path (str (gensym "flow-el"))})
+        (doto (->> (spit "/tmp/parsed.edn")))
+        (compile-el syms)
+        (doto (->> (spit "/tmp/compiled.edn")))
+        (render-el)
+        (doto (->> (spit "/tmp/rendered.edn"))))))
 
-#+clj
-(defmacro for<< [bindings & body]
-  `(f/for<< ~bindings ~@body))
+#+cljs
+(defn root [$container $elem]
+  (loop []
+    (when-let [$child (.-firstChild $container)]
+      (.removeChild $container $child)
+      (recur)))
+        
+  (.appendChild $container $elem))
 
-#+clj
-(defmacro el<< [el-stream]
-  `(el/el<< ~el-stream))
-
-#+clj
-(defmacro << [stream]
-  (throw (ex-info "'<<' used outside of let<</for<<" {:stream stream})))
+#+cljs
+(defn bind-value! [cursor]
+  (fd/bind-value! cursor))

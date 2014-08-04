@@ -1,4 +1,4 @@
-(defproject jarohen/flow "0.1.0"
+(defproject jarohen/flow "0.2.0-SNAPSHOT"
   :description "Lightweight library to help you write dynamic CLJS webapps"
 
   :url "https://github.com/james-henderson/flow"
@@ -9,7 +9,7 @@
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [org.clojure/core.async "0.1.303.0-886421-alpha"]]
 
-  :plugins [[com.keminglabs/cljx "0.3.2"]]
+  :plugins [[com.keminglabs/cljx "0.4.0"]]
 
   :source-paths ["src" "target/generated/clj"]
   

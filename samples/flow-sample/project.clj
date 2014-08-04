@@ -12,13 +12,15 @@
 
                  [prismatic/dommy "0.1.2"]
 
-                 [org.clojure/core.async "0.1.267.0-0d7780-alpha"]
-                 [org.clojure/clojurescript "0.0-2202"]
+                 [org.clojure/core.async "0.1.303.0-886421-alpha"]
+                 [org.clojure/clojurescript "0.0-2268"]
 
-                 [jarohen/flow "0.1.0"]]
+                 [jarohen/flow "0.2.0-SNAPSHOT"]]
 
-  :plugins [[jarohen/lein-frodo "0.3.0"]
+  :plugins [[jarohen/lein-frodo "0.3.2"]
+            [jarohen/simple-brepl "0.1.1"]
             [lein-cljsbuild "1.0.3"]
+            [com.keminglabs/cljx "0.4.0"]
             [lein-pdo "0.1.1"]]
 
   :frodo/config-resource "flow-sample-config.edn"
@@ -26,7 +28,10 @@
   :resource-paths ["resources" "target/resources"]
 
   :cljsbuild {:builds {:dev
-                       {:source-paths ["src"]
+                       {:source-paths ["ui-src"
+                                       "checkouts/flow/src"
+                                       "checkouts/flow/target/generated/clj"
+                                       "checkouts/flow/target/generated/cljs"]
                         :compiler {:output-to "target/resources/js/flow-sample.js"
                                    :output-dir "target/resources/js/"
                                    :optimizations :whitespace
