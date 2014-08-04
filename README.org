@@ -1,8 +1,41 @@
 * Flow
 
 #+BEGIN_SRC clojure
-  [jarohen/flow "0.1.0"]
+  [jarohen/flow "0.2.0-alpha1"]
 #+END_SRC
+
+Flow has been substantially changed since 0.1.0 - docs to come but,
+for now, here's the docs of the old version.
+
+In short, Flow is now a compiled DSL - the compiler analyses all of
+the dependencies at compile-time, and only updates what is necessary
+at run-time. The new DSL is a lot more expressive than the old =let<<=
+/ =for<<= combination.
+
+** Thanks
+
+A big thanks to [[https://github.com/lsnape][Luke Snape]] and [[https://github.com/henrygarner][Henry Garner]] for their feedback and
+advice on early versions of the library, and their help through
+numerous design/implementation conversations. Thanks also to Henry for
+his excellent suggestion of the =<<= syntax.
+
+Also, thanks to [[https://github.com/matlux][Mathieu Gauthron]], [[https://github.com/n8dawgrr][Nathan Matthews]] and [[https://github.com/malcolmsparks][Malcolm Sparks]],
+whose feedback on Clidget helped shape the direction of Flow.
+
+If you have any questions, feel free to get in touch through Twitter
+(I'm [[https://twitter.com/jarohen][@jarohen]]) or through the traditional GitHub methods!
+
+Thanks!
+
+James
+
+** License
+
+Copyright © 2014 James Henderson
+
+Distributed under the Eclipse Public License, the same as Clojure
+
+** Old Flow Docs (superceded):
 
 Flow is a lightweight library to help you write dynamic ClojureScript
 webapps in a declarative style, without worrying when/how the DOM
@@ -75,7 +108,7 @@ You can render this as a dynamic widget with the following Flow code:
 Flow will then update the contact list whenever the contacts atom is
 changed.
 
-** Getting started
+*** Getting started
 
 To add Flow to your Leiningen project, add the following to your =project.clj=:
 
@@ -83,7 +116,7 @@ To add Flow to your Leiningen project, add the following to your =project.clj=:
   [jarohen/flow "0.1.0"]
 #+END_SRC
 
-*** Requires
+**** Requires
 
 Flow only has one require, as follows:
 
@@ -91,7 +124,7 @@ Flow only has one require, as follows:
   (:require [flow.core :refer-macros [el<< let<< for<<]])
 #+END_SRC
 
-*** Emacs auto-indent
+**** Emacs auto-indent
 
 You can get Emacs to auto-indent your Flow code by adding the
 following snippet to your configuration:
@@ -105,7 +138,7 @@ following snippet to your configuration:
     (el<< 0))
 #+END_SRC
 
-** Example projects using Flow
+*** Example projects using Flow
 
 In this repo:
 
@@ -113,9 +146,9 @@ In this repo:
 - '[[https://github.com/james-henderson/flow/tree/master/samples/contacts][Contact Manager]]'
 - '[[https://github.com/james-henderson/flow/tree/master/samples/todomvc][TodoMVC]]' (because it's pretty much obligatory!)
 
-** Diving deeper into Flow
+*** Diving deeper into Flow
 
-*** About 'Streams'
+**** About 'Streams'
 
 At it's lowest level, Flow is built upon the concept of streams - a
 sequence of values representing an identity changing over
@@ -131,7 +164,7 @@ abstractions over this behaviour in the form of =let<<= and
 =for<<=. (If it helps, I tend to read these as 'let-arrow' and
 'for-arrow', respectively)
 
-*** =let<<= - extending Clojure's =let= to handle Streams
+**** =let<<= - extending Clojure's =let= to handle Streams
 
 =let<<= looks mostly like Clojure's =let=, except that you can use
 =let<<= to react to the changing values on a stream. With =let<<=, you
@@ -194,7 +227,7 @@ surrounding code as necessary to react to new values:
 (A slightly contrived example, admittedly - but rest assured it's far
 more useful in the =for<<= case, see below!)
 
-*** =for<<= - like =let<<=, but for Clojure's =for=
+**** =for<<= - like =let<<=, but for Clojure's =for=
 
 =for<<= works in exactly the same way as =let<<=, and also supports
 =:when=, =:while= and =:let= clauses in the same manner as Clojure's
@@ -215,7 +248,7 @@ binding; just wrapping the stream. This is particularly useful in the
 stream (i.e. sorting) before splitting it down into its individual
 elements.
 
-**** Caching in =for<<=
+***** Caching in =for<<=
 
 =for<<= does make one major assumption: that the code passed to it is
 referentially transparent - i.e. that the output of the body only
@@ -233,7 +266,7 @@ were to update a contact, =for<<= would re-use all of the elements
 that it could, and only re-generate the DOM element for the contact
 that had changed.
 
-*** =el<<= - turning a stream of DOM elements into a dynamic component
+**** =el<<= - turning a stream of DOM elements into a dynamic component
 
 The final piece in the jigsaw is how to turn a stream of DOM elements
 (or sequences of DOM elements, if you're using =for<<=) into a
@@ -257,25 +290,4 @@ declarative - they both require the user to declare what the component
 should look like for a given input value (as opposed to manually
 making updates to the DOM) - so there is no need to spend time
 rendering intermediate states.
-
-** Thanks
-
-A big thanks to [[https://github.com/henrygarner][Henry Garner]] for his excellent suggestion of the =<<=
-Flow syntax, and for his feedback on early versions of the library.
-
-Also, thanks to [[https://github.com/matlux][Mathieu Gauthron]], [[https://github.com/n8dawgrr][Nathan Matthews]] and [[https://github.com/malcolmsparks][Malcolm Sparks]],
-whose feedback on Clidget helped shape the direction of Flow.
-
-If you have any questions, feel free to get in touch through Twitter
-(I'm [[https://twitter.com/jarohen][@jarohen]]) or through the traditional GitHub methods!
-
-Thanks!
-
-James
-
-** License
-
-Copyright © 2014 James Henderson
-
-Distributed under the Eclipse Public License, the same as Clojure
 
