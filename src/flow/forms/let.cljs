@@ -20,20 +20,16 @@
                                                                   bound-syms value->state]}
                                                           [current-state update-fn
                                                            :as current-binding]]]
-            (if (fs/deps-updated? deps)
-              (let [[new-value update-fn] (update-fn)
-                    new-state (value->state new-value)]
-                {:state (merge state new-state)
-                 :updated-vars (if (fs/deps-updated? hard-deps)
-                                 (set/union updated-vars bound-syms)
-                                 updated-vars)
-                 :new-bindings (conj new-bindings
-                                     [new-state update-fn])})
-
-              {:state (merge state current-state)
-               :updated-vars updated-vars
+            (let [[new-value update-fn] (binding [fs/*state* (fs/with-updated-vars state
+                                                               updated-vars)]
+                                          (update-fn))
+                  new-state (value->state new-value)]
+              {:state (merge state new-state)
+               :updated-vars (if (fs/deps-updated? hard-deps)
+                               (set/union updated-vars bound-syms)
+                               updated-vars)
                :new-bindings (conj new-bindings
-                                   [current-state update-fn])}))
+                                   [new-state update-fn])}))
           
           {:state fs/*state*
            :updated-vars (fs/updated-vars fs/*state*)
