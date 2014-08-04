@@ -1,6 +1,5 @@
 (ns flow.forms.for
   (:require [flow.state :as fs]
-            [flow.protocols :as fp]
             [clojure.set :as set]))
 
 (defn value->key [{:keys [manual-key-fn]} value]
@@ -31,8 +30,7 @@
                              (let [[initial-element update-fn] (binding [fs/*state* initial-state]
                                                                  ((:build-fn compiled-body)))]
                                {:value-key (conj ks value-key)
-                                :current-element (doto initial-element
-                                                   (fp/set-flow-id! (conj ks value-key)))
+                                :current-element initial-element
                                 :update-fn update-fn}))
                   
                   :children (when (seq more-bindings)
@@ -61,6 +59,7 @@
                                                    (cond-> (fs/deps-updated? hard-deps) (set/union bound-syms))))
                                    
                                    value-key (value->key compiled-binding new-value)]
+
                                (if-let [cached-value (get cache value-key)]
                                  {:value-key value-key
                                   :element (when-not (seq more-bindings)
@@ -80,8 +79,7 @@
                                                                                  ((:build-fn compiled-body)))]
                                                {:deps (:deps compiled-body)
                                                 :value-key (conj ks value-key)
-                                                :current-element (doto initial-element
-                                                                   (fp/set-flow-id! (conj ks value-key)))
+                                                :current-element initial-element
                                                 :update-fn update-fn}))
                                   
                                   :children (when (seq more-bindings)

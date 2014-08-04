@@ -1,6 +1,5 @@
 (ns flow.holder
-  (:require [flow.dom :as fd]
-            [flow.protocols :as fp]))
+  (:require [flow.dom :as fd]))
 
 (defprotocol ElementHolder
   (append-to! [_ $parent])

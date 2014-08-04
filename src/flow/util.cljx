@@ -1,5 +1,5 @@
 (ns flow.util
-  (:require [flow.protocols :as fp]
+  (:require #+clj [flow.protocols :as fp]
             [clojure.string :as s]))
 
 #+clj (alias 'fs (doto 'flow.state create-ns))
