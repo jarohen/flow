@@ -10,6 +10,7 @@
                    flow.render
                    flow.forms.if
                    flow.forms.let
+                   flow.forms.fn-call
                    [flow.dom :as fd]))
 
 #+clj

@@ -4,42 +4,6 @@
             [flow.protocols :as fp]
             [flow.util :as u]))
 
-#_(defmethod compile-call-identity :fn-call [{:keys [args]} {:keys [path] :as opts}]
-    (let [compiled-args (map #(compile-identity % opts) args)
-          deps (set (mapcat fp/identity-deps compiled-args))
-
-          !current-args (u/path->sym "!" path "current-args")
-          !current-value (u/path->sym "!" path "current-value")]
-
-      (reify fp/CompiledIdentity
-        (identity-deps [_] deps)
-        
-        (bindings [_]
-          (concat (mapcat fp/bindings compiled-args)
-                
-                  `[[~!current-args (atom nil)]
-                    [~!current-value (atom nil)]]))
-      
-        (initial-form [_ state-sym]
-          `(let [initial-args# [~@(map #(fp/initial-form % state-sym) compiled-args)]
-                 initial-value# (apply (first initial-args#) (rest initial-args#))]
-             (reset! ~!current-args initial-args#)
-             (reset! ~!current-value initial-value#)
-             initial-value#))
-
-        (updated-form [_ new-state-sym updated-vars-sym]
-          (u/with-updated-deps-check deps updated-vars-sym
-            `(let [new-args# [~@(map #(fp/updated-form % new-state-sym updated-vars-sym) compiled-args)]
-                   new-value# (if-not (every? true? (map = new-args# @~!current-args))
-                                (apply (first new-args#) (rest new-args#))
-                                @~!current-value)]
-               (reset! ~!current-args new-args#)
-               (reset! ~!current-value new-value#)
-               new-value#)
-          
-            `@~!current-value)))))
-
-
 (defmethod compile-call-value :fn-call [{:keys [args]} opts]
   (let [compiled-args (map #(compile-value % opts) args)]
 
@@ -48,3 +12,23 @@
         
       (inline-value-form [_]
         `(~@(map fp/inline-value-form compiled-args))))))
+
+(defmethod compile-call-identity :fn-call [{:keys [args] :as call} {:keys [path] :as opts}]
+  (let [compiled-args (map #(compile-identity %1 (u/with-more-path opts ["call" "arg" (str %2)]))
+                           args
+                           (range))]
+
+    (if (empty? (set (mapcat fp/soft-deps compiled-args)))
+      (u/value->identity (compile-call-value call opts))
+
+      (reify fp/CompiledIdentity
+        (hard-deps [_] (set (mapcat fp/hard-deps compiled-args)))
+        (soft-deps [_] (set (mapcat fp/soft-deps compiled-args)))
+
+        (declarations [_]
+          (concat (mapcat fp/declarations compiled-args)))
+        
+        (build-form [_]
+          `(flow.forms.fn-call/build-call [~@(for [compiled-arg compiled-args]
+                                               `(fn []
+                                                  ~(fp/build-form compiled-arg)))]))))))
