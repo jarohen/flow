@@ -163,12 +163,12 @@
                    [:option {:value "all"}
                     "All"]]]
 
-                 #_[:div
-                    [:h3 "Pick your colours:"]
+                 [:div
+                  [:h3 "Pick your colours:"]
 
-                    [:p "Primary:" (render-colour-picker (!<< primary))]
+                  [:p "Primary:" (render-colour-picker (!<< primary))]
                   
-                    [:p "Secondary:" (render-colour-picker (!<< secondary))]]
+                  [:p "Secondary:" (render-colour-picker (!<< secondary))]]
                  
                  (render-svg !colors)]))))))
 
