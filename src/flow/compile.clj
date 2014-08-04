@@ -1,6 +1,10 @@
 (ns flow.compile)
 
-(defmulti compile-form
+(defmulti compile-identity
+  (fn [form opts]
+    (:type form)))
+
+(defmulti compile-value
   (fn [form opts]
     (:type form)))
 

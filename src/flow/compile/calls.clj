@@ -1,11 +1,11 @@
 (ns flow.compile.calls
-  (:require [flow.compile :refer [compile-form]]
-            [flow.bindings :as b]
-            [flow.util :as u]
-            [clojure.set :as set]
-            [flow.protocols :as fp]))
+  (:require [flow.compile :refer [compile-identity compile-value]]))
 
-(defmulti compile-call-form
+(defmulti compile-call-identity
+  (fn [call opts]
+    (:call-type call)))
+
+(defmulti compile-call-value
   (fn [call opts]
     (:call-type call)))
 
@@ -13,9 +13,14 @@
 (require 'flow.compile.fn-call)
 (require 'flow.compile.do)
 (require 'flow.compile.unwrap-cursor)
+(require 'flow.compile.wrap-cursor)
 (require 'flow.compile.if)
+(require 'flow.compile.case)
 (require 'flow.compile.let)
 (require 'flow.compile.for)
 
-(defmethod compile-form :call [call opts]
-  (compile-call-form call opts))
+(defmethod compile-identity :call [call opts]
+  (compile-call-identity call opts))
+
+(defmethod compile-value :call [call opts]
+  (compile-call-value call opts))

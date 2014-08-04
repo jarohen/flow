@@ -1,6 +1,6 @@
 (ns flow.compile.for
-  (:require [flow.compile.calls :refer [compile-call-form]]
-            [flow.compile :refer [compile-form]]
+  (:require [flow.compile.calls :refer [compile-call-identity]]
+            [flow.compile :refer [compile-identity]]
             [flow.bindings :as b]
             [flow.bindings.protocols :as bp]
             [flow.protocols :as fp]
@@ -8,34 +8,34 @@
 
 (alias 'f (doto 'flow.core create-ns))
 
-(defmethod compile-call-form :for [{:keys [bindings body path]} opts]
+(defmethod compile-call-identity :for [{:keys [bindings body]} {:keys [path] :as opts}]
   (let [{:keys [compiled-bindings opts]} (b/compile-bindings bindings opts)
 
-        compiled-body (compile-form body opts)
+        compiled-body (compile-identity body opts)
 
         deps (b/bindings-deps compiled-bindings compiled-body)
 
-        for-sym (symbol path)]
+        for-sym (u/path->sym path "for")]
 
-    (reify fp/CompiledForm
-      (form-deps [_] deps)
+    (reify fp/CompiledIdentity
+      (identity-deps [_] deps)
 
       (bindings [_]
         (concat (mapcat bp/bindings compiled-bindings)
                 
 
-                (let [state (symbol (str path "-state"))
-                      new-state (symbol (str path "-new-state"))
-                      updated-vars (symbol (str path "-updated-vars"))]
+                (let [state (u/path->sym path "for" "state")
+                      new-state (u/path->sym path "for" "new-state")
+                      updated-vars (u/path->sym path "for" "updated-vars")]
                   
                   `[[~for-sym (let [!body-value-cache# (atom {})
                                     make-body# (fn []
                                                  (let [~@(apply concat (fp/bindings compiled-body))]
                                                    (reify fp/DynamicValue
                                                      (~'build [~'_ ~state]
-                                                       ~(fp/initial-value-form compiled-body state))
+                                                       ~(fp/initial-form compiled-body state))
                                                      (~'updated-value [~'_ ~new-state ~updated-vars]
-                                                       ~(fp/updated-value-form compiled-body new-state updated-vars)))))]
+                                                       ~(fp/updated-form compiled-body new-state updated-vars)))))]
                                 
                                 (reify fp/DynamicValue
                                   (~'build [~'_ ~state]
@@ -73,8 +73,8 @@
                                       (reset! !body-value-cache# @!new-cache#)
                                       new-values#))))]])))
 
-      (initial-value-form [_ state-sym]
+      (initial-form [_ state-sym]
         `(fp/build ~for-sym ~state-sym))
 
-      (updated-value-form [_ new-state-sym updated-vars-sym]
+      (updated-form [_ new-state-sym updated-vars-sym]
         `(fp/updated-value ~for-sym ~new-state-sym ~updated-vars-sym)))))

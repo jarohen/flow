@@ -1,15 +1,22 @@
 (ns flow.compile.unwrap-cursor
-  (:require [flow.compile.calls :refer [compile-call-form]]
+  (:require [flow.compile.calls :refer [compile-call-identity compile-call-value]]
             [flow.protocols :as fp]))
 
-(defmethod compile-call-form :unwrap-cursor [{:keys [cursor]} opts]
-  (reify fp/CompiledForm
-    (form-deps [_] #{cursor})
+(defmethod compile-call-identity :unwrap-cursor [{:keys [cursor]} opts]
+  (reify fp/CompiledIdentity
+    (identity-deps [_] #{cursor})
 
     (bindings [_] nil)
 
-    (initial-value-form [_ state-sym]
+    (initial-form [_ state-sym]
       `(get ~state-sym (quote ~cursor)))
 
-    (updated-value-form [_ new-state-sym updated-vars-sym]
+    (updated-form [_ new-state-sym updated-vars-sym]
       `(get ~new-state-sym (quote ~cursor)))))
+
+(defmethod compile-call-value :unwrap-cursor [{:keys [cursor]} opts]
+  (reify fp/CompiledValue
+    (value-deps [_] #{cursor})
+
+    (inline-value-form [_ state-sym]
+      `(get ~state-sym (quote ~cursor)))))

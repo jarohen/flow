@@ -1,5 +1,5 @@
 (ns flow.bindings
-  (:require [flow.compile :refer [compile-form]]
+  (:require [flow.compile :refer [compile-value]]
             [clojure.set :as set]
             [flow.protocols :as fp]
             [flow.util :as u]
@@ -26,31 +26,30 @@
          (:id ~value-sym)
          ~value-sym)))
 
-(defn compile-bindings [bindings opts]
-  (reduce (fn [{:keys [compiled-bindings opts] :as acc} {:keys [bind value path]}]
-            (let [compiled-value (compile-form value opts)
+(defn compile-bindings [bindings {:keys [path] :as opts}]
+  (reduce (fn [{:keys [compiled-bindings opts] :as acc} [{:keys [bind value]} idx]]
+            (let [binding-path (u/path->sym path "binding" (str idx))
+                  compiled-value (compile-value value opts)
                         
                   destructured-syms (destructuring-bind-syms bind)
-                  deps (fp/form-deps compiled-value)
+                  deps (fp/value-deps compiled-value)
 
-                  bind-values->map-sym (symbol (str path "-value->map"))
-                  !value-sym (symbol (str "!" path "-value"))
-                  key-sym (symbol (str path "-key"))
-                  value-sym (symbol (str path "-value"))]
+                  bind-values->map-sym (u/path->sym binding-path "value->map")
+                  !value-sym (u/path->sym "!" binding-path "value")
+                  key-sym (u/path->sym binding-path "key")
+                  value-sym (u/path->sym binding-path "value")]
 
               {:compiled-bindings (conj compiled-bindings
                                         (reify bp/CompiledBindings
                                           (value-deps [_] deps)
 
                                           (bindings [_]
-                                            (concat (fp/bindings compiled-value)
-                                                    [[!value-sym `(atom nil)]]
-
-                                                    [[bind-values->map-sym `(fn bind-values->map# [value#]
-                                                                              (let [~bind value#]
-                                                                                ~(->> (for [bind-sym destructured-syms]
-                                                                                        `[(quote ~bind-sym) ~bind-sym])
-                                                                                      (into {}))))]]))
+                                            [[!value-sym `(atom nil)]
+                                             [bind-values->map-sym `(fn bind-values->map# [value#]
+                                                                      (let [~bind value#]
+                                                                        ~(->> (for [bind-sym destructured-syms]
+                                                                                `[(quote ~bind-sym) ~bind-sym])
+                                                                              (into {}))))]])
 
                                           (destructured-syms [_]
                                             destructured-syms)
@@ -59,7 +58,7 @@
                                             key-sym)
 
                                           (initial-bindings [_ state-sym]
-                                            `[[[~value-sym ~(fp/initial-value-form compiled-value state-sym)]]
+                                            `[[[~value-sym ~(fp/inline-value-form compiled-value state-sym)]]
                                               
                                               [[~key-sym ~(key-fn value value-sym)]
 
@@ -69,7 +68,7 @@
 
                                           (updated-bindings [_ new-state-sym updated-vars-sym]
                                             `[[[~value-sym ~(u/with-updated-deps-check deps updated-vars-sym
-                                                              (fp/updated-value-form compiled-value new-state-sym updated-vars-sym)
+                                                              (fp/inline-value-form compiled-value new-state-sym)
                                                               `@~!value-sym)]]
                                               
                                               [[~key-sym ~(key-fn value value-sym)]
@@ -90,12 +89,12 @@
           {:compiled-bindings []
            :opts opts}
                 
-          bindings))
+          (map vector bindings (range))))
 
 (defn bindings-deps [compiled-bindings compiled-body]
   (reduce (fn [deps-acc compiled-binding]
             (-> deps-acc
                 (set/difference (bp/destructured-syms compiled-binding))
                 (set/union (bp/value-deps compiled-binding))))
-          (fp/form-deps compiled-body)
+          (fp/identity-deps compiled-body)
           (reverse compiled-bindings)))
