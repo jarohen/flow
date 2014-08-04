@@ -1,5 +1,9 @@
 * Flow
 
+Flow is a lightweight library to help you write dynamic ClojureScript
+webapps in a declarative style, without worrying when/how the DOM
+needs to be updated.
+
 #+BEGIN_SRC clojure
   [jarohen/flow "0.2.0-alpha1"]
 #+END_SRC
@@ -11,6 +15,45 @@ In short, Flow is now a compiled DSL - the compiler analyses all of
 the dependencies at compile-time, and only updates what is necessary
 at run-time. The new DSL is a lot more expressive than the old =let<<=
 / =for<<= combination.
+
+In the meantime, to see what's in store:
+
+- Fork/clone this repo
+- =cd samples/flow-sample=
+- =lein dev= to start the server
+- Head to http://localhost:3000 and click the buttons :)
+
+You can also take a look at some [[https://github.com/james-henderson/flow/tree/0.2.0-alpha1/samples/flow-sample/ui-src/flow_sample/ui]['example code']] - this is a heavily
+contrived application that I've been using to drive the development so
+far.
+
+It's not particularly suitable to be used as an example (yet) - I
+fully intend to provide more examples, documentation and tutorials
+before cutting a stable release.
+
+The back of an envelope story (to be expanded):
+
+- Flow is a DSL designed to look as much like ClojureScript as
+  possible, with a couple of additions for declarative webapps.
+- =f/el= is the main entry point - all the code inside this is
+  compiled by the =f/el= macro as the Flow DSL.
+- Flow uses a Hiccup-style syntax for elements, with =::f/style= to
+  declare styles, =::f/on= to declare listeners and =::f/classes= to
+  declare dynamic classes.
+- The additions to ClojureScript are the =<<= and =!<<= forms 
+  - =<<= turns an atom into a 'cursor' - a dynamic, changing
+    value. Any time the atom changes, the cursor's new value is
+    propagated through the rest of the form and any necessary elements
+    are updated.
+  - =!<<= turns a cursor back into an atom that then be passed to
+    other functions. Cursors are only dynamic within the scope of the
+    =f/el= that they are defined in - to allow sub-components to
+    update based on their changing value, they must be re-wrapped with
+    =!<<=.
+
+If you have any questions, or would like to get involved with Flow's
+development, please get in touch! I can be contacted either through
+Github, or on Twitter at [[https://twitter.com/jarohen][@jarohen]].
 
 ** Thanks
 
