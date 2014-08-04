@@ -1,0 +1,256 @@
+* Old Flow Docs (superceded):
+
+Flow is a lightweight library to help you write dynamic ClojureScript
+webapps in a declarative style, without worrying when/how the DOM
+needs to be updated.
+
+Fundamentally, it does this by extending the behaviour of Clojure's
+=let= and =for= constructs to handle changing inputs, but allowing you
+to write pure, value → value functions as you would if the inputs
+were static.
+
+For example, if you were to design an counter widget based on a static
+counter value, you might write something like:
+
+#+BEGIN_SRC clojure
+  (:require-macros [dommy.macros :refer [node]])
+
+  (defn counter-widget [counter]
+    (node
+     [:p "The counter is currently at " counter]))
+#+END_SRC
+
+(Here I'm using Prismatic's '[[https://github.com/prismatic/dommy][Dommy]]' library to generate the DOM
+elements; you're free to use whatever templating library you prefer.)
+
+To make this dynamic, using Flow, we'd write something like this:
+
+#+BEGIN_SRC clojure
+  (:require [flow.core :refer-macros [el<< let<<]])
+
+  (defn counter-widget [counter-atom]
+    (el<<
+      (let<< [counter (<< counter-atom)]
+        (node
+         [:p "The counter is currently at " counter]))))
+#+END_SRC
+
+I would probably read this function as:
+
+#+BEGIN_QUOTE
+given that =counter= comes from (<<) =counter-atom=, give me a dynamic
+element that reads "The counter is currently at <counter>"
+#+END_QUOTE
+
+Flow also has a =for<<= macro, with predictable semantics. Assuming I
+have a contact list atom containing
+
+#+BEGIN_SRC clojure
+  [{:first "Rich"
+    :last "Hickey"}
+   {:first "Martin"
+    :last "Odersky"}
+   {:first "James"
+    :last "Gosling"}]
+#+END_SRC
+
+You can render this as a dynamic widget with the following Flow code:
+
+#+BEGIN_SRC clojure
+  (:require [flow.core :refer-macros [el<< for<<]])
+
+  (defn contacts-widget [contacts-atom]
+    (node
+     [:ul
+      (el<<
+        (for<< [{:keys [first last]} (sort-by :last (<< contacts-atom))]
+          (node
+           [:li last ", " first])))]))
+#+END_SRC
+
+Flow will then update the contact list whenever the contacts atom is
+changed.
+
+** Getting started
+
+To add Flow to your Leiningen project, add the following to your =project.clj=:
+
+#+BEGIN_SRC clojure
+  [jarohen/flow "0.1.0"]
+#+END_SRC
+
+*** Requires
+
+Flow only has one require, as follows:
+
+#+BEGIN_SRC clojure
+  (:require [flow.core :refer-macros [el<< let<< for<<]])
+#+END_SRC
+
+*** Emacs auto-indent
+
+You can get Emacs to auto-indent your Flow code by adding the
+following snippet to your configuration:
+
+#+BEGIN_SRC emacs-lisp
+  (require 'clojure-mode)
+
+  (define-clojure-indent
+    (let<< 1)
+    (for<< 1)
+    (el<< 0))
+#+END_SRC
+
+** Example projects using Flow
+
+In this repo:
+
+- '[[https://github.com/james-henderson/flow/tree/master/samples/flow-sample][flow-sample]]' - a simple counter app
+- '[[https://github.com/james-henderson/flow/tree/master/samples/contacts][Contact Manager]]'
+- '[[https://github.com/james-henderson/flow/tree/master/samples/todomvc][TodoMVC]]' (because it's pretty much obligatory!)
+
+** Diving deeper into Flow
+
+*** About 'Streams'
+
+At it's lowest level, Flow is built upon the concept of streams - a
+sequence of values representing an identity changing over
+time. Examples of streams are as follows:
+
+- Atoms
+- core.async channels
+- HTML =<input>= and =<select>= elements
+- Anything else you extend the =flow.stream/Stream= protocol to!
+
+You shouldn't need to worry about streams - Flow provides higher-level
+abstractions over this behaviour in the form of =let<<= and
+=for<<=. (If it helps, I tend to read these as 'let-arrow' and
+'for-arrow', respectively)
+
+*** =let<<= - extending Clojure's =let= to handle Streams
+
+=let<<= looks mostly like Clojure's =let=, except that you can use
+=let<<= to react to the changing values on a stream. With =let<<=, you
+declare the result that you want for a given value of the stream(s),
+and let =let<<= worry about what to re-evaluate when the stream
+presents a new value.
+
+As I mentioned in the introduction, if you were to declaratively write
+a static counter, you'd probably write it something like this:
+
+#+BEGIN_SRC clojure
+   (defn counter-widget [counter]
+     (node
+      [:p "The counter is currently at " counter]))
+#+END_SRC
+
+If counter was an atom, we'd want to react to it, but without all of
+the boilerplate of listening for changes, figuring out what to render
+now, and updating the DOM. We can do this *declaratively* with
+=let<<=, by wrapping the counter atom with =<<=, as follows:
+
+#+BEGIN_SRC clojure
+  (defn counter-widget [counter-atom]
+    (el<< ;; see below for a description of el<<
+      (let<< [counter (<< counter-atom)]
+        (node
+         [:p "The counter is currently at " counter]))))
+#+END_SRC
+
+We've now declared how the =counter-widget= should behave for any
+value of the =counter-atom=! Easy!
+
+=let<<= will now react when the =counter-atom= updates, and re-execute
+the body of the declaration. =let<<= itself returns a stream of
+values, updating whenever the input streams change.
+
+You could think of =<<= as behaving like =deref/@= - in that it
+appears (on the surface) to take the current value of the stream and
+use it throughout the =let<<= declaration.
+
+It's also quite reasonable to think of =<<= and =let<<= like
+core.async's =<!= macro and =go= block - you can only use =<<= within
+the =let<<= (or =for<<=) bindings. This is because =let<<= (again, in
+a similar manner to =go=) transforms the code around the =<<= to react
+to any new values on the stream. The difference, however, is that
+while =<!= only returns one value from a channel, =<<= will react to
+all future values in the stream, and re-evaluate the surrounding code
+if necessary.
+
+=<<='s can be nested however far you need to within the confines of
+the =let<<= bindings - the macro will automagically expand the
+surrounding code as necessary to react to new values:
+
+#+BEGIN_SRC clojure
+  (defn counter-stream [counter-atom]
+    (let<< [counter (dec->hex (<< counter-atom))]
+      (str "The counter's value, in hex, is " counter)))
+#+END_SRC
+
+(A slightly contrived example, admittedly - but rest assured it's far
+more useful in the =for<<= case, see below!)
+
+*** =for<<= - like =let<<=, but for Clojure's =for=
+
+=for<<= works in exactly the same way as =let<<=, and also supports
+=:when=, =:while= and =:let= clauses in the same manner as Clojure's
+=for=.
+
+You can use =for<<= when each of the values of your stream is itself a
+sequence - for example, the contacts example from the introduction:
+
+#+BEGIN_SRC clojure
+  (for<< [{:keys [first last]} (sort-by :last (<< contacts-atom))]
+    (node
+     [:li last ", " first]))
+#+END_SRC
+
+Note again that the =<<= doesn't have to be at the top-level of the
+binding; just wrapping the stream. This is particularly useful in the
+=for= case, because you can apply sequence-wide transformations to the
+stream (i.e. sorting) before splitting it down into its individual
+elements.
+
+**** Caching in =for<<=
+
+=for<<= does make one major assumption: that the code passed to it is
+referentially transparent - i.e. that the output of the body only
+depends on the streams referenced in the bindings and immutable
+values. If your code does depend on a mutable value outside of the
+bindings, this won't trigger a new output value. In this case, I would
+advice either wrapping the mutable value in an atom or writing an
+implementation of the =Stream= protocol for the mutable type, and
+then reference it in the bindings.
+
+=for<<= does this so that it doesn't have to re-create a whole list of
+DOM elements if only one value in the input stream has been
+inserted/updated/deleted. For example, in the example above, if we
+were to update a contact, =for<<= would re-use all of the elements
+that it could, and only re-generate the DOM element for the contact
+that had changed.
+
+*** =el<<= - turning a stream of DOM elements into a dynamic component
+
+The final piece in the jigsaw is how to turn a stream of DOM elements
+(or sequences of DOM elements, if you're using =for<<=) into a
+component in the browser that dynamically updates based on the input
+streams. The answer here is =el<<= - a small macro that will update
+the browser whenever a new value appears on the input streams:
+
+#+BEGIN_SRC clojure
+  (:require [flow.core :refer-macros [el<< for<<]])
+
+  (el<<
+    (for<< [{:keys [first last]} (sort-by :last (<< contacts-atom))]
+      (node
+       [:li last ", " first])))
+#+END_SRC
+
+=el<<= also has an optimization to ignore values from the stream that
+have already been superceded if, for example, two updates are made in
+quick succession. It can do this because =let<<= and =for<<= are
+declarative - they both require the user to declare what the component
+should look like for a given input value (as opposed to manually
+making updates to the DOM) - soq there is no need to spend time
+rendering intermediate states.
+
