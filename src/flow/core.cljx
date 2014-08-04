@@ -1,34 +1,33 @@
 (ns flow.core
   #+clj (:require [flow.expand :refer [expand-macros]]
                   [flow.parse :refer [parse-form]]
-                  [flow.compile :refer [compile-el]]
-                  [flow.render :refer [render-el]])
+                  [flow.compile :refer [compile-form]]
+                  [flow.render :refer [render-form]]
+                  [flow.protocols :as fp])
   
   #+cljs (:require flow.protocols
-                   [flow.dom :as fd]
-                   flow.forms.if
-                   flow.forms.let
-                   flow.forms.for
-                   flow.forms.symbol
-                   flow.forms.cursors))
+                   [flow.dom :as fd]))
+
+#+clj
+(defn debug-compiled-form [compiled-form]
+  (spit "/tmp/compiled.edn"
+        {:deps (fp/form-deps compiled-form)
+         :bindings (fp/bindings compiled-form)
+         :initial-value (fp/initial-value-form compiled-form 'state)
+         :updated-value (fp/updated-value-form compiled-form 'new-state 'updated-vars)}))
 
 #+clj
 (defmacro el [elem]
-  (let [el-sym (gensym "flow-el")
-        syms {:state (symbol (str el-sym "-state"))
-              :old-state (symbol (str el-sym "-old-state"))
-              :new-state (symbol (str el-sym "-new-state"))
-              :updated-vars (symbol (str el-sym "-updated-vars"))
-              :dynamic-syms #{}
-              :local-syms #{}}]
+  (let [el-sym (gensym "flow-el")]
     
     (-> (expand-macros elem &env)
         (parse-form {:elem? true
-                     :path (str (gensym "flow-el"))})
+                     :path el-sym})
         (doto (->> (spit "/tmp/parsed.edn")))
-        (compile-el syms)
-        (doto (->> (spit "/tmp/compiled.edn")))
-        (render-el)
+        (compile-form {:dynamic-syms #{}
+                       :local-syms #{}})
+        (doto debug-compiled-form)
+        (render-form (str el-sym))
         (doto (->> (spit "/tmp/rendered.edn"))))))
 
 #+cljs

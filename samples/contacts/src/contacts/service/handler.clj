@@ -1,10 +1,10 @@
 (ns contacts.service.handler
-  (:require [ring.util.response :refer [response]]
-            [compojure.core :refer [routes GET]]
-            [compojure.route :refer [resources]]
+  (:require [compojure.core :refer [routes GET]]
             [compojure.handler :refer [api]]
-            [hiccup.page :refer [html5 include-css include-js]]
+            [compojure.route :refer [resources]]
             [frodo.web :refer [App]]
+            [hiccup.page :refer [html5 include-css include-js]]
+            [ring.util.response :refer [response]]
             [simple-brepl.service :refer [brepl-js]]))
 
 (defn page-frame []

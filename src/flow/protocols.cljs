@@ -1,29 +1,29 @@
 (ns flow.protocols
   (:require [flow.dom :as fd]))
 
-(defprotocol DynamicElement
-  (should-update? [_ updated-vars])
-  (build-element [_ state])
-  (handle-update! [_ old-state new-state updated-vars]))
+(defprotocol DynamicValue
+  (build [_ state])
+  (updated-value [_ new-state updated-vars]))
 
-(extend-protocol DynamicElement
+(extend-protocol DynamicValue
   nil
-  (should-update? [_ updated-vars]
-    false)
-
-  (build-element [_ state]
-    (fd/null-elem))
-
-  (handle-update! [_ old-state new-state updated-vars]
+  (build [_ _]
     nil)
 
-
-  js/Text
-  (should-update? [_ updated-vars]
-    false)
-
-  (build-element [text-node state]
-    text-node)
-
-  (handle-update! [_ old-state new-state updated-vars]
+  (updated-value [_ _ _]
     nil))
+
+
+(defprotocol FlowElement
+  (get-flow-id [_])
+  (set-flow-id! [_ id]))
+
+(extend-protocol FlowElement
+  js/Node
+
+  (get-flow-id [$el]
+    (or (.-flowId $el) $el))
+
+  (set-flow-id! [$el id]
+    (set! (.-flowId $el) id)))
+

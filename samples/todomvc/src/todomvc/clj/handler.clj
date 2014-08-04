@@ -1,10 +1,9 @@
 (ns todomvc.clj.handler
-  (:require [ring.util.response :refer [response content-type]]
-            [compojure.core :refer [routes GET]]
-            [compojure.route :refer [resources]]
+  (:require [compojure.core :refer [routes GET]]
             [compojure.handler :refer [api]]
+            [compojure.route :refer [resources]]
             [hiccup.page :refer [html5 include-css include-js]]
-            [clojure.java.io :as io]))
+            [ring.util.response :refer [response]]))
 
 (defn page-frame []
   (html5

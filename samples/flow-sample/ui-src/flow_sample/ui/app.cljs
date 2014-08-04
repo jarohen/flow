@@ -14,7 +14,8 @@
     [:div {::f/style {:margin "1em 0"
                       :color "#000"}}
      [:h3 "And now for an SVG example:"]
-     (let [{:keys [primary secondary]} (<<! !colors)]
+
+     (let [{:keys [primary secondary]} (!<< !colors)]
        [:svg 
         [:rect {:x 10
                 :y 10
@@ -40,7 +41,7 @@
               !random-numbers (atom (for [idx (range 5)]
                                       {:id idx
                                        :num (rand-int 1000)}))
-              !input-value (atom 2)]
+              !filter (atom :even)]
 
           (def !foo-colors !colors)
           (def !foo-show-heading? !show-heading?)
@@ -58,61 +59,70 @@
           
           (f/root js/document.body
             (f/el
-              (let [{:keys [primary secondary]} (<<! !colors)]
+              (let [{:keys [primary secondary]} (!<< !colors)]
                 [:div#test.container.blah {::f/classes ["abc"
                                                         (when (= primary "#000")
                                                           "black")]
+                                                                                      
+                                           ::f/style {:margin-top "2em"}
                                                  
                                            :data-test "foo"
                                                  
                                            :data-is-black (boolean (= primary "#000"))}
-
-                 (let [show-heading? (<<! !show-heading?)]
+               
+                 (when (!<< !show-heading?)
                    [:div
-                    (when show-heading?
-                      [:h1 {::f/style {:color secondary
-                                       :padding "0.5em"
-                                       :background-color primary}}
-                       (<<! !heading)])])
+                    [:h1 {::f/style {:color secondary
+                                     :padding "0.5em"
+                                     :background-color primary}}
+                     (!<< !heading)]])
 
                  [:p.copy {::f/style {:text-align :center
-                                      :color secondary}}
+                                      :color (:secondary (!<< !colors))}}
                   "If this works, " [:strong "I'll be very happy :)"]]
+
+                 [:button.btn.btn-default {::f/style {:margin-right "1em"}
+                                           ::f/on {:click #(js/alert "Hello!")}}
+                  "Click me!"]
 
                  [:button.btn.btn-default {::f/style {:margin-right "1em"}
                                            ::f/on {:click (fn [e] (a/put! change-colors-ch :change!))}}
                   "Change colours!"]
 
                  [:button.btn.btn-default {::f/style {:margin-right "1em"}
+                                           ::f/on {:click #(swap! !show-heading? not)}}
+                  "Show/Hide heading!"]
+
+                 [:button.btn.btn-default {::f/style {:margin-right "1em"}
                                            ::f/on {:click (fn [e] (a/put! update-numbers-ch :change!))}}
                   "Update numbers!"]
-
-                 [:button.btn.btn-default {::f/on {:click #(swap! !show-heading? not)}}
-                  "Show/Hide heading!"]
 
                  [:div {::f/style {:margin "1em 0"
                                    :color "#000"}}
                   [:h3 "And now for a 'for' example:"]
 
-                  (let [random-numbers (<<! !random-numbers)]
+                  (let [random-numbers (!<< !random-numbers)
+                        selected-filter (!<< !filter)]
                     [:div
-                     [:div "!random-numbers: " random-numbers]
-                     
+                     [:p "!random-numbers: " random-numbers]
+                     [:p "filter: " selected-filter]
+                   
                      [:ul {::f/style {:margin-top "1em"}}
                       (for [{:keys [num]} (->> random-numbers
-                                               (filter (comp even? :num))
+                                               (filter (comp (if (= :even selected-filter)
+                                                               even?
+                                                               odd?)
+                                                             :num))
                                                (sort-by :num))]
                         [:li num])]])]
 
                  [:div
-                  [:div "Input value:" (<<! !input-value)]
-
-                  [:select {::f/on {:change (f/bind-value! !input-value)}
-                            :value (<<! !input-value)}
-                   [:option {:value 1}
-                    "Option 1"]
-                   [:option {:value 2}
-                    "Option 2"]]]
+                  [:select {::f/on {:change (f/bind-value! !filter)}
+                            :value (!<< !filter)}
+                   [:option {:value :odd}
+                    "Odd"]
+                   [:option {:value :even}
+                    "Even"]]]
 
                  (render-svg !colors)])))
 

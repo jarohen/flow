@@ -1,5 +1,6 @@
 (ns flow.dom
-  (:require [clojure.set :as set]))
+  (:require [clojure.set :as set]
+            [clojure.string :as s]))
 
 (def !debug (atom false))
 
@@ -13,9 +14,10 @@
     (js/document.createElementNS svg-ns tag)
     (js/document.createElement tag)))
 
-(defn remove-child! [$parent $el]
+(defn remove! [$el]
   (when $el
-    (.removeChild $parent $el)))
+    (when-let [$parent (.-parentNode $el)]
+      (.removeChild $parent $el))))
 
 (defn append-child! [$parent child-or-children]
   (if (coll? child-or-children)
@@ -29,32 +31,8 @@
     (.insertBefore $parent $el $before-sibling)
     (append-child! $parent $el)))
 
-(defn add-class! [$el class-name]
-  (when @!debug
-    (js/console.log "adding class" (pr-str class-name) "to" $el))
-  
-  (.. $el
-      -classList
-      (add class-name)))
-
-(defn remove-class! [$el class-name]
-  (when @!debug
-    (js/console.log "removing class" (pr-str class-name) "from" $el))
-  
-  (.. $el
-      -classList
-      (remove class-name)))
-
-(defn add-classes! [$el classes]
-  (doseq [class-name classes]
-    (add-class! $el class-name)))
-
-(defn update-classes! [$el old-classes new-classes]
-  (doseq [class-name (set/difference new-classes old-classes)]
-    (add-class! $el class-name))
-  
-  (doseq [class-name (set/difference old-classes new-classes)]
-    (remove-class! $el class-name)))
+(defn set-classes! [$el new-classes]
+  (set! (.-className $el) (s/join " " new-classes)))
 
 (defn set-style! [$el k v]
   (when @!debug
@@ -74,37 +52,11 @@
       (.setAttribute $el (name k) v)
       (.removeAttribute $el (name k) v))))
 
-(let [$null-elem (doto (js/document.createElement "span")
-                   (set-style! :display :none))]
-  (defn null-elem [& [id]]
-    (let [$elem (.cloneNode $null-elem)]
-      (when id
-        (set! (.-id $elem) id))
-      
-      $elem)))
-
-(defn swap-elem! [$old $new]
-  (when @!debug
-    (js/console.log "swapping" $old "for" $new))
-  
-  (when-let [$parent (.-parentNode $old)]
-    (.replaceChild $parent $new $old)))
-
 (defn add-listener! [$el event listener]
   (when @!debug
     (js/console.log "adding" (pr-str event) "listener on" $el))
   
   (.addEventListener $el (name event) listener))
-
-(defn ->node [$el-or-val]
-  (cond
-   (nil? $el-or-val) (null-elem)
-   
-   (.-nodeType $el-or-val) $el-or-val
-   
-   :else (js/document.createTextNode (if (string? $el-or-val)
-                                       $el-or-val
-                                       (pr-str $el-or-val)))))
 
 (defn value [$el]
   (case (.-type $el)
@@ -114,3 +66,22 @@
 (defn bind-value! [!atom]
   (fn [e]
     (reset! !atom (value (.-target e)))))
+
+(let [$null-elem (doto (js/document.createElement "span")
+                   (set-style! :display :none)
+                   (set-attr! :data-flow-placeholder true))]
+  (defn null-elem []
+    (.cloneNode $null-elem)))
+
+(defn ->node [$el-or-val]
+  (cond
+   (nil? $el-or-val) (null-elem)
+   (seq? $el-or-val) (map ->node $el-or-val)
+   
+   (.-nodeType $el-or-val) $el-or-val
+   
+   :else (js/document.createTextNode (if (string? $el-or-val)
+                                       $el-or-val
+                                       (pr-str $el-or-val)))))
+
+

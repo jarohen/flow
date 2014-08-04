@@ -43,9 +43,11 @@
                                                :elem? false})
 
      :listeners (for [[event listener] (::f/on attrs)]
-                  {:event event
-                   :listener (parse-form listener {:path (str path "-on" (name event))
-                                                   :elem? false})})
+                  (let [path (str path "-on" (name event))]
+                    {:event event
+                     :path path
+                     :listener (parse-form listener {:path path
+                                                     :elem? false})}))
      
      :attrs (parse-map-vals (dissoc attrs ::f/classes ::f/style ::f/on) {:path (str path "-attrs")
                                                                          :elem? false})
@@ -117,7 +119,7 @@
    :side-effects (butlast body)
    :return (parse-form (last body) opts)})
 
-(defmethod parse-call '<<! [[_ cursor] {:keys [path]}]
+(defmethod parse-call '!<< [[_ cursor] {:keys [path]}]
   {:call-type :unwrap-cursor
    :path (str path "-unwrap-cursor-" cursor)
    :cursor cursor})

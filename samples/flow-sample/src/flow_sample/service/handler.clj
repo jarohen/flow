@@ -1,9 +1,9 @@
 (ns flow-sample.service.handler
-  (:require [ring.util.response :refer [response]]
-            [compojure.core :refer [routes GET]]
-            [compojure.route :refer [resources]]
+  (:require [compojure.core :refer [routes GET]]
             [compojure.handler :refer [api]]
+            [compojure.route :refer [resources]]
             [hiccup.page :refer [html5 include-css include-js]]
+            [ring.util.response :refer [response]]
             [simple-brepl.service :refer [brepl-js]]))
 
 (defn page-frame []

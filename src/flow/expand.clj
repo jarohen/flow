@@ -1,9 +1,9 @@
 (ns flow.expand
-  (:require [cljs.analyzer :refer [macroexpand-1] :rename {macroexpand-1 cljs-macroexpand-1}]
+  (:require [cljs.analyzer :as cljs]
             [clojure.walk :as w]))
 
 (def ^:dynamic *macroexpand-env*)
-(def ^:dynamic *macroexpand-1* #(cljs-macroexpand-1 *macroexpand-env* %))
+(def ^:dynamic *macroexpand-1* #(cljs/macroexpand-1 *macroexpand-env* %))
 
 (defn macroexpand-until-known [form]
   (loop [form form]
