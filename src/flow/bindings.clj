@@ -1,8 +1,10 @@
 (ns flow.bindings
-  (:require [flow.compile :refer [compile-identity]]
+  (:require [flow.compile :refer [compile-identity compile-value]]
             [flow.util :as u]
             [flow.protocols :as fp]
             [clojure.set :as set]))
+
+(alias 'fs (doto 'flow.state create-ns))
 
 (defn destructuring-bind-syms [bind]
   (letfn [(dbs* [bind] (cond
@@ -17,16 +19,7 @@
                         (symbol? bind) [(symbol (name bind))]))]
     (set (dbs* bind))))
 
-(comment
-  (defn key-fn [value value-sym]
-    (let [manual-key-fn (:flow.core/key-fn (meta value))]
-      `(or ~@(when manual-key-fn
-               `[(~manual-key-fn ~value-sym)])
-           (:flow.core/id ~value-sym)
-           (:id ~value-sym)
-           ~value-sym))))
-
-(defn compile-binding [{:keys [bind value idx]} opts]
+(defn compile-identity-binding [{:keys [bind value idx]} opts]
   (let [compiled-identity (compile-identity value (u/with-more-path opts [(str idx)]))
         
         hard-deps (fp/hard-deps compiled-identity)
@@ -56,9 +49,9 @@
                          :local-syms)]
                       set/union destructured-syms)}))
 
-(defn compile-bindings [bindings opts]
+(defn compile-identity-bindings [bindings opts]
   (reduce (fn [{:keys [compiled-bindings opts] :as acc} binding]
-            (let [{:keys [compiled-binding opts]} (compile-binding binding opts)]
+            (let [{:keys [compiled-binding opts]} (compile-identity-binding binding opts)]
 
               {:compiled-bindings (conj compiled-bindings
                                         compiled-binding)
@@ -70,7 +63,7 @@
                 
           bindings))
 
-(defn bindings-deps [compiled-bindings compiled-body]
+(defn identity-bindings-deps [compiled-bindings compiled-body]
   (reduce (fn [{:keys [hard-deps soft-deps] :as deps-acc} {:keys [bound-syms] :as compiled-binding}]
             (-> deps-acc
                 (update-in [:hard-deps] set/difference (:bound-syms compiled-binding))
@@ -83,5 +76,53 @@
 
           {:hard-deps (fp/hard-deps compiled-body)
            :soft-deps (fp/soft-deps compiled-body)}
+          
+          (reverse compiled-bindings)))
+
+(defn compile-value-binding [{:keys [bind value idx]} {:keys [state-sym] :as opts}]
+  (let [compiled-value (compile-value value opts)
+        
+        deps (fp/value-deps compiled-value)
+
+        destructured-syms (destructuring-bind-syms bind)]
+
+    {:compiled-binding {:deps deps
+                        :bound-syms destructured-syms
+
+                        :value-bindings `[[~bind (binding [fs/*state* ~state-sym]
+                                                   ~(fp/inline-value-form compiled-value))]]
+                        :state-bindings `[[~state-sym (merge ~state-sym
+                                                             ~(->> (for [bind-sym destructured-syms]
+                                                                     `[(quote ~bind-sym) ~bind-sym])
+                                                                   (into {})))]]}
+
+     :opts (update-in opts
+                      [(if (seq deps)
+                         :dynamic-syms
+                         :local-syms)]
+                      set/union destructured-syms)}))
+
+(defn compile-value-bindings [bindings opts]
+  (reduce (fn [{:keys [compiled-bindings opts] :as acc} binding]
+            (let [{:keys [compiled-binding opts]} (compile-value-binding binding opts)]
+
+              {:compiled-bindings (conj compiled-bindings
+                                        compiled-binding)
+               
+               :opts opts}))
+                
+          {:compiled-bindings []
+           :opts opts}
+                
+          bindings))
+
+(defn value-bindings-deps [compiled-bindings compiled-body]
+  (reduce (fn [deps {:keys [bound-syms] :as compiled-binding}]
+            (-> deps
+                (set/difference (:bound-syms compiled-binding))
+                (set/union (when (seq (set/intersection bound-syms deps))
+                             (:deps compiled-binding)))))
+
+          (fp/value-deps compiled-body)
           
           (reverse compiled-bindings)))

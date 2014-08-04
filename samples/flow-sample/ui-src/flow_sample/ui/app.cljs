@@ -130,6 +130,7 @@
                         selected-filter (<< !filter)]
                     [:div
                      [:p "!random-numbers: " (vec random-numbers)]
+                     
                      [:p "filter: " (case selected-filter
                                       "even" (let [even-count (count (filter (comp even? :num) random-numbers))]
                                                [:span "Only the " even-count

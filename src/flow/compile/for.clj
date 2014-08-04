@@ -1,19 +1,19 @@
 (ns flow.compile.for
   (:require [flow.compile.calls :refer [compile-call-identity compile-call-value]]
-            [flow.compile :refer [compile-identity]]
+            [flow.compile :refer [compile-identity compile-value]]
             [flow.bindings :as b]
             [flow.protocols :as fp]
             [flow.util :as u]
             [clojure.set :as set]))
 
-(alias 'f (doto 'flow.core create-ns))
+(alias 'fs (doto 'flow.state create-ns))
 
 (defmethod compile-call-identity :for [{:keys [bindings body]} {:keys [path] :as opts}]
-  (let [{:keys [compiled-bindings opts]} (b/compile-bindings bindings opts)
+  (let [{:keys [compiled-bindings opts]} (b/compile-identity-bindings bindings opts)
 
         compiled-body (compile-identity body (u/with-more-path opts ["for" "body"]))
 
-        {:keys [hard-deps soft-deps]} (b/bindings-deps compiled-bindings compiled-body)
+        {:keys [hard-deps soft-deps]} (b/identity-bindings-deps compiled-bindings compiled-body)
 
         for-sym (u/path->sym path "for")]
 
@@ -44,7 +44,20 @@
         `(~for-sym)))))
 
 (defmethod compile-call-value :for [{:keys [bindings body]} opts]
-  ;; TODO going to require some changes to bindings (or a different
-  ;; compile-bindings fn) because 'compile-bindings' currently expects
-  ;; this to be an identity
-  (throw (Exception. "not implemented")))
+  (let [state-sym (gensym "state")
+
+        {:keys [compiled-bindings opts]} (b/compile-value-bindings bindings (assoc opts
+                                                                              :state-sym state-sym))
+        compiled-body (compile-value body opts)]
+
+    (reify fp/CompiledValue
+      (value-deps [_] (b/value-bindings-deps compiled-bindings compiled-body))
+
+      (inline-value-form [_]
+        `(let [~state-sym fs/*state*]
+           (for [~@(->> (for [{:keys [value-bindings state-bindings]} compiled-bindings]
+                          `[~@(apply concat value-bindings)
+                            :let [~@(apply concat state-bindings)]])
+                        (apply concat))]
+             (binding [fs/*state* ~state-sym]
+               ~(fp/inline-value-form compiled-body))))))))
