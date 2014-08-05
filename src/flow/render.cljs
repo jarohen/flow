@@ -2,6 +2,11 @@
   (:require [flow.holder :as fh]
             [flow.state :as fs]))
 
+(defn with-animation-frame-if-possible [f]
+  (if (exists? js/requestAnimationFrame)
+    (js/requestAnimationFrame f)
+    (f)))
+
 (defn build-el [{:keys [deps build-fn]}]
   (let [initial-state (->> (for [{:keys [dep-sym dep]} deps]
                              [dep-sym (deref dep)])
@@ -18,13 +23,15 @@
       (add-watch dep (str (gensym "watch"))
                  (fn flow-dep-watcher [_ _ old-value new-value]
                    (when (not= old-value new-value)
-                     (let [new-state (swap! !state assoc dep-sym new-value)
-                           $old-el @!$el
-                           [$new-el new-update-fn] (binding [fs/*state* (fs/with-updated-vars new-state
-                                                                          #{dep-sym})]
-                                                     (@!update-fn))]
+                     (with-animation-frame-if-possible
+                       (fn []
+                         (let [new-state (swap! !state assoc dep-sym new-value)
+                               $old-el @!$el
+                               [$new-el new-update-fn] (binding [fs/*state* (fs/with-updated-vars new-state
+                                                                              #{dep-sym})]
+                                                         (@!update-fn))]
 
-                       (when-not (= $old-el $new-el)
-                         (reset! !$el (fh/swap-child! $old-el $new-el))))))))
+                           (when-not (= $old-el $new-el)
+                             (reset! !$el (fh/swap-child! $old-el $new-el))))))))))
     
     $initial-el))
