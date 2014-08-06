@@ -129,7 +129,7 @@
                   (let [random-numbers (<< !random-numbers)
                         selected-filter (<< !filter)]
                     [:div
-                     [:p "!random-numbers: " (vec random-numbers)]
+                     [:p "!random-numbers: " #_(vec random-numbers)]
                      
                      [:p "filter: " (case selected-filter
                                       "even" (let [even-count (count (filter (comp even? :num) random-numbers))]
@@ -167,9 +167,9 @@
                  [:div
                   [:h3 "Pick your colours:"]
 
-                  [:p "Primary:" (render-colour-picker (!<< primary))]
+                  [:p "Primary:" (render-colour-picker (!<< colors [:primary]))]
                   
-                  [:p "Secondary:" (render-colour-picker (!<< secondary))]]
+                  [:p "Secondary:" (render-colour-picker (!<< colors [:secondary]))]]
                  
                  (render-svg !colors)]))))))
 
