@@ -32,18 +32,18 @@
       IReset
       (-reset! [this new-value]
         (let [old-value (-deref this)]
-          (swap! !state update-in path new-value)
+          (swap! !state assoc-in path new-value)
           (-notify-watches this old-value new-value)
           new-value))
 
       ISwap
-      (-swap [this f & args]
+      (-swap! [this f & args]
         (reset! this (apply f (-deref this) args)))
 
       IPrintWithWriter
       (-pr-writer [this writer opts]
         (-write writer "#<Atom: ")
-        (pr-writer @this writer opts)
+        (-write writer (pr-str @this))
         (-write writer ">"))
 
       IWatchable
@@ -125,7 +125,7 @@
 
     IPrintWithWriter
     (-pr-writer [_ writer opts]
-      (-pr-writer value writer opts))))
+      (-write writer (pr-str value)))))
 
 (defn vec-lens [value !state path]
   (reify
@@ -194,16 +194,14 @@
     
     IPrintWithWriter
     (-pr-writer [_ writer opts]
-      (-pr-writer value writer opts))))
+      (-write writer (pr-str value)))))
 
-(extend-type js/String
-  ICloneable
-  (-clone [s] (js/String. s)))
-
-(defn obj->lens [value !state path]
+(defn cloneable->lens [value !state path]
   (specify value
     Lens
-    
+    (-value [_] value)
+    (->atom [_]
+      (lens->atom !state path))
     
     IEquiv
     (-equiv [_ other]
@@ -211,26 +209,26 @@
         (= val (-value other))
         (= val other)))))
 
-(defmulti ^:private ->lens*
-  (fn [value !state path]
-    (type value)))
-
-(defmethod ->lens* js/String [value !state path]
-  (obj->lens value !state path))
-
-(defmethod ->lens* :default [value !state path]
-  (obj->lens value !state path))
-
 (defn ->lens [value !state path]
   (cond
    (lens? value) value
    (indexed? value) (vec-lens value !state path)
    (map? value) (map-lens value !state path)
-   (satisfies? ICloneable value) (->lens* (-clone value) !state path)
-   :else (->lens* value !state path)))
+   (satisfies? ICloneable value) (cloneable->lens value !state path)
+   :else value))
 
 (defn wrap-lens [lens]
   (->atom lens))
 
 (defn unwrap-lens [!atom]
   (->lens @!atom !atom []))
+
+(comment
+  (def !foo
+    (atom {:a {:c 3, :d 4}, :b 2}))
+
+  (def foo (unwrap-lens !foo))
+
+  (def foo-a (:a foo))
+
+  (def !foo-a (wrap-lens foo-a)))
