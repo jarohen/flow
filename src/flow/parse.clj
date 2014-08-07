@@ -91,7 +91,7 @@
 
 (defmethod parse-call 'do [[_ & body] opts]
   {:call-type :do
-   :side-effects (butlast body)
+   :side-effects (map #(parse-form % opts) (butlast body))
    :return (parse-form (last body) opts)})
 
 (defmethod parse-call 'case [[_ case-expr & clauses] opts]

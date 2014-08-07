@@ -48,9 +48,9 @@
       (reify fp/CompiledValue
         (value-deps [_]
           (set (concat (mapcat fp/value-deps compiled-side-effects)
-                       (fp/value-deps return))))
+                       (fp/value-deps compiled-return))))
         
         (inline-value-form [_]
           `(do
              ~@(map fp/inline-value-form compiled-side-effects)
-             ~(fp/inline-value-form return)))))))
+             ~(fp/inline-value-form compiled-return)))))))
