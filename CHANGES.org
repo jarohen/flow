@@ -1,5 +1,9 @@
 * ChangeLog
 ** 0.2.x (complete re-write)
+*** 0.2.0-alpha5
+
+More minor bugfixes as a result of using Flow in other projects
+
 *** 0.2.0-alpha4
 
 Minor typo. :(
