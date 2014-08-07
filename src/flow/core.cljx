@@ -5,13 +5,15 @@
                   [flow.render :refer [render-elem]]
                   [flow.protocols :as fp])
   
-  #+cljs (:require flow.protocols
-                   flow.state
+  #+cljs (:require flow.state
                    flow.render
                    flow.lens
+                   flow.util
                    flow.forms.if
                    flow.forms.let
                    flow.forms.fn-call
+                   flow.forms.case
+                   flow.forms.for
                    [flow.dom :as fd]))
 
 #+clj
