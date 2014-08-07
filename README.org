@@ -5,7 +5,7 @@ webapps in a declarative style, without worrying when/how the DOM
 needs to be updated.
 
 #+BEGIN_SRC clojure
-  [jarohen/flow "0.2.0-alpha2"]
+  [jarohen/flow "0.2.0-alpha3"]
 
   (:require [flow.core :as f :include-macros true]) 
 #+END_SRC

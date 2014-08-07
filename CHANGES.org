@@ -1,6 +1,11 @@
 * ChangeLog
 ** 0.2.x (complete re-write)
 
+*** 0.2.0-alpha3
+
+Minor bugfix - lens atoms weren't being updated when their parent
+atoms changed.
+
 *** 0.2.0-alpha2
 
 Added:
