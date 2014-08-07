@@ -108,9 +108,10 @@
   {:call-type :unwrap-lens
    :lens lens})
 
-(defmethod parse-call '!<< [[_ lens] _]
+(defmethod parse-call '!<< [[_ lens extra-path] _]
   {:call-type :wrap-lens
-   :lens lens})
+   :lens lens
+   :extra-path extra-path})
 
 (defmethod parse-call :default [[& args] opts]
   {:call-type :fn-call

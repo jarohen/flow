@@ -3,6 +3,7 @@
             [flow.protocols :as fp]))
 
 (alias 'fs (doto 'flow.state create-ns))
+(alias 'fl (doto 'flow.lens create-ns))
 
 (defmethod compile-call-value :unwrap-lens [{:keys [lens]} opts]
   (reify fp/CompiledValue

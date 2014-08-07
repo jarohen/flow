@@ -4,8 +4,9 @@
             [flow.util :as u]))
 
 (alias 'fs (doto 'flow.state create-ns))
+(alias 'fl (doto 'flow.lens create-ns))
 
-(defmethod compile-call-identity :wrap-lens [{:keys [lens]} {:keys [path] :as opts}]
+(defmethod compile-call-identity :wrap-lens [{:keys [lens extra-path]} {:keys [path] :as opts}]
   (let [wrap-sym (u/path->sym "wrap" path (str (gensym (str lens))))
         deps #{lens}]
     
@@ -15,12 +16,11 @@
 
       (declarations [_]
         [`(defn ~wrap-sym []
-            (let [!atom# (atom (get fs/*state* (quote ~lens)))]
-              (letfn [(update-wrapped-atom# []
-                        (reset! !atom# (get fs/*state* (quote ~lens)))
-                        [!atom# update-wrapped-atom#])]
+            (let [wrapped-lens# (fl/wrap-lens (get fs/*state* (quote ~lens)) ~extra-path)]
+              (letfn [(update-wrapped-lens# []
+                        [wrapped-lens# update-wrapped-lens#])]
                 
-                [!atom# update-wrapped-atom#])))])
+                [wrapped-lens# update-wrapped-lens#])))])
 
       (build-form [_]
         `(~wrap-sym)))))
