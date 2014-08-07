@@ -173,7 +173,7 @@
     ICollection
     (-conj [_ o]
       (vec-lens (-conj value o) !state path))
-p
+
     ILookup
     (-lookup [this n]
       (-nth this n nil))
