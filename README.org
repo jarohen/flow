@@ -5,7 +5,7 @@ webapps in a declarative style, without worrying when/how the DOM
 needs to be updated.
 
 #+BEGIN_SRC clojure
-  [jarohen/flow "0.2.0-alpha1"]
+  [jarohen/flow "0.2.0-alpha2"]
 
   (:require [flow.core :as f :include-macros true]) 
 #+END_SRC
@@ -43,12 +43,12 @@ The back of an envelope story (to be expanded):
   declare styles, =::f/on= to declare listeners and =::f/classes= to
   declare dynamic classes.
 - The additions to ClojureScript are the =<<= and =!<<= forms 
-  - =<<= turns an atom into a 'cursor' - a dynamic, changing
-    value. Any time the atom changes, the cursor's new value is
+  - =<<= turns an atom into a 'lens' - a dynamic, changing
+    value. Any time the atom changes, the lens's new value is
     propagated through the rest of the form and any necessary elements
     are updated.
-  - =!<<= turns a cursor back into an atom that then be passed to
-    other functions. Cursors are only dynamic within the scope of the
+  - =!<<= turns a lens back into an atom that then be passed to
+    other functions. Lenses are only dynamic within the scope of the
     =f/el= that they are defined in - to allow sub-components to
     update based on their changing value, they must be re-wrapped with
     =!<<=.

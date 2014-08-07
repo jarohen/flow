@@ -1,6 +1,19 @@
 * ChangeLog
 ** 0.2.x (complete re-write)
 
+*** 0.2.0-alpha2
+
+Added:
+- Read-Write support for lenses
+- Batching of updates
+- Using =requestAnimationFrame= if available
+
+Still to do:
+
+- Docs
+- Sample apps
+- Even more copious testing
+
 *** 0.2.0-alpha1
 
 Complete re-write of the Flow library (it's probably best thought of
@@ -15,7 +28,7 @@ Still missing before I can go to 0.2.0:
 
 - Updated docs
 - Updating sample apps
-- Currently only read-only wrapped cursors
+- Currently only read-only wrapped lenses
 - Copious testing
 
 A big thanks to [[https://github.com/lsnape][Luke Snape]] for all his help in design/implementation
