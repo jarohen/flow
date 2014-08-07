@@ -50,3 +50,7 @@
 #+cljs
 (defn bind-value! [lens]
   (fd/bind-value! lens))
+
+#+cljs
+(defn on [$el event listener]
+  (fd/add-listener! $el event listener))
