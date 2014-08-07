@@ -104,13 +104,14 @@
    :default (when (odd? (count clauses))
               (parse-form (last clauses) opts))})
 
-(defmethod parse-call '<< [[_ cursor] _]
-  {:call-type :unwrap-cursor
-   :cursor cursor})
+(defmethod parse-call '<< [[_ lens] _]
+  {:call-type :unwrap-lens
+   :lens lens})
 
-(defmethod parse-call '!<< [[_ cursor] _]
-  {:call-type :wrap-cursor
-   :cursor cursor})
+(defmethod parse-call '!<< [[_ lens extra-path] _]
+  {:call-type :wrap-lens
+   :lens lens
+   :extra-path extra-path})
 
 (defmethod parse-call :default [[& args] opts]
   {:call-type :fn-call

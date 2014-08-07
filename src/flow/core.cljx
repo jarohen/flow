@@ -8,6 +8,7 @@
   #+cljs (:require flow.protocols
                    flow.state
                    flow.render
+                   flow.lens
                    flow.forms.if
                    flow.forms.let
                    flow.forms.fn-call
@@ -45,5 +46,5 @@
   (.appendChild $container $elem))
 
 #+cljs
-(defn bind-value! [cursor]
-  (fd/bind-value! cursor))
+(defn bind-value! [lens]
+  (fd/bind-value! lens))
