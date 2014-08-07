@@ -5,6 +5,8 @@
 
 (defprotocol Lens
   (-value [_])
+  (-!state [_])
+  (-path [_])
   (->atom [_ extra-path]))
 
 (defn lens? [v]
@@ -69,6 +71,8 @@
   (reify
     Lens
     (-value [_] value)
+    (-!state [_] !state)
+    (-path [_] path)
     (->atom [_ extra-path]
       (lens->atom !state (vec (concat path extra-path))))
     
@@ -137,6 +141,8 @@
   (reify
     Lens
     (-value [_] value)
+    (-!state [_] !state)
+    (-path [_] path)
     (->atom [_ extra-path]
       (lens->atom !state (vec (concat path extra-path))))
     
@@ -211,8 +217,10 @@
   (specify value
     Lens
     (-value [_] value)
-    (->atom [_]
-      (lens->atom !state path))
+    (-!state [_] !state)
+    (-path [_] path)
+    (->atom [_ extra-path]
+      (lens->atom !state (vec (concat path extra-path))))
     
     IEquiv
     (-equiv [_ other]
@@ -236,12 +244,23 @@
 
 (comment
   (def !foo
-    (atom {:a {:c 3, :d 4}, :b 2}))
+    (atom {:a {:c 3, :d 4}, :b 2,
+           :v [{:id 2 :name "Number 2"}
+               {:id 1 :name "Number 1"}]
+           :s #{2 3 5 7 11}}))
 
   (def foo (unwrap-lens !foo))
 
   (def foo-a (:a foo))
 
+  (def foo-num-2 (second (sort-by :id (:v foo))))
+
   (def !foo-a (wrap-lens foo-a))
 
-  (def !foo-b (wrap-lens foo [:b])))
+  (def !foo-b (wrap-lens foo [:b]))
+
+  (def !foo-num-2 (wrap-lens foo-num-2))
+
+  (def foo-s (:s foo))
+
+  (def !foo-s (wrap-lens foo-s)))
