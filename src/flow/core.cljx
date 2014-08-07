@@ -45,5 +45,5 @@
   (.appendChild $container $elem))
 
 #+cljs
-(defn bind-value! [cursor]
-  (fd/bind-value! cursor))
+(defn bind-value! [lens]
+  (fd/bind-value! lens))

@@ -38,8 +38,10 @@
   (when @!debug
     (js/console.log "setting style on" $el ":" (pr-str k) "=" (pr-str v)))
   
-  (aset (.-style $el) (name k) (cond-> v
-                                 (keyword? v) name)))
+  (.setProperty (.-style $el)
+                (name k)
+                (cond-> v
+                  (keyword? v) name)))
 
 (defn set-attr! [$el k v]
   (when @!debug
