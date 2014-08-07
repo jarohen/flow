@@ -1,6 +1,7 @@
 (ns flow.render
   (:require [flow.holder :as fh]
-            [flow.state :as fs]))
+            [flow.state :as fs]
+            [flow.lens :as fl]))
 
 (defn with-animation-frame-if-possible [f]
   (if (exists? js/requestAnimationFrame)
@@ -42,18 +43,18 @@
 
              system))))
 
-(defn effect-updates! [!batch-state dep-sym new-value]
+(defn effect-updates! [!batch-state dep-sym dep new-value]
   (swap! !batch-state
          (fn [{:keys [state $el update-fn] :as system}]
            (-> system
-               (assoc-in [:state dep-sym] new-value)
+               (assoc-in [:state dep-sym] (fl/->lens new-value dep []))
                (update-in [:updated-vars] conj dep-sym))))
   
   (schedule-frame! !batch-state))
 
 (defn build-el [{:keys [deps build-fn]}]
   (let [initial-state (->> (for [{:keys [dep-sym dep]} deps]
-                             [dep-sym (deref dep)])
+                             [dep-sym (fl/unwrap-lens dep)])
                            (into {}))
 
         [$initial-el initial-update-fn] (binding [fs/*state* initial-state]
@@ -71,6 +72,6 @@
       (add-watch dep (str (gensym "watch"))
                  (fn flow-dep-watcher [_ _ old-value new-value]
                    (when (not= old-value new-value)
-                     (effect-updates! !batch-state dep-sym new-value)))))
+                     (effect-updates! !batch-state dep-sym dep new-value)))))
     
     $initial-el))

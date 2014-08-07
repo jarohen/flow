@@ -8,6 +8,7 @@
   #+cljs (:require flow.protocols
                    flow.state
                    flow.render
+                   flow.lens
                    flow.forms.if
                    flow.forms.let
                    flow.forms.fn-call
