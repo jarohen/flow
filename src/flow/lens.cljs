@@ -37,8 +37,14 @@
           new-value))
 
       ISwap
-      (-swap! [this f & args]
-        (reset! this (apply f (-deref this) args)))
+      (-swap! [this f]
+        (reset! this (f (-deref this))))
+      (-swap! [this f a1]
+        (reset! this (f (-deref this) a1)))
+      (-swap! [this f a1 a2]
+        (reset! this (f (-deref this) a1 a2)))
+      (-swap! [this f a1 a2 as]
+        (reset! this (apply f (-deref this) a1 a2 as)))
 
       IPrintWithWriter
       (-pr-writer [this writer opts]
