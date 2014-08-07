@@ -5,7 +5,7 @@
 
 (defprotocol Lens
   (-value [_])
-  (->atom [_]))
+  (->atom [_ extra-path]))
 
 (defn lens? [v]
   (satisfies? Lens v))
@@ -63,8 +63,8 @@
   (reify
     Lens
     (-value [_] value)
-    (->atom [_]
-      (lens->atom !state path))
+    (->atom [_ extra-path]
+      (lens->atom !state (vec (concat path extra-path))))
     
     IWithMeta
     (-with-meta [_ new-meta]
@@ -129,6 +129,11 @@
 
 (defn vec-lens [value !state path]
   (reify
+    Lens
+    (-value [_] value)
+    (->atom [_ extra-path]
+      (lens->atom !state (vec (concat path extra-path))))
+    
     ISequential
 
     IWithMeta
@@ -217,8 +222,8 @@
    (satisfies? ICloneable value) (cloneable->lens value !state path)
    :else value))
 
-(defn wrap-lens [lens]
-  (->atom lens))
+(defn wrap-lens [lens & [extra-path]]
+  (->atom lens extra-path))
 
 (defn unwrap-lens [!atom]
   (->lens @!atom !atom []))
@@ -231,4 +236,6 @@
 
   (def foo-a (:a foo))
 
-  (def !foo-a (wrap-lens foo-a)))
+  (def !foo-a (wrap-lens foo-a))
+
+  (def !foo-b (wrap-lens foo [:b])))
