@@ -6,8 +6,7 @@
   (or (when manual-key-fn
         (manual-key-fn value))
       (:flow.core/id value)
-      (:id value)
-      value))
+      (:id value)))
 
 (defn tree->elements [tree]
   (when tree
@@ -60,7 +59,7 @@
                                    
                                    value-key (value->key compiled-binding new-value)]
 
-                               (if-let [cached-value (get cache value-key)]
+                               (if-let [cached-value (and value-key (get cache value-key))]
                                  {:value-key value-key
                                   :element (when-not (seq more-bindings)
                                              (let [[new-element update-fn] (binding [fs/*state* new-state]
