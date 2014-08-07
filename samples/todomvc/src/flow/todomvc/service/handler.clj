@@ -1,4 +1,4 @@
-(ns todomvc.clj.handler
+(ns flow.todomvc.service.handler
   (:require [compojure.core :refer [routes GET]]
             [compojure.handler :refer [api]]
             [compojure.route :refer [resources]]

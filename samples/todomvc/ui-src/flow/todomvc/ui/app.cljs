@@ -1,17 +1,16 @@
-(ns todomvc.cljs.app
-  (:require [cljs.core.async :as a]
-            [todomvc.cljs.todomvc-widget :refer [make-todomvc]]
-            [todomvc.cljs.todomvc-model :as model]
-            [dommy.core :as d])
-  (:require-macros [dommy.macros :refer [sel1]]
-                   [cljs.core.async.macros :refer [go]]))
+(ns flow.todomvc.ui.app
+  (:require [flow.core :as f :include-macros true]
+            [cljs.core.async :as a]
+            [flow.todomvc.ui.todomvc-widget :refer [make-todomvc]]
+            [flow.todomvc.ui.todomvc-model :as model])
+  (:require-macros [cljs.core.async.macros :refer [go]]))
 
 (enable-console-print!)
 
 (defn test-todos []
-  (->> (for [x (range 5)]
-         [x {:caption (str "Test todo " x)}])
-       (into {})))
+  (for [x (range 5)]
+    {:id x
+     :caption (str "Test todo " x)}))
 
 (defn run-benchmark! [!todos]
   (reset! !todos {})
@@ -38,7 +37,8 @@
               events-ch (doto (a/chan)
                           (model/watch-events! !todos))]
 
-          (d/replace-contents! (sel1 :#content) (make-todomvc !todos events-ch))
+          (f/root js/document.body
+            (make-todomvc !todos events-ch))
 
           (go
             (a/<! (a/timeout 1000))

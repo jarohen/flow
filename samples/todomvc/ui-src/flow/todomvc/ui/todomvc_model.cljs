@@ -1,4 +1,4 @@
-(ns todomvc.cljs.todomvc-model
+(ns flow.todomvc.ui.todomvc-model
   (:require [cljs.core.async :as a])
   (:require-macros [cljs.core.async.macros :refer [go-loop]]))
 
