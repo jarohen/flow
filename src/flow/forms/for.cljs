@@ -2,9 +2,11 @@
   (:require [flow.state :as fs]
             [clojure.set :as set]))
 
-(defn value->key [{:keys [manual-key-fn]} value]
+(defn value->key [values {:keys [manual-key-fn]} value]
   (or (when manual-key-fn
         (manual-key-fn value))
+      (when (map? values)
+        (key value))
       (:flow.core/id value)
       (:id value)))
 
@@ -23,7 +25,7 @@
      :current-values initial-values
      :values (for [initial-value initial-values]
                (let [initial-state (merge state (value->state initial-value))
-                     value-key (value->key compiled-binding initial-value)]
+                     value-key (value->key initial-values compiled-binding initial-value)]
                  {:value-key value-key
                   :element (when-not (seq more-bindings)
                              (let [[initial-element update-fn] (binding [fs/*state* initial-state]
@@ -57,7 +59,7 @@
                                                    (set/difference bound-syms)
                                                    (cond-> (fs/deps-updated? hard-deps) (set/union bound-syms))))
                                    
-                                   value-key (value->key compiled-binding new-value)]
+                                   value-key (value->key new-values compiled-binding new-value)]
 
                                (if-let [cached-value (and value-key (get cache value-key))]
                                  {:value-key value-key
