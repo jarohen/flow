@@ -2,11 +2,12 @@
   (:require [flow.core :as f :include-macros true]
             [cljs.core.async :as a]
             [clojure.string :as s]
-            [goog.events.KeyCodes :as kc]))
+            [goog.events.KeyCodes :as kc])
+  (:require-macros [cljs.core.async.macros :refer [go-loop]]))
 
 (defn toggle-all-widget [!todos events-ch]
   (f/el
-    (let [all-done? (every? :done? (<< !todos))]
+    (let [all-done? (every? :done? (vals (<< !todos)))]
       [:input#toggle-all {:type "checkbox"
                           :checked all-done?
                           ::f/on {:change #(a/put! events-ch {:type :toggle-all
@@ -70,21 +71,17 @@
    :active (complement :done?)
    :completed :done?})
 
-(defn prn-todo []
-  )
-
 (defn todo-list-widget [!todos !todo-filter events-ch]
-  (prn !todos)
   (f/el
     [:ul#todo-list
-     (for [{:keys [id todo] :as todo-item} (doto (->> (<< !todos)
-                                                      (filter (filter-todos (<< !todo-filter))))
-                                             prn)]
-       (todo-item-widget (!<< todo-item) events-ch))]))
+     (for [[id todo] ^{::f/key-fn key} (->> (<< !todos)
+                                            (filter (comp (filter-todos (<< !todo-filter)) val)))]
+       (todo-item-widget (!<< todo) events-ch))]))
 
 (defn stats-widget [!todos]
   (f/el
     (let [todo-count (->> (<< !todos)
+                          vals
                           (remove :done?)
                           count)]
       [:span#todo-count
@@ -110,6 +107,7 @@
 (defn clear-completed-widget [!todos events-ch]
   (f/el
     (let [completed-count (->> (<< !todos)
+                               vals
                                (filter :done?)
                                count)]
       [:div

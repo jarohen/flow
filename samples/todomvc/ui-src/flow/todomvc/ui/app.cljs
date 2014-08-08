@@ -2,15 +2,17 @@
   (:require [flow.core :as f :include-macros true]
             [cljs.core.async :as a]
             [flow.todomvc.ui.todomvc-widget :refer [make-todomvc]]
-            [flow.todomvc.ui.todomvc-model :as model])
+            [flow.todomvc.ui.todomvc-model :as model]
+            simple-brepl.client)
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
 (enable-console-print!)
 
 (defn test-todos []
-  (for [x (range 5)]
-    {:id x
-     :caption (str "Test todo " x)}))
+  (->> (for [x (range 5)]
+         [x {:id x
+             :caption (str "Test todo " x)}])
+       (into {})))
 
 (defn run-benchmark! [!todos]
   (reset! !todos {})
@@ -18,7 +20,8 @@
     (let [els 250]
       (dotimes [i els]
         (swap! !todos
-               assoc i {:caption (str "test" i), :done? false}))
+               conj {:id i
+                     :caption (str "test" i), :done? false}))
 
       (dotimes [i els]
         (swap! !todos
@@ -26,7 +29,7 @@
       
       #_(dotimes [i els]
         (swap! !todos
-               dissoc i))
+               #(remove (comp #{i} :id) %)))
 
       (swap! !todos
              assoc els {:caption (str "test" els), :done? false}))))
@@ -40,6 +43,6 @@
           (f/root js/document.body
             (make-todomvc !todos events-ch))
 
-          (go
-            (a/<! (a/timeout 1000))
-            (run-benchmark! !todos)))))
+          #_(go
+              (a/<! (a/timeout 1000))
+              (run-benchmark! !todos)))))

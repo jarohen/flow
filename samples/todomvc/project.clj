@@ -18,6 +18,7 @@
                  [jarohen/flow "0.2.0-SNAPSHOT"]]
 
   :plugins [[jarohen/lein-frodo "0.3.2"]
+            [jarohen/simple-brepl "0.1.1"]
             [lein-cljsbuild "1.0.3"]
             [lein-pdo "0.1.1"]
             [lein-shell "0.4.0"]]
@@ -27,7 +28,7 @@
   :resource-paths ["resources" "target/resources"]
 
   :cljsbuild {:builds {:dev
-                       {:source-paths ["ui-src"]
+                       {:source-paths ["ui-src" "checkouts/flow/src" "checkouts/flow/target/generated/cljs"]
                         :compiler {:output-to "target/resources/js/todomvc.js"
                                    :output-dir "target/resources/js/"
                                    :optimizations :whitespace
