@@ -27,8 +27,11 @@
 #+clj
 (defmacro el [elem]
   (let [el-sym (gensym "flow-el")]
-    
+    (spit "/tmp/elem.edn" (binding [*print-meta* true]
+                            (pr-str elem)))
     (-> (expand-macros elem &env)
+        (doto (#(binding [*print-meta* true]
+                  (spit "/tmp/expanded.edn" (pr-str %)))))
         (parse-form {:elem? true})
         (doto (->> (spit "/tmp/parsed.edn")))
         (compile-identity {:dynamic-syms #{}
