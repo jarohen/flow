@@ -45,10 +45,10 @@
 (defn root [$container $elem]
   (loop []
     (when-let [$child (.-firstChild $container)]
-      (.removeChild $container $child)
+      (fd/remove! $child)
       (recur)))
         
-  (.appendChild $container $elem))
+  (fd/append-child! $container $elem))
 
 #+cljs
 (defn bind-value! [lens]
