@@ -61,7 +61,7 @@
   {:call-type :for
    :bindings (for [[bind value] (partition 2 bindings)]
                {:bind bind
-                :value (parse-form value opts)
+                :value (parse-form value {:elem? false})
                 :key-fn (::f/key-fn (meta value))})
    :body (parse-form body opts)})
 
