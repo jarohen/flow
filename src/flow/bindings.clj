@@ -71,8 +71,8 @@
                 (update-in [:hard-deps] set/union (when (seq (set/intersection bound-syms hard-deps))
                                                     (:hard-deps compiled-binding)))
                 (update-in [:soft-deps] set/union (when (seq (set/intersection bound-syms (set/union hard-deps soft-deps)))
-                                                    (concat (:soft-deps compiled-binding)
-                                                            (:hard-deps compiled-binding))))))
+                                                    (set (concat (:soft-deps compiled-binding)
+                                                                 (:hard-deps compiled-binding)))))))
 
           {:hard-deps (fp/hard-deps compiled-body)
            :soft-deps (fp/soft-deps compiled-body)}
