@@ -1,5 +1,6 @@
 (ns flow.holder
-  (:require [flow.dom :as fd]))
+  (:require [flow.dom :as fd]
+            [flow.diff :refer [vector-diff]]))
 
 (defprotocol ElementHolder
   (append-to! [_ $parent])
@@ -8,15 +9,24 @@
 (defn swap-elem-seqs! [old-els new-els]
   (let [$last-elem (last old-els)
         $next-sibling (.-nextSibling $last-elem)
-        $parent (.-parentNode $last-elem)]
+        $parent (.-parentNode $last-elem)
 
-    (doseq [$el old-els]
-      (fd/remove! $el))
+        diff (vector-diff old-els new-els)]
 
-    (reduce (fn [$next-sibling $new-el]
-              (fd/insert-child-before! $parent $new-el $next-sibling))
+    (doseq [[action $el] diff]
+      (when (= action :moved-out)
+        (fd/remove! $el)))
+
+    (reduce (fn [$next-sibling [action $new-el]]
+              (case action
+                :kept $new-el
+                :moved-in (do
+                            (fd/insert-child-before! $parent $new-el $next-sibling)
+                            $new-el)
+                :moved-out $next-sibling))
+            
             $next-sibling
-            (reverse new-els))
+            (reverse diff))
 
     new-els))
 
