@@ -26,33 +26,38 @@
       [:input.edit {:value caption,
                     :autofocus true
                     :type "text"
-                    ::f/on {:keyup (juxt (f/bind-value !input-value)
+                    ::f/on {:keyup (juxt (f/bind-value! !input-value)
                                          (on-enter #(do
                                                       (a/put! events-ch {:type :update
                                                                          :caption @!input-value
                                                                          :updated-id id})
                                                       (swap! !todo-entry assoc-in [:editing?] false))))}}])))
 
+(defn render-todo [!todo-entry events-ch]
+  (f/el
+    (let [{:keys [id caption done? editing?]} (<< !todo-entry)]
+      [:div.view
+       [:input.toggle {:type "checkbox",
+                       :checked done?
+                       ::f/on {:change #(a/put! events-ch {:type :toggle
+                                                           :toggled-id id})}}]
+
+       [:label {::f/on {:dblclick (let [!editing? (!<< !todo-entry [:editing?])]
+                                    #(reset! !editing? true))}}
+        caption]
+
+       [:button.destroy {::f/on {:click #(a/put! events-ch {:type :delete
+                                                            :deleted-id id})}}]])))
+
 (defn todo-item-widget [!todo-entry events-ch]
-  (let [!editing? (atom false)]
-    (f/el
-      (let [{:keys [id caption done? editing?]} (<< !todo-entry)]
-        [:li {::f/classes [(when done? "completed")
-                           (when editing? "editing")]}
-         (if-not editing?
-           [:div.view
-            [:input.toggle {:type "checkbox",
-                            :checked done?
-                            ::f/on {:change #(a/put! events-ch {:type :toggle
-                                                                :toggled-id id})}}]
-
-            [:label {::f/on {:dblclick #(reset! !editing? true)}}
-             caption]
-
-            [:button.destroy {::f/on {:click #(a/put! events-ch {:type :delete
-                                                                 :deleted-id id})}}]]
-           
-           (edit-input !todo-entry events-ch))]))))
+  (f/el
+    (let [{:keys [id caption done? editing?]} (<< !todo-entry)]
+      [:li {::f/classes [(when done? "completed")
+                         (when editing? "editing")]}
+       (if-not editing?
+         (render-todo !todo-entry events-ch)
+         
+         (edit-input !todo-entry events-ch))])))
 
 (defn new-todo-widget [events-ch]
   (let [!input-value (atom nil)]
