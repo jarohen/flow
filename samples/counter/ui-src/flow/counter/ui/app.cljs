@@ -5,10 +5,17 @@
 
 (enable-console-print!)
 
+(def !counter
+  (atom 0))
+
 (set! (.-onload js/window)
       (fn []
         (f/root js/document.body
           (f/el
-            [:p "Hello world!"]))))
+            [:div
+             [:p "The value of the counter is " (<< !counter)]
+             
+             [:p [:button {::f/on {:click #(swap! !counter inc)}}
+                  "Increment me!"]]]))))
 
 
