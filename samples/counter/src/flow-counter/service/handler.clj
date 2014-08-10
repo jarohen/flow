@@ -1,4 +1,4 @@
-(ns flow.counter.service.handler
+(ns flow-counter.service.handler
   (:require [ring.util.response :refer [response]]
             [compojure.core :refer [routes GET]]
             [compojure.route :refer [resources]]
@@ -10,7 +10,7 @@
 (defn page-frame []
   (html5
    [:head
-    [:title "flow.counter - CLJS Single Page Web Application"]
+    [:title "Flow Counter Tutorial"]
 
     [:script (brepl-js)]
     

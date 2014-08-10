@@ -65,7 +65,7 @@ In =ui-src/flow-counter/ui/app.cljs=, you should see the code for the
 SPLAT introduction - feel free to delete this, and replace it with:
 
 #+BEGIN_SRC clojure
-  (ns flow.counter.ui.app
+  (ns flow-counter.ui.app
     (:require [flow.core :as f :include-macros true]
               simple-brepl.client))
   

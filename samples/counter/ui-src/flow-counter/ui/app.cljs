@@ -1,4 +1,4 @@
-(ns flow.counter.ui.app
+(ns flow-counter.ui.app
   (:require [flow.core :as f :include-macros true]
             [clojure.string :as s]
             simple-brepl.client))
