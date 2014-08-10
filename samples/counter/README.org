@@ -277,4 +277,5 @@ The one exception to this rule (there's always one!) is that Flow's
 ** What's next?
 
 In future tutorials, we'll look at how to split Flow applications into
-separate components
+separate components, and introduce =<<='s brother (the only other
+addition to ClojureScript in the DSL), =!<<=.
