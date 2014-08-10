@@ -20,8 +20,9 @@
     (let [els 250]
       (dotimes [i els]
         (swap! !todos
-               conj {:id i
-                     :caption (str "test" i), :done? false}))
+               assoc i {:id i
+                        :caption (str "test" i),
+                        :done? false}))
 
       (dotimes [i els]
         (swap! !todos
@@ -29,10 +30,7 @@
       
       #_(dotimes [i els]
         (swap! !todos
-               #(remove (comp #{i} :id) %)))
-
-      (swap! !todos
-             assoc els {:caption (str "test" els), :done? false}))))
+               dissoc i)))))
 
 (set! (.-onload js/window)
       (fn []
