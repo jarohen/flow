@@ -249,10 +249,15 @@ add a style only when the counter is even, you might do something
 like:
 
 #+BEGIN_SRC clojure
-  [:p {::f/classes [(when (even? (<< !counter))
-                      "even")]}
-   "The value of the counter is " (<< !counter)]
+  (let [counter (<< !counter)]
+    [:p {::f/classes [(when (even? counter)
+                        "even")]}
+     "The value of the counter is " counter])
 #+END_SRC
+
+Here we're introducing a =let= binding in the same way as we would in
+vanilla Clojure - Flow will analyse the data dependencies here and
+update the DOM elements as required.
 
 ** Extending the 'counter' example
 
