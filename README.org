@@ -45,12 +45,12 @@ the following main design aims:
 If you want to dive straight into tutorials, there are a number of
 tutorials/example apps in this repository:
 
-- [[https://github.com/james-henderson/flow/tree/counter/samples/counter][Flow in 5 Minutes]] - writing a 'Hello World'/simple counter
+- [[samples/counter][Flow in 5 Minutes]] - writing a 'Hello World'/simple counter
   application
 - Colour Picker (to come) - an intermediate tutorial introducing =!<<=
 - Contacts (to come) - an intermediate tutorial covering splitting
   your Flow application into components
-- [[https://github.com/james-henderson/flow/tree/0.2.0-a6/samples/todomvc][TodoMVC]] example application - no webapp library would be complete
+- [[samples/todomvc][TodoMVC]] example application - no webapp library would be complete
   without it!
 
 *** Basic Elements
