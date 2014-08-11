@@ -24,9 +24,11 @@ the following main design aims:
 
 - *It's as close to ClojureScript as possible, to minimise the
   learning curve.* =let= (including destructuring), =for= *, =case=,
-  =if=, =when=, =when-let=, etc all work as they do in ClojureScript,
-  albeit having been extended to handle continuous dynamic updates. If
-  you know CLJS, the Flow DSL should be a natural extension.
+  =if=, =when=, =when-let=, etc are all designed to work as they do in
+  ClojureScript, albeit having been extended to handle continuous
+  dynamic updates. If you know CLJS, the Flow DSL should be a natural
+  extension. /(see 'Current Limitations' for a couple of minor
+  differences')/
 - *Its element syntax is based on Hiccup* - again, a well-known and
   widely used DSL in itself.
 - *It only adds two new constructs to the language* - =<<=, to extract
@@ -36,9 +38,6 @@ the following main design aims:
   specify *how* or *when* to update the elements; simply state *what*
   they should look like given a certain state, and Flow will do the
   rest.
-
-/* - Flow's 'for' doesn't currently support ':when', ':let', or
-':while' clauses - support for these is planned for a future release./
 
 *** Tutorials
 
@@ -230,6 +229,32 @@ collection, and provide an extra key to find the corresponding value:
 
 Here, we can't wrap 'caption', because it's a string, so we tell
 =!<<= that it needs to wrap the ':caption' key of 'todo'.
+
+** Current Limitations
+
+There are a couple of features still to be implemented:
+
+- Flow's 'for' doesn't yet support ':when', ':let' or ':while'
+  clauses - support for this will be added in the future.
+- It is currently required to declare atoms outside of =f/el=
+  clauses - this is not a limitation I like as it violates the 'no
+  surprises' rule - it will get fixed!
+
+#+BEGIN_SRC clojure
+  ;; Replace:
+  
+  (f/el
+    (let [!state (atom {})]
+      [:p {::f/style {:color (:color (<< !state))}}
+       "Hello!"]))
+  
+  ;; With:
+  
+  (let [!state (atom {})]
+    (f/el
+      [:p {::f/style {:color (:color (<< !state))}}
+       "Hello!"]))
+#+END_SRC
 
 ** Questions/suggestions/bug fixes?
 
