@@ -1,0 +1,16 @@
+* Flow TodoMVC example
+
+This is a larger-scale example application for Flow based on the
+[[http://todomvc.com/][TodoMVC]] project.
+
+All of the concepts here have already been introduced in the [[https://github.com/james-henderson/flow/tree/0.2.0-branch/samples][tutorials]]
+or [[https://github.com/james-henderson/flow][README]] - have a look at these if you're unsure about any of the
+code:
+
+To start the TodoMVC application, clone this repository, 'cd' to
+'samples/todomvc', and run =lein dev=. You should then see a web
+service start at http://localhost:3000!
+
+Any questions, please let me know!
+
+James ([[https://twitter.com/jarohen][@jarohen]])

@@ -71,7 +71,6 @@
     (doseq [{:keys [dep-sym dep]} deps]
       (add-watch dep (str (gensym "watch"))
                  (fn flow-dep-watcher [_ _ old-value new-value]
-                   (when (not= old-value new-value)
-                     (effect-updates! !batch-state dep-sym dep new-value)))))
+                   (effect-updates! !batch-state dep-sym dep new-value))))
     
     $initial-el))

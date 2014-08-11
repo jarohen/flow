@@ -9,31 +9,36 @@
         compiled-side-effects (map #(compile-value %1 (u/with-more-path opts ["do" (str %2)]))
                                    side-effects (range))
         compiled-return (compile-identity return (cond-> opts
-                                                   side-effects (u/with-more-path ["do-return"])))]
+                                                   side-effects (u/with-more-path ["do-return"])))
 
-    (assert (empty? side-effects) "I can't handle this yet!")
-    
+        do-sym (u/path->sym path "do")]
+
     (if (empty? side-effects)
       compiled-return
 
-      ;; TODO! handle the non-empty side-effects case
-      #_{:el `(~do-el)
-         :deps deps
-         :declarations (concat (:declarations compiled-return)
+      (reify fp/CompiledIdentity
+        (hard-deps [_] (set (concat (mapcat fp/value-deps compiled-side-effects)
+                                    (fp/hard-deps compiled-return))))
 
-                               [`(defn ~do-el []
-                                   (let [downstream-el# ~(:el compiled-return)]
-                                   
-                                     (reify fp/DynamicValue
-                                       (~'should-update? [~'_ updated-vars#]
-                                         (fp/should-update? downstream-el# updated-vars#))
+        (soft-deps [_] (fp/soft-deps compiled-return))
 
-                                       (~'build [~'_ state#]
-                                         ~@side-effects
-                                         (fp/build downstream-el#))
+        (declarations [_]
+          (concat (fp/declarations compiled-return)
+                  `[(defn ~do-sym []
+                      (letfn [(update-do# [update-fn#]
+                                (fn []
+                                  ~@(map fp/inline-value-form compiled-side-effects)
 
-                                       (~'handle-update! [~'_ new-state# updated-vars#]
-                                         (fp/handle-update! downstream-el# new-state# updated-vars#)))))])})))
+                                  (let [[new-value# new-update-fn#] (update-fn#)]
+                                    [new-value# (update-do# new-update-fn#)])))]
+
+                        ~@(map fp/inline-value-form compiled-side-effects)
+
+                        (let [[initial-value# initial-update-fn#] ~(fp/build-form compiled-return)]
+                          [initial-value# (update-do# initial-update-fn#)])))]))
+      
+        (build-form [_]
+          `(~do-sym))))))
 
 (defmethod compile-call-value :do [{:keys [side-effects return]} {:keys [path] :as opts}]
   (let [do-el (u/path->sym path)
@@ -48,9 +53,9 @@
       (reify fp/CompiledValue
         (value-deps [_]
           (set (concat (mapcat fp/value-deps compiled-side-effects)
-                       (fp/value-deps return))))
+                       (fp/value-deps compiled-return))))
         
         (inline-value-form [_]
           `(do
              ~@(map fp/inline-value-form compiled-side-effects)
-             ~(fp/inline-value-form return)))))))
+             ~(fp/inline-value-form compiled-return)))))))

@@ -47,8 +47,11 @@
   (when @!debug
     (js/console.log "setting attr on" $el ":" (pr-str k) "=" (pr-str v)))
 
-  (if (= k :value)
-    (set! (.-value $el) v)
+  (case k
+    :value (set! (.-value $el) v)
+    :checked (if (boolean v)
+               (set! (.-checked $el) true)
+               (set! (.-checked $el) nil))
     
     (if-not (nil? v)
       (.setAttribute $el (name k) v)
@@ -77,7 +80,11 @@
 
 (defn ->node [$el-or-val]
   (cond
-   (nil? $el-or-val) (null-elem)
+   (or (nil? $el-or-val)
+       (and (seq? $el-or-val)
+            (empty? $el-or-val)))
+   (null-elem)
+            
    (seq? $el-or-val) (map ->node $el-or-val)
    
    (.-nodeType $el-or-val) $el-or-val

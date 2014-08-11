@@ -14,6 +14,31 @@
 
 (declare ->lens)
 
+(defn get-at-path [m [p & more-path :as path]]
+  (if (and m (seq path))
+    (cond
+     (satisfies? ILookup m) (get-at-path (get m p) more-path)
+     (number? p) (get-at-path (nth m p) more-path))
+    
+    m))
+
+(defn assoc-at-path [m [p & more-path :as path] v]
+  (if (seq path)
+    (cond
+     (or (satisfies? IAssociative m)
+         (nil? m))
+     (assoc m p (assoc-at-path (get m p) more-path v))
+
+     (and (seq? m)
+          (number? p))
+     (if (zero? p)
+       (cons (assoc-at-path (first m) more-path v)
+             (rest m))
+       (cons (first m)
+             (assoc-at-path (rest m) (cons (dec p) more-path) v))))
+    
+    v))
+
 (defn lens->atom [!state path]
   ;; This part adapted from CLJS core.
   (let [!watches (atom {})
@@ -29,12 +54,12 @@
       
                      IDeref
                      (-deref [_]
-                       (get-in @!state path))
+                       (get-at-path @!state path))
 
                      IReset
                      (-reset! [this new-value]
                        (let [old-value (-deref this)]
-                         (swap! !state assoc-in path new-value)
+                         (swap! !state assoc-at-path path new-value)
                          (-notify-watches this old-value new-value)
                          new-value))
 
@@ -188,10 +213,10 @@
 
     IIndexed
     (-nth [this n]
-      (->lens (-nth value n) !state (conj path n)))
+      (->lens (nth value n) !state (conj path n)))
     (-nth [this n not-found]
       (if (< n (-count value))
-        (->lens (-nth value n) !state (conj path n))
+        (->lens (nth value n) !state (conj path n))
         not-found))
 
     ISeqable
@@ -239,7 +264,7 @@
 (defn ->lens [value !state path]
   (cond
    (lens? value) value
-   (indexed? value) (vec-lens value !state path)
+   (or (indexed? value) (seq? value)) (vec-lens value !state path)
    (map? value) (map-lens value !state path)
    (satisfies? ICloneable value) (cloneable->lens value !state path)
    :else value))

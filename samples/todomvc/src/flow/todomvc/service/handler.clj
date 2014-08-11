@@ -1,9 +1,10 @@
-(ns todomvc.clj.handler
+(ns flow.todomvc.service.handler
   (:require [compojure.core :refer [routes GET]]
             [compojure.handler :refer [api]]
             [compojure.route :refer [resources]]
             [hiccup.page :refer [html5 include-css include-js]]
-            [ring.util.response :refer [response]]))
+            [ring.util.response :refer [response]]
+            [simple-brepl.service :refer [brepl-js]]))
 
 (defn page-frame []
   (html5
@@ -11,6 +12,8 @@
     [:title "TodoMVC - A sample Flow application"]
     [:meta {:charset "utf-8"}]
 
+    [:script (brepl-js)]
+    
     (include-js "/js/todomvc.js")
     (include-css "/todomvc/todomvc.css")]
    [:body

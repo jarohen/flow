@@ -19,7 +19,7 @@
                         (symbol? bind) [(symbol (name bind))]))]
     (set (dbs* bind))))
 
-(defn compile-identity-binding [{:keys [bind value idx]} opts]
+(defn compile-identity-binding [{:keys [bind key-fn value idx]} opts]
   (let [compiled-identity (compile-identity value (u/with-more-path opts [(str idx)]))
         
         hard-deps (fp/hard-deps compiled-identity)
@@ -34,7 +34,7 @@
                         :declarations (fp/declarations compiled-identity)
                         :bound-syms destructured-syms
 
-                        :manual-key-fn (:flow.core/key-fn (meta value))
+                        :manual-key-fn key-fn
 
                         :value->state `(fn [~bind]
                                          ~(->> (for [bind-sym destructured-syms]
@@ -71,8 +71,8 @@
                 (update-in [:hard-deps] set/union (when (seq (set/intersection bound-syms hard-deps))
                                                     (:hard-deps compiled-binding)))
                 (update-in [:soft-deps] set/union (when (seq (set/intersection bound-syms (set/union hard-deps soft-deps)))
-                                                    (concat (:soft-deps compiled-binding)
-                                                            (:hard-deps compiled-binding))))))
+                                                    (set (concat (:soft-deps compiled-binding)
+                                                                 (:hard-deps compiled-binding)))))))
 
           {:hard-deps (fp/hard-deps compiled-body)
            :soft-deps (fp/soft-deps compiled-body)}

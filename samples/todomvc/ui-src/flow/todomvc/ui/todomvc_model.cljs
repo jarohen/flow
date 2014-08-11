@@ -1,4 +1,4 @@
-(ns todomvc.cljs.todomvc-model
+(ns flow.todomvc.ui.todomvc-model
   (:require [cljs.core.async :as a])
   (:require-macros [cljs.core.async.macros :refer [go-loop]]))
 
@@ -15,7 +15,7 @@
 (defmethod apply-event :new-todo [todos {:keys [caption]}]
   (let [new-id ((fnil inc 0) (apply max (keys todos)))]
     (assoc todos
-      new-id {:caption caption, :done? false})))
+      new-id {:id new-id, :caption caption, :done? false})))
 
 (defmethod apply-event :delete [todos {:keys [deleted-id]}]
   (dissoc todos deleted-id))

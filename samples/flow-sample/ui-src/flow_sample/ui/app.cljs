@@ -86,14 +86,14 @@
             (f/el
               (let [{:keys [primary secondary] :as colors} (<< !colors)]
                 [:div#test.container.blah {::f/classes ["abc"
-                                                        (when (= primary "#000")
+                                                        (when (= primary "#000000")
                                                           "black")]
                                                                                       
                                            ::f/style {:margin-top "2em"}
                                                  
                                            :data-test "foo"
                                                  
-                                           :data-is-black (boolean (= primary "#000"))}
+                                           :data-is-black (boolean (= primary "#000000"))}
 
                  (when (<< !show-heading?)
                    [:div
