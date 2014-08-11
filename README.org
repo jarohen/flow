@@ -74,7 +74,7 @@ hash:
       [:p#hello "Hello world!"]))
 #+END_SRC
 
-*** Reacting to dynamic state
+*** =<<= - Reacting to dynamic state
 
 Flow uses standard ClojureScript atoms to store state, so I'll assume
 here we have an atom containing the current value of a 'counter':
@@ -108,7 +108,7 @@ imperative behaviour here; no 'when the counter updates, then update
 this element' - we simply say 'this element contains the up-to-date
 value of my atom' and Flow does the rest.
 
-*** Styles/Classes
+*** =::f/styles= & =::f/classes= - Styling
 
 Classes can be added in one of two ways. Static classes can be added
 in the same way as Hiccup, by appending them to the tag keyword (after
@@ -153,17 +153,18 @@ Style values here can be keywords or strings.
 *N.B. Each of the Flow keywords is namespace-qualified, so uses
 a double colon*
 
-*** Event Listeners
+*** =::f/on= - Event Listeners
 
 Event listeners are attached with the =::f/on= attribute:
 
 #+BEGIN_SRC clojure
-  [:button {::f/on {:click #(js/alert "Hello!")}}
-   "Click me!"]
+  (f/el
+    [:button {::f/on {:click #(js/alert "Hello!")}}
+     "Click me!"])
 #+END_SRC
 
 There is also a helper function, =f/bind-value!=, which binds the
-value of an HTML input to a lens/atom:
+value of an HTML input to a dynamic value or atom:
 
 #+BEGIN_SRC clojure
   (let [!textbox-value (atom nil)]
@@ -172,7 +173,7 @@ value of an HTML input to a lens/atom:
                ::f/on {:keyup (f/bind-value! !textbox-value)}}]))
 #+END_SRC
 
-*** Passing lenses outside of the =f/el=
+*** =!<<= - Passing dynamic values outside of the =f/el=
 
 The values extracted from an atom with =<<= are only dynamic within
 the scope of the =f/el= in which they are extracted. To ensure that
