@@ -10,19 +10,20 @@ updated.
   (:require [flow.core :as f :include-macros true]) 
 #+END_SRC
 
-For an 'all-batteries-included' template (including Flow), try SPLAT:
+For an 'all-batteries-included' template (including Flow), you might
+want to try SPLAT:
 
 #+BEGIN_SRC shell
   lein new splat <your-project>
 #+END_SRC
 
-** DSL Guide
+** The Flow DSL
 
 The main part of Flow is it's dynamic element DSL - a language with
 the following main design aims:
 
 - *It's as close to ClojureScript as possible, to minimise the
-  learning curve.* =let= (including destructuring), =for= (*), =case=,
+  learning curve.* =let= (including destructuring), =for= *, =case=,
   =if=, =when=, =when-let=, etc all work as they do in ClojureScript,
   albeit having been extended to handle continuous dynamic updates, so
   there shouldn't be any surprises for anyone who knows CLJS.
@@ -38,6 +39,19 @@ the following main design aims:
 
 /* - Flow's 'for' doesn't currently support ':when', ':let', or
 ':while' clauses - support for these is planned for a future release./
+
+*** Tutorials
+
+If you want to dive straight into tutorials, there are a number of
+tutorials/example apps in this repository:
+
+- [[https://github.com/james-henderson/flow/tree/counter/samples/counter][Flow in 5 Minutes]] - writing a 'Hello World'/simple counter
+  application
+- Colour Picker (to come) - an intermediate tutorial introducing =!<<=
+- Contacts (to come) - an intermediate tutorial covering splitting
+  your Flow application into components
+- [[https://github.com/james-henderson/flow/tree/0.2.0-a6/samples/todomvc][TodoMVC]] example application - no webapp library would be complete
+  without it!
 
 *** Basic Elements
 
