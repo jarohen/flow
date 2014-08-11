@@ -1,6 +1,10 @@
 * ChangeLog
 ** 0.2.x (complete re-write)
 
+*** 0.2.0-beta2
+
+Bugfix to macro-expansion stage - needs to be a prewalk rather than a postwalk
+
 *** 0.2.0-beta1
 
 Lots of documentation and tutorials.
