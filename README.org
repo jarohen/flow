@@ -19,8 +19,8 @@ want to try SPLAT:
 
 ** The Flow DSL
 
-The main part of Flow is it's dynamic element DSL - a language with
-the following main design aims:
+The main part of Flow is its dynamic element DSL - a language with the
+following main design aims:
 
 - *It's as close to ClojureScript as possible, to minimise the
   learning curve.* =let= (including destructuring), =for= *, =case=,
