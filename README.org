@@ -5,7 +5,7 @@ declarative style, without worrying how/when the DOM needs to be
 updated.
 
 #+BEGIN_SRC clojure
-  [jarohen/flow "0.2.0-beta1"]
+  [jarohen/flow "0.2.0-beta2"]
 
   (:require [flow.core :as f :include-macros true]) 
 #+END_SRC
