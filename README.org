@@ -25,8 +25,8 @@ the following main design aims:
 - *It's as close to ClojureScript as possible, to minimise the
   learning curve.* =let= (including destructuring), =for= *, =case=,
   =if=, =when=, =when-let=, etc all work as they do in ClojureScript,
-  albeit having been extended to handle continuous dynamic updates, so
-  there shouldn't be any surprises for anyone who knows CLJS.
+  albeit having been extended to handle continuous dynamic updates. If
+  you know CLJS, the Flow DSL should be a natural extension.
 - *Its element syntax is based on Hiccup* - again, a well-known and
   widely used DSL in itself.
 - *It only adds two new constructs to the language* - =<<=, to extract
