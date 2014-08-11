@@ -27,19 +27,20 @@
 #+clj
 (defmacro el [elem]
   (let [el-sym (gensym "flow-el")]
-    (spit "/tmp/elem.edn" (binding [*print-meta* true]
-                            (pr-str elem)))
+    ;; (spit "/tmp/elem.edn" (binding [*print-meta* true]
+    ;;                         (pr-str elem)))
     (-> (expand-macros elem &env)
-        (doto (#(binding [*print-meta* true]
-                  (spit "/tmp/expanded.edn" (pr-str %)))))
+        ;; (doto (#(binding [*print-meta* true]
+        ;;           (spit "/tmp/expanded.edn" (pr-str %)))))
         (parse-form {:elem? true})
-        (doto (->> (spit "/tmp/parsed.edn")))
+        ;; (doto (->> (spit "/tmp/parsed.edn")))
         (compile-identity {:dynamic-syms #{}
                            :local-syms #{}
                            :path [el-sym]})
-        (doto debug-compiled-el)
+        ;; (doto debug-compiled-el)
         (render-elem)
-        (doto (->> (spit "/tmp/rendered.edn"))))))
+        ;; (doto (->> (spit "/tmp/rendered.edn")))
+        )))
 
 #+cljs
 (defn root [$container $elem]
