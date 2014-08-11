@@ -1,8 +1,8 @@
 * Flow
 
-Flow is a lightweight library to help you write dynamic ClojureScript
-webapps in a declarative style, without worrying when/how the DOM
-needs to be updated.
+Flow is a library to help you write dynamic ClojureScript webapps in a
+declarative style, without worrying how/when the DOM needs to be
+updated.
 
 #+BEGIN_SRC clojure
   [jarohen/flow "0.2.0-alpha5"]
@@ -10,52 +10,221 @@ needs to be updated.
   (:require [flow.core :as f :include-macros true]) 
 #+END_SRC
 
-Flow has been substantially changed since 0.1.0 - docs to come but,
-for now, here is an initial taster:
+For an 'all-batteries-included' template (including Flow), try SPLAT:
 
-In short, Flow is now a compiled DSL - the compiler analyses all of
-the dependencies at compile-time, and only updates what is necessary
-at run-time. The new DSL is a lot more expressive than the old =let<<=
-/ =for<<= combination.
+#+BEGIN_SRC shell
+  lein new splat <your-project>
+#+END_SRC
 
-In the meantime, to see what's in store:
+** DSL Guide
 
-- Fork/clone this repo
-- =cd samples/flow-sample=
-- =lein dev= to start the server
-- Head to http://localhost:3000 and click the buttons :)
+The main part of Flow is it's dynamic element DSL - a language with
+the following main design aims:
 
-You can also take a look at some [[https://github.com/james-henderson/flow/tree/0.2.0-alpha1/samples/flow-sample/ui-src/flow_sample/ui]['example code']] - this is a heavily
-contrived application that I've been using to drive the development so
-far.
+- *It's as close to ClojureScript as possible, to minimise the
+  learning curve.* =let= (including destructuring), =for= (*), =case=,
+  =if=, =when=, =when-let=, etc all work as they do in ClojureScript,
+  albeit having been extended to handle continuous dynamic updates, so
+  there shouldn't be any surprises for anyone who knows CLJS.
+- *Its element syntax is based on Hiccup* - again, a well-known and
+  widely used DSL in itself.
+- *It only adds two new constructs to the language* - =<<=, to extract
+  a value from a vanilla CLJS atom; and =!<<=, to turn an extracted
+  value back into an atom. This is covered in more detail below.
+- *Flow is entirely declarative* - so there's no need for you to
+  specify *how* or *when* to update the elements; simply state *what*
+  they should look like given a certain state, and Flow will do the
+  rest.
 
-It's not particularly suitable to be used as an example (yet) - I
-fully intend to provide more examples, documentation and tutorials
-before cutting a stable release.
+/* - Flow's 'for' doesn't currently support ':when', ':let', or
+':while' clauses - support for these is planned for a future release./
 
-The back of an envelope story (to be expanded):
+*** Basic Elements
 
-- Flow is a DSL designed to look as much like ClojureScript as
-  possible, with a couple of additions for declarative webapps.
-- =f/el= is the main entry point - all the code inside this is
-  compiled by the =f/el= macro as the Flow DSL.
-- Flow uses a Hiccup-style syntax for elements, with =::f/style= to
-  declare styles, =::f/on= to declare listeners and =::f/classes= to
-  declare dynamic classes.
-- The additions to ClojureScript are the =<<= and =!<<= forms 
-  - =<<= turns an atom into a 'lens' - a dynamic, changing
-    value. Any time the atom changes, the lens's new value is
-    propagated through the rest of the form and any necessary elements
-    are updated.
-  - =!<<= turns a lens back into an atom that then be passed to
-    other functions. Lenses are only dynamic within the scope of the
-    =f/el= that they are defined in - to allow sub-components to
-    update based on their changing value, they must be re-wrapped with
-    =!<<=.
+Flow elements are created inside the =f/el= macro - this transpiles
+the declarative Flow DSL into the imperative ClojureScript required to
+create and update the elements.
+
+Elements are created in the traditional Hiccup style:
+
+#+BEGIN_SRC clojure
+  (f/el
+    [:p "Hello world!"])
+#+END_SRC
+
+The result of =f/el= is a standard, albeit possibly dynamic, DOM
+element and can be passed around as such.
+
+Flow also includes =f/root=, a helper function to include an element
+in the page. =f/root= first clears the container element, and then
+attaches the Flow component:
+
+#+BEGIN_SRC clojure
+  (f/root js/document.body
+    (f/el
+      [:p "Hello world!"]))
+#+END_SRC
+
+Elements can be given an ID by appending it to the tag keyword with a
+hash:
+
+#+BEGIN_SRC clojure
+  (f/root js/document.body
+    (f/el
+      [:p#hello "Hello world!"]))
+#+END_SRC
+
+*** Reacting to dynamic state
+
+Flow uses standard ClojureScript atoms to store state, so I'll assume
+here we have an atom containing the current value of a 'counter':
+
+#+BEGIN_SRC clojure
+  (def !counter
+    (atom 0))
+#+END_SRC
+
+The '!' before the name is an optional naming convention - it doesn't
+have any effect on Flow. Personally, as a developer, I like using it
+because it makes a clear distinction in my code between stateful
+variables and immutable values.
+
+We now need to tell Flow to include the current value of the counter
+in our element, which we do using Flow's =(<< ...)= operator. It's
+similar in nature to '@'/'deref', and it's used as follows:
+
+#+BEGIN_SRC clojure
+  (f/el
+    [:p "The current value of the counter is " (<< !counter)])
+#+END_SRC
+
+As it's part of the Flow DSL, =<<= only works inside the =f/el= macro.
+
+When I'm reading Flow code, I'll usually read =(<< ...)= as 'comes
+from', or 'unwrap'.
+
+Flow is fundamentally declarative in nature. We don't specify any
+imperative behaviour here; no 'when the counter updates, then update
+this element' - we simply say 'this element contains the up-to-date
+value of my atom' and Flow does the rest.
+
+*** Styles/Classes
+
+Classes can be added in one of two ways. Static classes can be added
+in the same way as Hiccup, by appending them to the tag keyword (after
+the ID, if present):
+
+#+BEGIN_SRC clojure
+  (f/el
+    [:div.container
+     [:p#hello.copy "Hello world!"]])
+#+END_SRC
+
+If a class should only be applied to an element in certain situations,
+use =::f/classes=. Using the example in the previous section, if we
+wanted the counter to be of class =.even= when the counter is even,
+we'd write:
+
+#+BEGIN_SRC clojure
+  (f/el
+    (let [counter (<< !counter)]
+      [:p {::f/classes [(when (even? counter)
+                          "even")]}
+       "The value of the counter is " counter]))
+#+END_SRC
+
+Notice here that we've also moved the =(<< counter)= into a 'let'
+block, the same way as we would in vanilla Clojure. Even though
+they're not wrapped with =(<< ...)=, Flow knows that the 'counter'
+variable came from an atom, and therefore that it needs to update the
+classes and the text when the =!counter= atom changes.
+
+Finally, for inline styles, we use =::f/style=:
+
+#+BEGIN_SRC clojure
+  (f/el
+    [:p {::f/style {:text-align :center
+                    :margin "1em 0"}}
+     "Hello world!"])
+#+END_SRC
+
+Style values here can be keywords or strings.
+
+*N.B. Each of the Flow keywords is namespace-qualified, so uses
+a double colon*
+
+*** Event Listeners
+
+Event listeners are attached with the =::f/on= attribute:
+
+#+BEGIN_SRC clojure
+  [:button {::f/on {:click #(js/alert "Hello!")}}
+   "Click me!"]
+#+END_SRC
+
+There is also a helper function, =f/bind-value!=, which binds the
+value of an HTML input to a lens/atom:
+
+#+BEGIN_SRC clojure
+  (let [!textbox-value (atom nil)]
+    (f/el
+      [:input {:type :text
+               ::f/on {:keyup (f/bind-value! !textbox-value)}}]))
+#+END_SRC
+
+*** Passing lenses outside of the =f/el=
+
+The values extracted from an atom with =<<= are only dynamic within
+the scope of the =f/el= in which they are extracted. To ensure that
+subcomponents also react to dynamic values, we re-wrap them using
+=!<<=:
+
+#+BEGIN_SRC clojure
+  (defn render-todo-item [!todo]
+    ;; '!todo' is an atom here
+    (f/el
+      (let [{:keys [caption]} (<< !todo)]
+        [:li caption])))
+  
+  (defn render-todo-list [!todos]
+    (f/el
+      (for [todo (<< !todos)]
+        (render-todo-item (!<< todo)))))
+#+END_SRC
+
+Notice here that we don't need to re-wrap the original atom for the
+dynamic value to be propagated - we can just as easily wrap sub-keys
+of a map, or elements in a vector.
+
+Unfortunately, Flow can only re-wrap maps, vectors, lists and sets in
+this way. For primitives, you can use =!<<= to wrap the containing
+collection, and provide an extra key to find the corresponding value:
+
+#+BEGIN_SRC clojure
+  (defn render-todo-item [!caption]
+    ;; Here '!caption' is an atom containing a string.
+    (f/el
+      [:li caption]))
+  
+  (defn render-todo-list [!todos]
+    (f/el
+      (for [todo (<< !todos)]
+        ;; we only want to pass the ':caption' key as a dynamic value
+        (render-todo-item (!<< todo [:caption])))))
+#+END_SRC
+
+Here, we can't wrap 'caption', because it's a string, so we tell
+=!<<= that it needs to wrap the ':caption' key of 'todo'.
+
+** Questions/suggestions/bug fixes?
+
+Yes please!
 
 If you have any questions, or would like to get involved with Flow's
 development, please get in touch! I can be contacted either through
 Github, or on Twitter at [[https://twitter.com/jarohen][@jarohen]].
+
+Thanks!
 
 ** Thanks
 
@@ -67,10 +236,7 @@ his excellent suggestion of the =<<= syntax.
 Also, thanks to [[https://github.com/matlux][Mathieu Gauthron]], [[https://github.com/n8dawgrr][Nathan Matthews]] and [[https://github.com/malcolmsparks][Malcolm Sparks]],
 whose feedback on Clidget helped shape the direction of Flow.
 
-If you have any questions, feel free to get in touch through Twitter
-(I'm [[https://twitter.com/jarohen][@jarohen]]) or through the traditional GitHub methods!
-
-Thanks!
+Cheers!
 
 James
 
