@@ -15,7 +15,7 @@
 
                  [gaka "0.3.0"]
 
-                 [jarohen/flow "0.2.0-SNAPSHOT"]]
+                 [jarohen/flow "0.2.0-beta1"]]
 
   :plugins [[jarohen/lein-frodo "0.3.2"]
             [jarohen/simple-brepl "0.1.1"]
@@ -28,7 +28,7 @@
   :resource-paths ["resources" "target/resources"]
 
   :cljsbuild {:builds {:dev
-                       {:source-paths ["ui-src" "checkouts/flow/src" "checkouts/flow/target/generated/cljs"]
+                       {:source-paths ["ui-src"]
                         :compiler {:output-to "target/resources/js/todomvc.js"
                                    :output-dir "target/resources/js/"
                                    :optimizations :whitespace
