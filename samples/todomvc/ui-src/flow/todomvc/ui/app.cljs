@@ -29,8 +29,8 @@
                assoc-in [i :done?] true))
       
       #_(dotimes [i els]
-        (swap! !todos
-               dissoc i)))))
+          (swap! !todos
+                 dissoc i)))))
 
 (set! (.-onload js/window)
       (fn []
