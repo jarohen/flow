@@ -57,8 +57,9 @@
                              [dep-sym (fl/unwrap-lens dep)])
                            (into {}))
 
-        [$initial-el initial-update-fn] (binding [fs/*state* initial-state]
+        [initial-value initial-update-fn] (binding [fs/*state* initial-state]
                                           (build-fn))
+        $initial-el (fh/new-element-holder initial-value)
         
         !state (atom initial-state)
         !$el (atom $initial-el)
