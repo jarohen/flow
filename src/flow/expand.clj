@@ -25,11 +25,9 @@
                 (#{'let 'case 'if 'do 'for
                    'clojure.core/let 'clojure.core/case 'clojure.core/for
                    'el 'flow.core/el} (first form)))
-          (with-meta (-> form unalias-form)
-            (meta form))
+          (-> form unalias-form)
           
-          (recur (with-meta expanded-form
-                   (meta form)))))
+          (recur expanded-form)))
 
       form)))
 
