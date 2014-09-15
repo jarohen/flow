@@ -35,7 +35,7 @@
 
 (defn prewalk-with-meta [f form]
   (w/walk (fn [form]
-            (if (instance? clojure.lang.IMeta form)
+            (if (instance? clojure.lang.IObj form)
               (with-meta (prewalk-with-meta f form)
                 (meta form))
               (prewalk-with-meta f form)))
