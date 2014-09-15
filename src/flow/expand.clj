@@ -33,13 +33,18 @@
 
 (defn prewalk-with-meta [f form]
   (w/walk (fn [form]
-            (if (instance? clojure.lang.IObj form)
-              (with-meta (prewalk-with-meta f form)
-                (meta form))
-              (prewalk-with-meta f form)))
+            (let [walked-form (prewalk-with-meta f form)]
+              (if (instance? clojure.lang.IObj walked-form)
+                (with-meta walked-form
+                  (meta form))
+                
+                walked-form)))
+
           identity
+
           (f form)))
 
 (defn expand-macros [elem env]
   (binding [*macroexpand-env* env]
     (prewalk-with-meta macroexpand-until-known elem)))
+
