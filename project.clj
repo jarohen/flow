@@ -24,5 +24,4 @@
 
                   {:source-paths ["src"]
                    :output-path "target/generated/cljs"
-                   :rules :cljs
-                   :externs ["externs/jquery.js"]}]})
+                   :rules :cljs}]})
