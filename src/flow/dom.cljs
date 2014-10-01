@@ -62,7 +62,7 @@
     (js/console.log "adding" (pr-str event) "listener on" $el))
   
   (if (exists? js/window.jQuery)
-    (.. ($ $el) (on (name event) listener))
+    (.. (js/$ $el) (on (name event) listener))
     (.addEventListener $el (name event) listener)))
 
 (defn value [$el]
