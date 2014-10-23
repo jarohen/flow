@@ -22,4 +22,5 @@
 (require 'flow.forms.primitive)
 
 (defn compile-el [el-form]
+  ;; TODO I think the big macro-expand goes in here?!
   (compile-el-form el-form))
