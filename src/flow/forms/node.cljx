@@ -1,5 +1,5 @@
 (ns flow.forms.node
-  (:require #+clj [flow.compiler :refer [compile-form]]
+  (:require #+clj [flow.compiler :as fc]
             [flow.dom.children :as fdc]
             [flow.dom.elements :as fde]))
 
@@ -17,12 +17,13 @@
    :children (rest node)})
 
 #+clj
-(defn compile-node [{:keys [tag children]}]
+(defn compile-node [{:keys [tag attrs style children]}]
   `(build-node ~{:tag tag
-                 :children (vec (map compile-form children))}))
+
+                 :children (vec (map fc/compile-el-form children))}))
 
 #+clj
-(defmethod compile-form :node [node]
+(defmethod fc/compile-el-form :node [node]
   (-> node
       parse-node
       compile-node))

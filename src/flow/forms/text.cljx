@@ -1,5 +1,5 @@
 (ns flow.forms.text
-  (:require #+clj [flow.compiler :refer [compile-form]]
+  (:require #+clj [flow.compiler :as fc]
             [flow.dom.elements :refer [text-el]]))
 
 (defn text-node [s]
@@ -8,5 +8,5 @@
       [$el text])))
 
 #+clj
-(defmethod compile-form :text [s]
+(defmethod fc/compile-el-form :text [s]
   `(text-node ~s))
