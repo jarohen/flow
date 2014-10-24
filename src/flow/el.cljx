@@ -1,10 +1,15 @@
 (ns flow.el
-  (:require [flow.dom.children :as fdc]))
+  (:require [flow.dom.children :as fdc]
+            [flow.state :as fs]))
 
-(defn root [$container build-el]
-  (let [[$el update-el!] (build-el)]
-    (fdc/clear! $container)
-    (fdc/append-child! $container $el)))
+(defn root [$container el]
+  (binding [fs/*ctx* (reify fs/Context
+                       (-read-lens [_ lens]
+                         (prn "dereffing!" lens)
+                         @lens))]
+    (let [[$el update-el!] ((el))]
+      (fdc/clear! $container)
+      (fdc/append-child! $container $el))))
 
 (defn render-el [el]
-  (el))
+  el)
