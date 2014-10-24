@@ -5,7 +5,8 @@
 (defn text-node [s]
   (fn []
     (let [$el (text-el s)]
-      (fn update-text! []
+      (letfn [(update-text! []
+                [$el update-text!])]
         [$el update-text!]))))
 
 #+clj

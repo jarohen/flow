@@ -7,17 +7,17 @@
 (defn build-node [{:keys [tag style children]}]
   (fn []
     (let [$el (fde/new-element tag)]
-      (doseq [child-fn children]
-        (let [child (child-fn)
-              [$child update-child!] (child)]
+      (doseq [child children]
+        (let [[$child update-child!] (child)]
           (fdc/append-child! $el $child)))
 
       (doseq [{:keys [attr value-fn]} style]
         (let [initial-value (value-fn)]
           (fda/set-style! $el attr initial-value)))
-    
-      (fn update-node! []
-        [$el update-node!]))))
+
+      (letfn [(update-node! []
+                [$el update-node!])]
+        (update-node!)))))
 
 #+clj
 (defn parse-node [[tagish possible-attrs & body]]

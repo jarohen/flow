@@ -6,13 +6,14 @@
 (defn root [$container el]
   (fr/schedule-rendering-frame
    (fn []
+     (fdc/clear! $container)
+     
      (binding [fs/*ctx* (reify fs/Context
                           (-read-lens [_ lens]
                             (prn "dereffing!" lens)
                             @lens))]
 
-       (let [[$el update-el!] ((el))]
-         (fdc/clear! $container)
+       (let [[$el update-el!] (el)]
          (fdc/append-child! $container $el))))))
 
 (defn render-el [el]
