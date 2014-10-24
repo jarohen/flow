@@ -3,8 +3,8 @@
 
 (defn root [$container build-el]
   (let [[$el update-el!] (build-el)]
-    (fd/clear! $container)
-    (fd/append-child! $container $el)))
+    (fdc/clear! $container)
+    (fdc/append-child! $container $el)))
 
 (defn render-el [el]
   (el))

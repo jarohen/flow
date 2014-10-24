@@ -5,17 +5,19 @@
             [flow.dom.elements :as fde]))
 
 (defn build-node [{:keys [tag style children]}]
-  (let [$el (fde/new-element tag)]
-    (doseq [child children]
-      (let [[$child update-child!] (child)]
-        (fdc/append-child! $el $child)))
+  (fn []
+    (let [$el (fde/new-element tag)]
+      (doseq [child-fn children]
+        (let [child (child-fn)
+              [$child update-child!] (child)]
+          (fdc/append-child! $el $child)))
 
-    (doseq [{:keys [attr value]} style]
-      (let [[initial-value update-value!] (value)]
-        (fda/set-style! $el attr initial-value)))
+      (doseq [{:keys [attr value-fn]} style]
+        (let [initial-value (value-fn)]
+          (fda/set-style! $el attr initial-value)))
     
-    (fn update-node! []
-      [$el update-node!])))
+      (fn update-node! []
+        [$el update-node!]))))
 
 #+clj
 (defn parse-node [[tagish possible-attrs & body]]
@@ -25,7 +27,8 @@
 
         children (if attrs
                    body
-                   (cons possible-attrs body))
+                   (cond->> body
+                     possible-attrs (cons possible-attrs)))
 
         tag (second (re-find #"^([^#.]+)" tagish))]
 
@@ -47,21 +50,21 @@
      :children children}))
 
 #+clj
-(defn compile-node [{:keys [tag attrs style children]}]
+(defn compile-node [{:keys [tag attrs style children]} opts]
   `(build-node ~{:tag tag
 
                  :attrs (vec (for [[k v] attrs]
                                {:attr k
-                                :value (fc/compile-value-form v)}))
+                                :value-fn `(fn [] ~(fc/compile-value-form v opts))}))
 
                  :style (vec (for [[k v] style]
                                {:attr k
-                                :value (fc/compile-value-form v)}))
+                                :value-fn `(fn [] ~(fc/compile-value-form v opts))}))
                  
-                 :children (vec (map fc/compile-el-form children))}))
+                 :children (vec (map #(fc/compile-el-form % opts) children))}))
 
 #+clj
-(defmethod fc/compile-el-form :node [node]
+(defmethod fc/compile-el-form :node [node opts]
   (-> node
       parse-node
-      compile-node))
+      (compile-node opts)))

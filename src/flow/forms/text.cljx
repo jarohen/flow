@@ -3,10 +3,11 @@
             [flow.dom.elements :refer [text-el]]))
 
 (defn text-node [s]
-  (let [$el (text-el s)]
-    (fn text []
-      [$el text])))
+  (fn []
+    (let [$el (text-el s)]
+      (fn update-text! []
+        [$el update-text!]))))
 
 #+clj
-(defmethod fc/compile-el-form :text [s]
+(defmethod fc/compile-el-form :text [s opts]
   `(text-node ~s))

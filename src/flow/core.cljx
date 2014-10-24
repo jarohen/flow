@@ -2,9 +2,8 @@
   (:require [flow.el :as fel]
             #+clj [flow.compiler :as fc]))
 
-#+clj
-(defmacro root [$container el]
-  `(fel/root ~$container (fn [] ~el)))
+(defn root [$container el]
+  (fel/root $container el))
 
 #+clj
 (defmacro el [el]

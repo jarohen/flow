@@ -7,15 +7,19 @@
     (and (vector? el-form)
          (keyword (first el-form))) :node))
 
-(defmulti compile-el-form #'el-form-type)
+(defmulti compile-el-form
+  (fn [el-form opts]
+    (el-form-type el-form)))
 
-(defn value-form-type [el-form]
+(defn value-form-type [value-form]
   (cond
-    (list? el-form) :fn-call
-    (coll? el-form) :coll
+    (list? value-form) :fn-call
+    (coll? value-form) :coll
     :else :primitive))
 
-(defmulti compile-value-form #'value-form-type)
+(defmulti compile-value-form
+  (fn [value-form opts]
+    (value-form-type value-form)))
 
 (require 'flow.forms.text)
 (require 'flow.forms.node)
@@ -23,4 +27,4 @@
 
 (defn compile-el [el-form]
   ;; TODO I think the big macro-expand goes in here?!
-  (compile-el-form el-form))
+  (compile-el-form el-form {}))
