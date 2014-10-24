@@ -1,6 +1,7 @@
 (ns flow.core
   (:require [flow.el :as fel]
-            #+clj [flow.compiler :as fc]))
+            #+clj [flow.compiler :as fc]
+            ))
 
 (defn root [$container el]
   (fel/root $container el))
@@ -10,8 +11,16 @@
   `(fel/render-el ~(fc/compile-el el)))
 
 (comment
-  (let [!test (atom "4em")]
-    (root (atom {})
-      (el
-        [:div
-         [:span {:flow.core/style {:height (<< !test)}}]]))))
+  (require '[flow.render :as fr])
+
+  (fr/foo-with-render-queue
+   (let [!test (atom "4em")
+         !parent (atom {})]
+     (root !parent
+       (el
+         [:div
+          [:span {:flow.core/style {:height (<< !test)}}]]))
+
+     (fr/foo-render-frame!)
+     
+     !parent)))
