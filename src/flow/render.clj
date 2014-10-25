@@ -11,7 +11,8 @@
                (let [frame (first @*!render-queue*)]
                  (alter *!render-queue* (comp vec rest))
                  frame))]
-    (frame)))
+    (when frame
+      (frame))))
 
 (defn schedule-rendering-frame [f]
   (dosync
