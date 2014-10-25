@@ -10,8 +10,10 @@
               [(symbol-fn) update-symbol!])]
       (update-symbol!))))
 
+#+clj
 (defmethod fc/compile-el-form :symbol [symbol opts]
   `(build-symbol (fn [] ~symbol)))
 
+#+clj
 (defmethod fc/compile-value-form :symbol [symbol opts]
   symbol)
