@@ -19,27 +19,29 @@
         (update-in [:children] #(map foo-el-snapshot %))))
 
   (fr/foo-with-render-queue
-   (let [!test (atom "4em")
+   (let [!style-test (atom "4em")
          !parent (atom {})
-         !class-test (atom "blah")]
+         !class-test (atom "blah")
+         style-sym-test "12em"]
      (root !parent
        (el
          [:div
           [:a#the-link.class {:href "testing"
                               ::classes [(<< !class-test)]}
-           [:span {:flow.core/style {:height (<< !test)}}
+           [:span {:flow.core/style {:height (<< !style-test)
+                                     :width style-sym-test}}
             "testing here!"]]]))
 
      (fr/foo-render-frame!)
 
-     (reset! !test "5em")
+     (reset! !style-test "5em")
      (reset! !class-test nil)
 
      (fr/foo-render-frame!)
 
      (reset! !class-test ["blah" "more"])
      
-     (reset! !test "5em")
+     (reset! !style-test "5em")
 
      (fr/foo-render-frame!)
      

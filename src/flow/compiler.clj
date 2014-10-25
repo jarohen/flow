@@ -12,6 +12,8 @@
     (string? form) (case type
                         :el :text
                         :value :primitive)
+
+    (symbol? form) :symbol
     
     (and (= type :el)
          (vector? form)
@@ -43,8 +45,9 @@
 (require 'flow.forms.primitive)
 (require 'flow.forms.lenses)
 (require 'flow.forms.collections)
+(require 'flow.forms.symbols)
 
 (defn compile-el [el-form macro-env]
   (-> el-form
       (expand-macros macro-env)
-      (compile-el-form {})))
+      (compile-el-form {:dynamic-syms #{}})))
