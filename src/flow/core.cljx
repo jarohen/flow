@@ -33,4 +33,8 @@
 
      (fr/foo-render-frame!)
      
+     (reset! !test "5em")
+
+     (fr/foo-render-frame!)
+     
      (foo-el-snapshot !parent))))

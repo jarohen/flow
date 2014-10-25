@@ -5,26 +5,37 @@
             [flow.dom.elements :as fde]))
 
 (defn update-style! [$el style]
-  (doseq [{:keys [attr value-fn]} style]
-    (let [initial-value (value-fn)]
-      (fda/set-style! $el attr initial-value))))
+  (->> (for [{:keys [attr value-fn] :as style-attr} style]
+         (let [new-value (value-fn)]
+           (if-not (= new-value (get style-attr :previous-value ::nil))
+             (do
+               (fda/set-style! $el attr new-value)
+               (assoc style-attr :previous-value new-value))
+                
+             style-attr)))
+       doall))
 
 (defn update-children! [$el children]
   (fdc/clear! $el)
   
-  (doseq [child children]
-    (let [[$child update-child!] (child)]
-      (fdc/append-child! $el $child))))
+  (->> (for [child children]
+         (let [[$child update-child!] (child)]
+           (fdc/append-child! $el $child)
+           
+           update-child!))
+       
+       doall))
 
-(defn build-node [{:keys [tag style children]}]
+(defn build-node [{:keys [tag] :as node}]
   (fn []
     (let [$el (fde/new-element tag)]
-      (letfn [(update-node! []
-                (update-children! $el children)
-                (update-style! $el style)
-                
-                [$el update-node!])]
-        (update-node!)))))
+      (letfn [(update-node! [{:keys [style children]}]
+                (let [updated-style (update-style! $el style)
+                      updated-children (update-children! $el children)]
+                  
+                  [$el #(update-node! {:style updated-style
+                                       :children updated-children})]))]
+        (update-node! node)))))
 
 #+clj
 (defn parse-node [[tagish possible-attrs & body]]
