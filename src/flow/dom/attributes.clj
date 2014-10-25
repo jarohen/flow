@@ -8,3 +8,6 @@
 
 (defn set-attr! [!el attr value]
   (swap! !el assoc-in [:attrs attr] value))
+
+(defn set-classes! [!el classes]
+  (swap! !el assoc :classes classes))

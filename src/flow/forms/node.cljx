@@ -26,6 +26,27 @@
                (assoc style :previous-value new-value)))))
        doall))
 
+(defn update-classes! [$el classes]
+  (letfn [])
+  (when (seq classes)
+    (let [new-classes (for [{:keys [class-value-fn] :as class} classes]
+                        {:previous-values (let [new-value (class-value-fn)]
+                                            (if (coll? new-value)
+                                              new-value
+                                              [new-value]))
+                         :class-value-fn class-value-fn})
+          new-classes-set (->> (mapcat :previous-values new-classes)
+                               (remove nil?)
+                               set)]
+      (if (= new-classes-set (->> (mapcat :previous-values classes)
+                                  (remove nil?)
+                                  set))
+        classes
+
+        (do
+          (fda/set-classes! $el new-classes-set)
+          new-classes)))))
+
 (defn update-children! [$el children]
   (fdc/clear! $el)
   
@@ -43,14 +64,16 @@
       (when id
         (fda/set-id! $el id))
       
-      (letfn [(update-node! [{:keys [attrs styles children]}]
+      (letfn [(update-node! [{:keys [attrs styles children classes]}]
                 (let [updated-attrs (update-attrs! $el attrs)
                       updated-styles (update-styles! $el styles)
-                      updated-children (update-children! $el children)]
+                      updated-children (update-children! $el children)
+                      updated-classes (update-classes! $el classes)]
                   
                   [$el #(update-node! {:attrs updated-attrs
                                        :styles updated-styles
-                                       :children updated-children})]))]
+                                       :children updated-children
+                                       :classes updated-classes})]))]
         (update-node! node)))))
 
 #+clj
@@ -66,14 +89,13 @@
 
         tag (second (re-find #"^([^#.]+)" tagish))]
 
-    {:type :node
-
-     :tag tag
+    {:tag tag
      
      :id (second (re-find #"#([^.]+)" tagish))
      
-     :classes (concat (map second (re-seq #"\.([^.]+)" tagish))
-                      (:flow.core/classes attrs))
+     :classes (->> (:flow.core/classes attrs)
+                   (cons (mapv second (re-seq #"\.([^.]+)" tagish)))
+                   (remove empty?))
 
      :styles (:flow.core/style attrs)
 
@@ -84,18 +106,24 @@
      :children children}))
 
 #+clj
-(defn compile-node [{:keys [tag id attrs styles children]} opts]
+(defn compile-node [{:keys [tag id attrs styles classes listeners children]} opts]
   `(build-node ~{:tag tag
 
                  :id id
 
+                 :classes (vec (for [class-form classes]
+                                 {:class-value-fn `(fn []
+                                                     ~(fc/compile-value-form class-form opts))}))
+
                  :attrs (vec (for [[k v] attrs]
                                {:attr-key k
-                                :value-fn `(fn [] ~(fc/compile-value-form v opts))}))
+                                :value-fn `(fn []
+                                             ~(fc/compile-value-form v opts))}))
 
                  :styles (vec (for [[k v] styles]
                                 {:style-key k
-                                 :value-fn `(fn [] ~(fc/compile-value-form v opts))}))
+                                 :value-fn `(fn []
+                                              ~(fc/compile-value-form v opts))}))
                  
                  :children (vec (map #(fc/compile-el-form % opts) children))}))
 

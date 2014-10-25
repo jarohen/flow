@@ -20,19 +20,24 @@
 
   (fr/foo-with-render-queue
    (let [!test (atom "4em")
-         !parent (atom {})]
+         !parent (atom {})
+         !class-test (atom "blah")]
      (root !parent
        (el
          [:div
-          [:a#the-link {:href "testing"}
+          [:a#the-link.class {:href "testing"
+                              ::classes [(<< !class-test)]}
            [:span {:flow.core/style {:height (<< !test)}}
             "testing here!"]]]))
 
      (fr/foo-render-frame!)
 
      (reset! !test "5em")
+     (reset! !class-test nil)
 
      (fr/foo-render-frame!)
+
+     (reset! !class-test ["blah" "more"])
      
      (reset! !test "5em")
 
