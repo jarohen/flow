@@ -13,6 +13,10 @@
 (comment
   (require '[flow.render :as fr])
 
+  (defn foo-el-snapshot [!el]
+    (-> @!el
+        (update-in [:children] #(map foo-el-snapshot %))))
+
   (fr/foo-with-render-queue
    (let [!test (atom "4em")
          !parent (atom {})]
@@ -23,4 +27,4 @@
 
      (fr/foo-render-frame!)
      
-     !parent)))
+     (foo-el-snapshot !parent))))
