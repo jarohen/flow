@@ -42,6 +42,7 @@
 (require 'flow.forms.node)
 (require 'flow.forms.primitive)
 (require 'flow.forms.lenses)
+(require 'flow.forms.collections)
 
 (defn compile-el [el-form macro-env]
   (-> el-form
