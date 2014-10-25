@@ -1,7 +1,6 @@
 (ns flow.core
   (:require [flow.el :as fel]
-            #+clj [flow.compiler :as fc]
-            ))
+            #+clj [flow.compiler :as fc]))
 
 (defn root [$container el]
   (fel/root $container el))
@@ -28,8 +27,8 @@
          [:div
           [:a#the-link.class {:href "testing"
                               ::classes [(<< !class-test)]}
-           [:span {:flow.core/style {:height (<< !style-test)
-                                     :width style-sym-test}}
+           [:span {::style {:height (<< !style-test)
+                            :width style-sym-test}}
             "testing here!"]]]))
 
      (fr/foo-render-frame!)
