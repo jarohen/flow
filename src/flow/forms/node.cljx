@@ -4,18 +4,25 @@
             [flow.dom.children :as fdc]
             [flow.dom.elements :as fde]))
 
+(defn update-style! [$el style]
+  (doseq [{:keys [attr value-fn]} style]
+    (let [initial-value (value-fn)]
+      (fda/set-style! $el attr initial-value))))
+
+(defn update-children! [$el children]
+  (fdc/clear! $el)
+  
+  (doseq [child children]
+    (let [[$child update-child!] (child)]
+      (fdc/append-child! $el $child))))
+
 (defn build-node [{:keys [tag style children]}]
   (fn []
     (let [$el (fde/new-element tag)]
-      (doseq [child children]
-        (let [[$child update-child!] (child)]
-          (fdc/append-child! $el $child)))
-
-      (doseq [{:keys [attr value-fn]} style]
-        (let [initial-value (value-fn)]
-          (fda/set-style! $el attr initial-value)))
-
       (letfn [(update-node! []
+                (update-children! $el children)
+                (update-style! $el style)
+                
                 [$el update-node!])]
         (update-node!)))))
 

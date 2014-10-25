@@ -10,6 +10,7 @@
 (defmacro el [el]
   `(fel/render-el ~(fc/compile-el el)))
 
+#+clj
 (comment
   (require '[flow.render :as fr])
 
@@ -23,7 +24,12 @@
      (root !parent
        (el
          [:div
-          [:span {:flow.core/style {:height (<< !test)}}]]))
+          [:span {:flow.core/style {:height (<< !test)}}
+           "testing here!"]]))
+
+     (fr/foo-render-frame!)
+
+     (reset! !test "5em")
 
      (fr/foo-render-frame!)
      
