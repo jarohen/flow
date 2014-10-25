@@ -37,9 +37,12 @@
        
        doall))
 
-(defn build-node [{:keys [tag] :as node}]
+(defn build-node [{:keys [tag id] :as node}]
   (fn []
     (let [$el (fde/new-element tag)]
+      (when id
+        (fda/set-id! $el id))
+      
       (letfn [(update-node! [{:keys [attrs styles children]}]
                 (let [updated-attrs (update-attrs! $el attrs)
                       updated-styles (update-styles! $el styles)
@@ -81,8 +84,10 @@
      :children children}))
 
 #+clj
-(defn compile-node [{:keys [tag attrs styles children]} opts]
+(defn compile-node [{:keys [tag id attrs styles children]} opts]
   `(build-node ~{:tag tag
+
+                 :id id
 
                  :attrs (vec (for [[k v] attrs]
                                {:attr-key k
