@@ -18,12 +18,12 @@
 (defn update-styles! [$el styles]
   (->> (for [{:keys [style-key value-fn] :as style} styles]
          (let [new-value (value-fn)]
-           (if-not (= new-value (get style :previous-value ::nil))
+           (if (= new-value (get style :previous-value ::nil))
+             style
+                
              (do
                (fda/set-style! $el style-key new-value)
-               (assoc style :previous-value new-value))
-                
-             style)))
+               (assoc style :previous-value new-value)))))
        doall))
 
 (defn update-children! [$el children]
