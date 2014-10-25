@@ -4,15 +4,26 @@
             [flow.dom.children :as fdc]
             [flow.dom.elements :as fde]))
 
-(defn update-style! [$el style]
-  (->> (for [{:keys [attr value-fn] :as style-attr} style]
+(defn update-attrs! [$el attrs]
+  (->> (for [{:keys [attr-key value-fn] :as attr} attrs]
          (let [new-value (value-fn)]
-           (if-not (= new-value (get style-attr :previous-value ::nil))
+           (if-not (= new-value (get attr :previous-value ::nil))
              (do
-               (fda/set-style! $el attr new-value)
-               (assoc style-attr :previous-value new-value))
+               (fda/set-attr! $el attr-key new-value)
+               (assoc attr :previous-value new-value))
                 
-             style-attr)))
+             attr)))
+       doall))
+
+(defn update-styles! [$el styles]
+  (->> (for [{:keys [style-key value-fn] :as style} styles]
+         (let [new-value (value-fn)]
+           (if-not (= new-value (get style :previous-value ::nil))
+             (do
+               (fda/set-style! $el style-key new-value)
+               (assoc style :previous-value new-value))
+                
+             style)))
        doall))
 
 (defn update-children! [$el children]
@@ -29,11 +40,13 @@
 (defn build-node [{:keys [tag] :as node}]
   (fn []
     (let [$el (fde/new-element tag)]
-      (letfn [(update-node! [{:keys [style children]}]
-                (let [updated-style (update-style! $el style)
+      (letfn [(update-node! [{:keys [attrs styles children]}]
+                (let [updated-attrs (update-attrs! $el attrs)
+                      updated-styles (update-styles! $el styles)
                       updated-children (update-children! $el children)]
                   
-                  [$el #(update-node! {:style updated-style
+                  [$el #(update-node! {:attrs updated-attrs
+                                       :styles updated-styles
                                        :children updated-children})]))]
         (update-node! node)))))
 
@@ -59,7 +72,7 @@
      :classes (concat (map second (re-seq #"\.([^.]+)" tagish))
                       (:flow.core/classes attrs))
 
-     :style (:flow.core/style attrs)
+     :styles (:flow.core/style attrs)
 
      :listeners (:flow.core/on attrs)
      
@@ -68,16 +81,16 @@
      :children children}))
 
 #+clj
-(defn compile-node [{:keys [tag attrs style children]} opts]
+(defn compile-node [{:keys [tag attrs styles children]} opts]
   `(build-node ~{:tag tag
 
                  :attrs (vec (for [[k v] attrs]
-                               {:attr k
+                               {:attr-key k
                                 :value-fn `(fn [] ~(fc/compile-value-form v opts))}))
 
-                 :style (vec (for [[k v] style]
-                               {:attr k
-                                :value-fn `(fn [] ~(fc/compile-value-form v opts))}))
+                 :styles (vec (for [[k v] styles]
+                                {:style-key k
+                                 :value-fn `(fn [] ~(fc/compile-value-form v opts))}))
                  
                  :children (vec (map #(fc/compile-el-form % opts) children))}))
 

@@ -24,8 +24,9 @@
      (root !parent
        (el
          [:div
-          [:span {:flow.core/style {:height (<< !test)}}
-           "testing here!"]]))
+          [:a {:href "testing"}
+           [:span {:flow.core/style {:height (<< !test)}}
+            "testing here!"]]]))
 
      (fr/foo-render-frame!)
 
