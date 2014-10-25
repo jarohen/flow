@@ -8,7 +8,7 @@
 
 #+clj
 (defmacro el [el]
-  `(fel/render-el ~(fc/compile-el el)))
+  `(fel/render-el ~(fc/compile-el el &env)))
 
 #+clj
 (comment

@@ -1,4 +1,5 @@
-(ns flow.compiler)
+(ns flow.compiler
+  (:require [flow.expand :refer [expand-macros]]))
 
 (defn fn-call-type [form]
   (condp = (first form)
@@ -42,6 +43,7 @@
 (require 'flow.forms.primitive)
 (require 'flow.forms.lenses)
 
-(defn compile-el [el-form]
-  ;; TODO I think the big macro-expand goes in here?!
-  (compile-el-form el-form {}))
+(defn compile-el [el-form macro-env]
+  (-> el-form
+      (expand-macros macro-env)
+      (compile-el-form {})))
