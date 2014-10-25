@@ -27,7 +27,6 @@
        doall))
 
 (defn update-classes! [$el classes]
-  (letfn [])
   (when (seq classes)
     (let [new-classes (for [{:keys [class-value-fn] :as class} classes]
                         {:previous-values (let [new-value (class-value-fn)]
@@ -94,7 +93,7 @@
      :id (second (re-find #"#([^.]+)" tagish))
      
      :classes (->> (:flow.core/classes attrs)
-                   (cons (mapv second (re-seq #"\.([^.]+)" tagish)))
+                   (cons (mapv (comp keyword second) (re-seq #"\.([^.]+)" tagish)))
                    (remove empty?))
 
      :styles (:flow.core/style attrs)
