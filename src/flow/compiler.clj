@@ -1,10 +1,10 @@
 (ns flow.compiler
   (:require [flow.expand :refer [expand-macros]]))
 
-(defn fn-call-type [form]
-  (condp = (first form)
+(defn fn-call-type [[called-fn & args]]
+  (condp = (or (resolve called-fn) called-fn)
     '<< :unwrap-lens
-
+    'if :if
     :fn-call))
 
 (defn form-type [form {:keys [type]}]
@@ -47,6 +47,7 @@
 (require 'flow.forms.collections)
 (require 'flow.forms.symbols)
 (require 'flow.forms.fn-calls)
+(require 'flow.forms.if)
 
 (defn compile-el [el-form macro-env]
   (-> el-form
