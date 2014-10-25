@@ -8,7 +8,7 @@
 
 (defn foo-render-frame! []
   (let [frame (dosync
-               (let [frame (first @*!render-queue*)]
+               (when-let [frame (first @*!render-queue*)]
                  (alter *!render-queue* subvec 1)
                  frame))]
     (when frame
