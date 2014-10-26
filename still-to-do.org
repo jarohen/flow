@@ -5,3 +5,4 @@
 ** TODO Event listeners
 ** TODO Sub-components
 ** TODO ClojureScript bindings
+Done but not tested
