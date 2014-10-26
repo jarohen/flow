@@ -46,14 +46,18 @@
           (fda/set-classes! $el new-classes-set)
           new-classes)))))
 
-(defn update-children! [$el children]
-  (fdc/clear! $el)
-  
-  (->> (for [child children]
+(defn with-child-holders [$parent children]
+  (for [child children]
+    {:child child
+     :holder (fdc/new-child-holder! $parent)}))
+
+(defn update-children! [children]
+  (->> (for [{:keys [child holder]} children]
          (let [[$child update-child!] (child)]
-           (fdc/append-child! $el $child)
+           (fdc/replace-child! holder $child)
            
-           update-child!))
+           {:child update-child!
+            :holder holder}))
        
        doall))
 
@@ -62,18 +66,20 @@
     (let [$el (fde/new-element tag)]
       (when id
         (fda/set-id! $el id))
-      
+
       (letfn [(update-node! [{:keys [attrs styles children classes]}]
                 (let [updated-attrs (update-attrs! $el attrs)
                       updated-styles (update-styles! $el styles)
-                      updated-children (update-children! $el children)
+                      updated-children (update-children! children)
                       updated-classes (update-classes! $el classes)]
                   
                   [$el #(update-node! {:attrs updated-attrs
                                        :styles updated-styles
                                        :children updated-children
                                        :classes updated-classes})]))]
-        (update-node! node)))))
+        
+        (update-node! (-> node
+                          (update-in [:children] #(with-child-holders $el %))))))))
 
 #+clj
 (defn parse-node [[tagish possible-attrs & body]]

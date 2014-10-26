@@ -1,5 +1,6 @@
 (ns flow.el
   (:require [flow.dom.children :as fdc]
+            [flow.dom.elements :as fde]
             [flow.state :as fs]
             [flow.render :as fr]
             [clojure.set :as set]))
@@ -31,18 +32,22 @@
 
 (defn root [$container el]
   (let [!deps (atom #{})
-        !el (atom el)
+        !child (atom el)
+        el-holder (fdc/new-child-holder! $container)
         !dirty? (atom true)
         watch-id (gensym "watch")]
     (letfn [(update-root! []
               (fr/schedule-rendering-frame
                (fn []
                  (reset! !dirty? false)
+                 
                  (let [{:keys [result deps]} (with-watch-context (root-ctx)
                                                (fn []
-                                                 (@!el)))
-                       [$el update-el!] result]
-                   (reset! !el update-el!)
+                                                 (@!child)))]
+                   
+                   (let [[$child update-child!] result]
+                     (reset! !child update-child!)
+                     (fdc/replace-child! el-holder $child))
 
                    (let [old-deps @!deps]
                      (update-watches! {:old-deps old-deps
@@ -54,9 +59,6 @@
                                                                             true)
                                                       (update-root!)))})
                      (reset! !deps deps))
-
-                   (fdc/clear! $container)
-                   (fdc/append-child! $container $el)
 
                    $container))))]
       
