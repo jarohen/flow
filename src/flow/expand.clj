@@ -34,17 +34,21 @@
 
           (f form)))
 
+(def leave-call-alone?
+  (set (->> (concat (for [fn-ns ['clojure.core 'cljs.core]
+                          :when (find-ns fn-ns)
+                          fn-name ['case 'for 'let]]
+                      (ns-resolve fn-ns fn-name))
+                    [(ns-resolve 'flow.core 'el)])
+            
+            (remove nil?))))
+
 (defn macroexpand-until-known [form]
   (loop [form form]
     (if (seq? form)
       (let [expanded-form (*macroexpand-1* form)]
         (if (or (= form expanded-form)
-                (contains? #{#'clojure.core/for
-                             #'clojure.core/let
-                             #'clojure.core/case
-                             (ns-resolve 'flow.core 'el)}
-                           
-                           (resolve (first form))))
+                (leave-call-alone? (resolve (first form))))
           form
           
           (recur expanded-form)))
