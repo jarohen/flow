@@ -18,6 +18,7 @@
     :core/case :case
     :core/let :let
     :core/for :for
+    'fn* :fn-decl
 
     'quote (throw (UnsupportedOperationException. "(quote ...) not supported in Flow's 'el' (yet?!)"))
     'loop* (throw (UnsupportedOperationException. "loop/recur not supported in Flow's 'el'"))
