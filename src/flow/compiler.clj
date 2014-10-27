@@ -64,6 +64,7 @@
 (require 'flow.forms.collections)
 (require 'flow.forms.symbols)
 (require 'flow.forms.fn-calls)
+(require 'flow.forms.do)
 (require 'flow.forms.if)
 (require 'flow.forms.case)
 
