@@ -37,7 +37,7 @@
          (keyword (first form)))
     :node
 
-    (list? form) (fn-call-type form)
+    (seq? form) (fn-call-type form)
     
     (map? form) :map
     (coll? form) :coll
