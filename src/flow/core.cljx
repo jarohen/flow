@@ -11,7 +11,8 @@
                   [flow.forms.fn-decls]
                   [flow.forms.do]
                   [flow.forms.if]
-                  [flow.forms.case]))
+                  [flow.forms.case]
+                  [flow.forms.let]))
 
 (defn root [$container el]
   (fel/root $container el))

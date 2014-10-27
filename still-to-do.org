@@ -1,7 +1,9 @@
 * What's to do before next release?
 ** TODO Forms still to implement
-*** TODO Let
-*** TODO For
+*** DONE =let=
+*** TODO =for=
+*** DONE =do=
+*** TODO =fn-decl=
 ** TODO Event listeners
 ** TODO Sub-components
 ** TODO ClojureScript bindings
