@@ -52,17 +52,6 @@
   (fn [value-form opts]
     (form-type value-form {:type :value})))
 
-(require 'flow.forms.text)
-(require 'flow.forms.node)
-(require 'flow.forms.primitive)
-(require 'flow.forms.lenses)
-(require 'flow.forms.collections)
-(require 'flow.forms.symbols)
-(require 'flow.forms.fn-calls)
-(require 'flow.forms.do)
-(require 'flow.forms.if)
-(require 'flow.forms.case)
-
 (defn compile-el [el-form macro-env]
   (-> el-form
       (expand-macros macro-env)
