@@ -9,4 +9,4 @@
 
 #+clj
 (defmethod fc/compile-value-form :unwrap-lens [[_ lens-sym] opts]
-  `(fs/read-lens ~lens-sym))
+  `(fs/read-lens ~(fc/compile-value-form lens-sym opts)))
