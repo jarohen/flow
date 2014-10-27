@@ -3,7 +3,10 @@
 (defprotocol Context
   (-read-lens [_ lens]))
 
-(def ^:dynamic *ctx* nil)
+(def ^:dynamic *ctx*
+  (reify Context
+    (-read-lens [_ lens]
+      (deref lens))))
 
 (defn read-lens [lens]
   (-read-lens *ctx* lens))
