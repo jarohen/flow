@@ -12,7 +12,8 @@
                   [flow.forms.do]
                   [flow.forms.if]
                   [flow.forms.case]
-                  [flow.forms.let]))
+                  [flow.forms.let]
+                  [flow.forms.for]))
 
 (defn root [$container el]
   (fel/root $container el))

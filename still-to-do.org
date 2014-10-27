@@ -1,7 +1,7 @@
 * What's to do before next release?
 ** TODO Forms still to implement
 *** DONE =let=
-*** TODO =for=
+*** DONE =for=
 *** DONE =do=
 *** TODO =fn-decl=
 ** TODO Event listeners
