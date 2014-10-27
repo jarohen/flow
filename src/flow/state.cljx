@@ -8,4 +8,5 @@
 (defn read-lens [lens]
   (-read-lens *ctx* lens))
 
+(def ^:dynamic *state* {})
 

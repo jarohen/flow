@@ -1,19 +1,23 @@
 (ns flow.forms.symbols
-  (:require #+clj [flow.compiler :as fc]))
+  (:require #+clj [flow.compiler :as fc]
+            [flow.state :as fs]))
 
-;; TODO - as and when we have let bindings - this is going to need to
-;; check whether it's a dynamic symbol or not.
-
-(defn build-symbol [symbol-fn]
+(defn build-symbol [sym-fn]
   (fn []
     (letfn [(update-symbol! []
-              [(symbol-fn) update-symbol!])]
+              [(sym-fn) update-symbol!])]
       (update-symbol!))))
 
 #+clj
-(defmethod fc/compile-el-form :symbol [symbol opts]
-  `(build-symbol (fn [] ~symbol)))
+(defn symbol-form [sym bound-syms]
+  (if (contains? bound-syms sym)
+    `(get fs/*state* (quote ~sym))
+    sym))
 
 #+clj
-(defmethod fc/compile-value-form :symbol [symbol opts]
-  symbol)
+(defmethod fc/compile-el-form :symbol [sym {:keys [bound-syms] :as opts}]
+  `(build-symbol (fn [] ~(symbol-form sym bound-syms))))
+
+#+clj
+(defmethod fc/compile-value-form :symbol [sym {:keys [bound-syms] :as opts}]
+  (symbol-form sym bound-syms))
