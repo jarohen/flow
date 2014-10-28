@@ -1,4 +1,5 @@
-(ns flow.dom.attributes)
+(ns flow.dom.attributes
+  (:require [clojure.string :as s]))
 
 (defn set-id! [$el id]
   (set! (.-id $el) id))
