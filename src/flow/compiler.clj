@@ -56,4 +56,4 @@
 (defn compile-el [el-form macro-env]
   (-> el-form
       (expand-macros macro-env)
-      (compile-el-form {:dynamic-syms #{}})))
+      (compile-el-form {:bound-syms #{}})))
