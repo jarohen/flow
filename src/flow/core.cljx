@@ -13,7 +13,8 @@
                   [flow.forms.if]
                   [flow.forms.case]
                   [flow.forms.let]
-                  [flow.forms.for]))
+                  [flow.forms.for]
+                  [flow.forms.sub-component]))
 
 (defn root [$container el]
   (fel/root $container el))
