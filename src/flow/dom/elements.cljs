@@ -33,7 +33,7 @@
 (defn replace-child! [$parent $old-child $new-child]
   (.replaceChild $parent $new-child $old-child))
 
-(defn next-sibling [!parent !child]
+(defn next-sibling [$parent $child]
   (.-nextSibling $child))
 
 (defn add-event-listener! [$el event listener]
