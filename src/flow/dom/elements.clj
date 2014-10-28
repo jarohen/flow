@@ -28,6 +28,9 @@
        first
        second))
 
+(defn add-event-listener! [!el event listener]
+  (swap! !el assoc-in [:listeners event] listener))
+
 (defn null-elem []
   (atom nil))
 

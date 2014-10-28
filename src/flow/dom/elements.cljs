@@ -36,6 +36,11 @@
 (defn next-sibling [!parent !child]
   (.-nextSibling $child))
 
+(defn add-event-listener! [$el event listener]
+  (if (exists? js/window.jQuery)
+    (.. (js/$ $el) (on (name event) listener))
+    (.addEventListener $el (name event) listener)))
+
 (let [$null-elem (doto (js/document.createElement "span")
                    (fda/set-style! :display :none)
                    (fda/set-attr! :data-flow-placeholder true))]

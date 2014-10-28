@@ -61,25 +61,45 @@
        
        doall))
 
+(defn build-listeners! [$el listeners]
+  (->> (for [{:keys [event build-listener]} listeners]
+         (let [initial-listener (build-listener)
+               !listener (atom initial-listener)]
+           (fde/add-event-listener! $el event (fn [e]
+                                                (when-let [listener @!listener]
+                                                  (listener e))))
+           {:!listener !listener
+            :build-listener build-listener}))
+       doall))
+
+(defn update-listeners! [listeners]
+  (doseq [{:keys [!listener build-listener]} listeners]
+    (reset! !listener (build-listener)))
+  
+  listeners)
+
 (defn build-node [{:keys [tag id] :as node}]
   (fn []
     (let [$el (fde/new-element tag)]
       (when id
         (fda/set-id! $el id))
 
-      (letfn [(update-node! [{:keys [attrs styles children classes]}]
+      (letfn [(update-node! [{:keys [attrs styles children classes listeners]}]
                 (let [updated-attrs (update-attrs! $el attrs)
                       updated-styles (update-styles! $el styles)
                       updated-children (update-children! children)
-                      updated-classes (update-classes! $el classes)]
+                      updated-classes (update-classes! $el classes)
+                      updated-listeners (update-listeners! listeners)]
                   
                   [$el #(update-node! {:attrs updated-attrs
                                        :styles updated-styles
                                        :children updated-children
-                                       :classes updated-classes})]))]
+                                       :classes updated-classes
+                                       :listeners updated-listeners})]))]
         
         (update-node! (-> node
-                          (update-in [:children] #(with-child-holders $el %))))))))
+                          (update-in [:children] #(with-child-holders $el %))
+                          (update-in [:listeners] #(build-listeners! $el %))))))))
 
 #+clj
 (defn parse-node [[tagish possible-attrs & body]]
@@ -129,6 +149,11 @@
                                 {:style-key k
                                  :value-fn `(fn []
                                               ~(fc/compile-value-form v opts))}))
+
+                 :listeners (vec (for [[event listener] listeners]
+                                   {:event event
+                                    :build-listener `(fn []
+                                                       ~(fc/compile-value-form listener opts))}))
                  
                  :children (vec (map #(fc/compile-el-form % opts) children))}))
 
@@ -137,3 +162,25 @@
   (-> node
       parse-node
       (compile-node opts)))
+
+(comment
+  (let [!number (atom 4)]
+    (binding [flow.state/*state* {'!number !number}]
+      (let [[$el update!] ((eval (fc/compile-el-form
+                                  '[:div {:flow.core/on {:click (fn [e]
+                                                                  (println (pr-str e) "happened!"
+                                                                           "!number was" (<< !number)))}}]
+                                  {:bound-syms #{'!number}})))
+            listener-1 (:click (:listeners @$el))]
+
+      
+        (listener-1 {:a 1 :b 2})
+      
+        (listener-1 {:a 3 :b 2})
+
+        (reset! !number 5)
+
+        (let [listener-2 (:click (:listeners @$el))]
+          ((:click (:listeners @$el)) {:a 3 :b 2})
+
+          (println '(= listener-1 listener-2) (= listener-1 listener-2)))))))
