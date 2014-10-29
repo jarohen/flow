@@ -41,6 +41,15 @@
     (.. (js/$ $el) (on (name event) listener))
     (.addEventListener $el (name event) listener)))
 
+(defn value [$el]
+  (case (.-type $el)
+    "checkbox" (.-checked $el)
+    (.-value $el)))
+
+(defn bind-value! [!atom]
+  (fn [e]
+    (reset! !atom (value (.-target e)))))
+
 (let [$null-elem (doto (js/document.createElement "span")
                    (fda/set-style! :display :none)
                    (fda/set-attr! :data-flow-placeholder true))]

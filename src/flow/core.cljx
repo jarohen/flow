@@ -1,5 +1,6 @@
 (ns flow.core
   (:require [flow.el :as fel]
+            [flow.dom.elements :as fde]
             [flow.forms.text]
             [flow.forms.node]
             [flow.forms.primitive]
@@ -22,3 +23,11 @@
 #+clj
 (defmacro el [el]
   `(fel/render-el ~(fc/compile-el el &env)))
+
+#+cljs
+(defn bind-value! [lens]
+  (fde/bind-value! lens))
+
+#+cljs
+(defn on [$el event listener]
+  (fde/add-listener! $el event listener))
