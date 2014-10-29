@@ -51,13 +51,13 @@
   (cond
     (coll? el-ish) (map ->el el-ish)
 
-    (.-nodeType el-ish) el-ish
-
     (or (nil? el-ish)
         (and (seq? el-ish)
              (empty? el-ish)))
     (null-elem)
     
+    (.-nodeType el-ish) el-ish
+
     :else (text-el (if (string? el-ish)
                      el-ish
                      (pr-str el-ish)))))
