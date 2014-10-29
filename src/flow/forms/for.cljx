@@ -1,6 +1,7 @@
 (ns flow.forms.for
   (:require #+clj [flow.compiler :as fc]
             #+clj [flow.forms.bindings :as fb]
+            [flow.dom.elements :as fde]
             [flow.state :as fs]))
 
 (defn for-values [compiled-bindings]
@@ -27,9 +28,11 @@
                                      {:$el $el
                                       :update! update-body!
                                       :values values})))]
-                [(map :$el for-bodies) #(update-for! (->> for-bodies
-                                                          (map (juxt :values :update!))
-                                                          (into {})))]))]
+                [(or (seq (map :$el for-bodies))
+                     (fde/null-elem))
+                 #(update-for! (->> for-bodies
+                                    (map (juxt :values :update!))
+                                    (into {})))]))]
       
       (update-for! {}))))
 

@@ -48,7 +48,7 @@
                      (fde/insert-before! $parent $old-el $el))
                    (fde/remove-child! $parent $old-el))
     [true false] (do
-                   (fde/insert-before! $parent $new-el (first $old-el))
+                   (fde/insert-before! $parent (first $old-el) $new-el)
                    (doseq [$el $old-el]
                      (fde/remove-child! $parent $el)))
     [true true] (swap-child-seqs! $parent $old-el $new-el)))
