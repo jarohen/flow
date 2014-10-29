@@ -15,7 +15,7 @@
                  [org.clojure/core.async "0.1.303.0-886421-alpha"]
                  [org.clojure/clojurescript "0.0-2268"]
 
-                 [jarohen/flow "0.2.0-beta1"]
+                 [jarohen/flow "0.2.0-SNAPSHOT"]
 
                  [garden "1.2.1"]]
 
@@ -23,7 +23,8 @@
             [jarohen/simple-brepl "0.1.1"]
             [lein-cljsbuild "1.0.3"]
             [com.keminglabs/cljx "0.4.0"]
-            [lein-pdo "0.1.1"]]
+            [lein-pdo "0.1.1"]
+            [lein-shell "0.4.0"]]
 
   :frodo/config-resource "flow-sample-config.edn"
 
@@ -32,11 +33,15 @@
   :cljsbuild {:builds {:dev
                        {:source-paths ["ui-src"
                                        "checkouts/flow/src"
-                                       "checkouts/flow/target/generated/clj"
                                        "checkouts/flow/target/generated/cljs"]
                         :compiler {:output-to "target/resources/js/flow-sample.js"
                                    :output-dir "target/resources/js/"
                                    :optimizations :whitespace
                                    :pretty-print true}}}}
 
-  :aliases {"dev" ["pdo" "cljsbuild" "auto" "dev," "frodo"]})
+  :aliases {"dev" ["do"
+                   ["shell" "mkdir" "-p"
+                    "target/resources"]
+                   ["pdo"
+                    ["cljsbuild" "auto" "dev"]
+                    "frodo"]]})
