@@ -22,4 +22,4 @@
       (.removeAttribute $el (name attr) value))))
 
 (defn set-classes! [$el new-classes]
-  (set! (.-className $el) (s/join " " new-classes)))
+  (set! (.-className $el) (s/join " " (map name new-classes))))
