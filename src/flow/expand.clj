@@ -39,7 +39,8 @@
                           :when (find-ns fn-ns)
                           fn-name ['case 'for 'let]]
                       (ns-resolve fn-ns fn-name))
-                    [(ns-resolve 'flow.core 'el)])
+                    [(ns-resolve 'flow.core 'el)]
+                    ['let 'if 'for 'case])
             
             (remove nil?))))
 
@@ -48,7 +49,8 @@
     (if (seq? form)
       (let [expanded-form (*macroexpand-1* form)]
         (if (or (= form expanded-form)
-                (leave-call-alone? (resolve (first form))))
+                (leave-call-alone? (or (resolve (first form))
+                                       (first form))))
           form
           
           (recur expanded-form)))

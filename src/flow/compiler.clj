@@ -15,9 +15,16 @@
     '<< :unwrap-lens
 
     'if :if
+
     :core/case :case
+    'case :case
+    
     :core/let :let
+    'let :let
+    
     :core/for :for
+    'for :for
+
     'do :do
     'fn* :fn-decl
 
