@@ -42,9 +42,10 @@
     (symbol? form) :symbol
     
     (and (= type :el)
-         (vector? form)
-         (keyword (first form)))
-    :node
+         (vector? form))
+    (if (keyword? (first form))
+      :node
+      :sub-component)
 
     (seq? form) (fn-call-type form)
     
