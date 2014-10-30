@@ -8,6 +8,8 @@
 (defn root-ctx []
   (reify fs/Context
     (-read-lens [_ lens]
+      @lens)
+    (-peek-lens [_ lens]
       @lens)))
 
 (defn with-watch-context [parent-ctx f]
@@ -15,7 +17,9 @@
     (binding [fs/*ctx* (reify fs/Context
                          (-read-lens [_ lens]
                            (swap! !deps conj lens)
-                           (fs/-read-lens parent-ctx lens)))]
+                           (fs/-read-lens parent-ctx lens))
+                         (-peek-lens [_ lens]
+                           (fs/-peek-lens parent-ctx lens)))]
 
       {:result (f)
        :deps @!deps})))
