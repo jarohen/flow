@@ -68,9 +68,33 @@
       
       (update-root!))))
 
-(defn render-el [el]
+(defn render-el [build-el]
   (fn []
-    (let [{:keys [result deps]} (with-watch-context fs/*ctx*
-                                  (fn []
-                                    (el)))]
-      result)))
+    (letfn [(update-el! [{:keys [update-component! $el deps dep-values]}]
+              
+              (let [new-dep-values (->> deps
+                                        (map (juxt identity fs/peek-lens))
+                                        (into {}))
+
+                    deps-unchanged? (and update-component!
+                                         (->> (for [dep deps]
+                                                (identical? (get dep-values dep ::not-present)
+                                                            (get new-dep-values dep ::not-present)))
+                                              (every? true?))) 
+                    
+                    {:keys [result deps]} (or (when deps-unchanged?
+                                                {:result [$el update-component!]
+                                                 :deps deps})
+
+                                              (with-watch-context fs/*ctx*
+                                                (fn []
+                                                  ((or update-component! build-el)))))
+                    
+                    [$el update-component!] result]
+                
+                [$el #(update-el! {:$el $el
+                                   :update-component! update-component!
+                                   :deps deps
+                                   :dep-values new-dep-values})]))]
+      
+      (update-el! {}))))
