@@ -2,22 +2,24 @@
   (:require #+clj [flow.compiler :as fc]))
 
 (defn build-sub-component [args]
-  (letfn [(build-component [arg-values]
-            (apply (first arg-values) (rest arg-values)))
+  (fn []
+    (letfn [(build-component [arg-values]
+              (apply (first arg-values) (rest arg-values)))
           
-          (update-sub-component! [old-arg-values update-component!]
-            (let [new-arg-values (map #(apply % []) args)
-                  arg-pairs (map vector old-arg-values new-arg-values)
-                  [$el update-component!] (if (or (not= (count old-arg-values)
-                                                        (count new-arg-values))
-                                                  (not (every? #(apply identical? %)
-                                                               arg-pairs)))
-                                            (build-component new-arg-values)
-                                            (update-component!))]
+            (update-sub-component! [old-arg-values update-component!]
+              (let [new-arg-values (map #(apply % []) args)
+                    arg-pairs (map vector old-arg-values new-arg-values)
+
+                    [$el update-component!] ((if (or (not= (count old-arg-values)
+                                                           (count new-arg-values))
+                                                     (not (every? #(apply identical? %)
+                                                                  arg-pairs)))
+                                               (build-component new-arg-values)
+                                               update-component!))]
               
-              [$el #(update-sub-component! new-arg-values update-component!)]))]
+                [$el #(update-sub-component! new-arg-values update-component!)]))]
     
-    (update-sub-component! nil nil)))
+      (update-sub-component! nil nil))))
 
 #+clj
 (defmethod fc/compile-el-form :sub-component [component-args opts]
