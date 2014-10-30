@@ -171,5 +171,5 @@
                   
                   [:p "Secondary:" (render-colour-picker (!<< colors [:secondary]))]]
                  
-                 (render-svg !colors)]))))))
+                 [render-svg !colors]]))))))
 
