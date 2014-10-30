@@ -7,7 +7,7 @@
               (run-side-effects!)
               (let [body (or body (build-body))
                     [$el update-body!] (body)]
-                [$el (update-do! update-body!)]))]
+                [$el #(update-do! update-body!)]))]
       (update-do! nil))))
 
 #+clj
@@ -20,7 +20,7 @@
         (fn []
           ~@(map #(fc/compile-value-form % opts) side-effects))
         (fn []
-          (fc/compile-el-form expr opts))))))
+          ~(fc/compile-el-form expr opts))))))
 
 #+clj
 (defmethod fc/compile-value-form :do [[_ & body] opts]
