@@ -39,7 +39,7 @@
                           :when (find-ns fn-ns)
                           fn-name ['case 'for 'let]]
                       (ns-resolve fn-ns fn-name))
-                    [(ns-resolve 'flow.core 'el)]
+                    [(ns-resolve (doto 'flow.core create-ns) 'el)]
                     ['let 'if 'for 'case])
             
             (remove nil?))))
