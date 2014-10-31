@@ -167,9 +167,9 @@
                  [:div
                   [:h3 "Pick your colours:"]
 
-                  [:p "Primary:" (render-colour-picker (!<< colors [:primary]))]
-                  
-                  [:p "Secondary:" (render-colour-picker (!<< colors [:secondary]))]]
+                  [:p "Primary:" [render-colour-picker (!<< colors [:primary])]]
+                    
+                  [:p "Secondary:" [render-colour-picker (!<< colors [:secondary])]]]
                  
                  [render-svg !colors]]))))))
 
