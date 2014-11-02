@@ -1,5 +1,13 @@
 (ns flow.forms.sub-component
-  (:require #+clj [flow.compiler :as fc]))
+  (:require #+clj [flow.compiler :as fc]
+            [flow.lenses.common :refer [Lens -!state -path]]))
+
+(defn unchanged? [old-value new-value]
+  (or (and (satisfies? Lens old-value)
+           (satisfies? Lens new-value)
+           (= (-!state old-value) (-!state new-value))
+           (= (-path old-value) (-path new-value)))
+      (identical? old-value new-value)))
 
 (defn build-sub-component [args]
   (fn []
@@ -12,7 +20,7 @@
 
                     [$el update-component!] ((if (or (not= (count old-arg-values)
                                                            (count new-arg-values))
-                                                     (not (every? #(apply identical? %)
+                                                     (not (every? #(apply unchanged? %)
                                                                   arg-pairs)))
                                                (build-component new-arg-values)
                                                update-component!))]
