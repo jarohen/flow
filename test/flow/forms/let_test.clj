@@ -2,14 +2,15 @@
   (:require [flow.forms.let :refer :all]
             [flow.compiler :as fc]
             [flow.state :as fs]
+            [flow.deps :as fd]
             [clojure.test :refer :all]))
 
 (deftest let-with-destructuring
   (let [!test (atom 8)]
     (binding [fs/*state* {'!test !test}
-              fs/*ctx* (reify fs/Context
-                         (-read-lens [_ lens]
-                           (deref lens)))]
+              fd/*ctx* (reify fd/Context
+                         (-read-dep [_ dep]
+                           (deref dep)))]
       (let [[$el update!] ((eval (fc/compile-el-form '(let [x 4
                                                             test (<< !test)]
                                                         (str "x is " x " and test is " test))
