@@ -6,7 +6,8 @@
                           (resolve called-fn))
                         called-fn)]
     (if (and (var? resolved-fn)
-             (contains? #{'clojure.core 'cljs.core} (symbol (str (:ns (meta resolved-fn))))))
+             (contains? #{'clojure.core 'cljs.core}
+                        (symbol (str (:ns (meta resolved-fn))))))
       (keyword "core" (str (:name (meta resolved-fn))))
       resolved-fn)))
 
