@@ -59,6 +59,8 @@
               (let [{:keys [result deps]} (or (when (and update-component!
                                                          (fd/deps-unchanged? deps))
 
+                                                (fd/mark-deps! deps)
+                                                
                                                 {:result [$el update-component!]
                                                  :deps deps})
 
