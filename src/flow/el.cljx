@@ -7,7 +7,6 @@
             [flow.render :as fr]
             [clojure.set :as set]))
 
-
 (defn update-watches! [{:keys [old-deps new-deps on-change watch-id]}]
   (let [old-atoms (set (keys old-deps))
         new-atoms (set (keys new-deps))]
@@ -59,6 +58,7 @@
     (letfn [(update-el! [{:keys [update-component! $el deps]}]
               (let [{:keys [result deps]} (or (when (and update-component!
                                                          (fd/deps-unchanged? deps))
+
                                                 {:result [$el update-component!]
                                                  :deps deps})
 
