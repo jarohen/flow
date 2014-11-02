@@ -17,3 +17,7 @@
 #+clj
 (defmethod fc/compile-value-form :unwrap-lens [[_ lens-sym] opts]
   `(fd/read-dep ~(fc/compile-value-form lens-sym opts)))
+
+#+clj
+(defmethod fc/compile-value-form :wrap-lens [[_ lens-sym extra-path] opts]
+  `(flc/->atom ~(fc/compile-value-form lens-sym opts) ~extra-path))
