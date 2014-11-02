@@ -85,9 +85,9 @@
         (fda/set-id! $el id))
 
       (letfn [(update-node! [{:keys [attrs styles children classes listeners]}]
-                (let [updated-attrs (update-attrs! $el attrs)
+                (let [updated-children (update-children! children)
+                      updated-attrs (update-attrs! $el attrs)
                       updated-styles (update-styles! $el styles)
-                      updated-children (update-children! children)
                       updated-classes (update-classes! $el classes)
                       updated-listeners (update-listeners! listeners)]
                   
