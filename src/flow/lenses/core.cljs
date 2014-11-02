@@ -5,64 +5,52 @@
 
 (defn lens->atom [!state path]
   ;; This part adapted from CLJS core.
-  (let [!watches (atom {})
-        !lens-atom (reify
-                     IEquiv
-                     (-equiv [this other]
-                       (identical? this other))
-
-                     IMeta
-                     (-meta [_]
-                       {:!state !state
-                        :path path})
-                     
-                     IDeref
-                     (-deref [_]
-                       (get-at-path @!state path))
-
-                     IReset
-                     (-reset! [this new-value]
-                       (let [old-value (-deref this)]
-                         (swap! !state assoc-at-path path new-value)
-                         (-notify-watches this old-value new-value)
-                         new-value))
-
-                     ISwap
-                     (-swap! [this f]
-                       (reset! this (f (-deref this))))
-                     (-swap! [this f a1]
-                       (reset! this (f (-deref this) a1)))
-                     (-swap! [this f a1 a2]
-                       (reset! this (f (-deref this) a1 a2)))
-                     (-swap! [this f a1 a2 as]
-                       (reset! this (apply f (-deref this) a1 a2 as)))
-
-                     IPrintWithWriter
-                     (-pr-writer [this writer opts]
-                       (-write writer "#<Atom: ")
-                       (-write writer (pr-str @this))
-                       (-write writer ">"))
-
-                     IWatchable
-                     (-notify-watches [this oldval newval]
-                       (doseq [[key f] @!watches]
-                         (f key this oldval newval)))
-                     (-add-watch [this key f]
-                       (swap! !watches assoc key f))
-                     (-remove-watch [this key]
-                       (swap! !watches dissoc key))
-
-                     IHash
-                     (-hash [this]
-                       (goog/getUid this)))]
-
-    (add-watch !state (str (gensym "lens-watch"))
-               (fn [_ _ old-state new-state]
-                 (-notify-watches !lens-atom
-                                  (get-in old-state path)
-                                  (get-in new-state path))))
+  (reify
+    Lens
+    (-value [this] @this)
+    (-!state [_] !state)
+    (-path [_] path)
+    (->atom [_ extra-path]
+      (lens->atom !state (vec (concat path extra-path))))
     
-    !lens-atom))
+    IEquiv
+    (-equiv [this other]
+      (identical? this other))
+
+    IMeta
+    (-meta [_]
+      {:!state !state
+       :path path})
+    
+    IDeref
+    (-deref [_]
+      (get-at-path @!state path))
+
+    IReset
+    (-reset! [this new-value]
+      (let [old-value (-deref this)]
+        (swap! !state assoc-at-path path new-value)
+        new-value))
+
+    ISwap
+    (-swap! [this f]
+      (reset! this (f (-deref this))))
+    (-swap! [this f a1]
+      (reset! this (f (-deref this) a1)))
+    (-swap! [this f a1 a2]
+      (reset! this (f (-deref this) a1 a2)))
+    (-swap! [this f a1 a2 as]
+      (reset! this (apply f (-deref this) a1 a2 as)))
+
+    IPrintWithWriter
+    (-pr-writer [this writer opts]
+      (-write writer "#<Atom: ")
+      (-write writer (pr-str @this))
+      (-write writer ">"))
+
+    IHash
+    (-hash [this]
+      (goog/getUid this))))
 
 (defn map-lens [value !state path]
   (reify
