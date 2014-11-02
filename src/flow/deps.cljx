@@ -32,8 +32,10 @@
               deps-1 deps-2))
 
 (defn tree-unchanged? [new-value tree]
-  (if-let [old-value (::value tree)]
-    (identical? old-value new-value)
+  (if (and (map? tree)
+           (contains? tree ::value))
+    (identical? (::value tree) new-value)
+
     (every? (fn [[path sub-tree]]
               (tree-unchanged? (get new-value path) sub-tree))
             tree)))
