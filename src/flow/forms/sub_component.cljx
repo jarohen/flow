@@ -1,12 +1,12 @@
 (ns flow.forms.sub-component
   (:require #+clj [flow.compiler :as fc]
-            [flow.lenses.common :refer [Lens -!state -path]]))
+            [flow.lenses :as fl]))
 
 (defn unchanged? [old-value new-value]
-  (or (and (satisfies? Lens old-value)
-           (satisfies? Lens new-value)
-           (= (-!state old-value) (-!state new-value))
-           (= (-path old-value) (-path new-value)))
+  (or (and (satisfies? fl/Lens old-value)
+           (satisfies? fl/Lens new-value)
+           (= (fl/-!state old-value) (fl/-!state new-value))
+           (= (fl/-path old-value) (fl/-path new-value)))
       (identical? old-value new-value)))
 
 (defn build-sub-component [args]

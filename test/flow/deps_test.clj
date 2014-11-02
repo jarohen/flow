@@ -1,10 +1,10 @@
 (ns flow.deps-test
   (:require [flow.deps :as fd :refer :all]
-            [flow.lenses.common :refer [Lens]]
+            [flow.lenses :as fl]
             [clojure.test :refer :all]))
 
 (defn mock-lens [!atom path]
-  (reify Lens
+  (reify fl/Lens
     (-!state [_] !atom)
     (-path [_] path)))
 

@@ -1,7 +1,7 @@
 (ns flow.forms.lenses
   (:require #+clj [flow.compiler :as fc]
             [flow.deps :as fd]
-            [flow.lenses.common :as flc]))
+            [flow.lenses :as fl]))
 
 (defn build-unwrap [build-lens]
   (fn []
@@ -20,4 +20,4 @@
 
 #+clj
 (defmethod fc/compile-value-form :wrap-lens [[_ lens-sym extra-path] opts]
-  `(flc/->atom ~(fc/compile-value-form lens-sym opts) ~extra-path))
+  `(fl/->atom ~(fc/compile-value-form lens-sym opts) ~extra-path))

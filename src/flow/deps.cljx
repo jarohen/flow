@@ -1,6 +1,5 @@
 (ns flow.deps
-  (:require [flow.lenses.core :refer [->lens]]
-            [flow.lenses.common :refer [Lens -!state -path]]))
+  (:require [flow.lenses :as fl]))
 
 (defprotocol Context
   (-read-dep [_ dep]))
@@ -8,11 +7,11 @@
 (def ^:dynamic *ctx*
   (reify Context
     (-read-dep [this dep]
-      (->lens @dep dep []))))
+      (fl/->lens @dep dep []))))
 
 (defn mark-dep [dep-tree dep value]
-  (let [state+path (if (satisfies? Lens dep)
-                     (cons (-!state dep) (-path dep))
+  (let [state+path (if (satisfies? fl/Lens dep)
+                     (cons (fl/-!state dep) (fl/-path dep))
                      [dep])]
     (letfn [(dep-marked? [dep-tree path]
               (or (boolean (::value dep-tree))

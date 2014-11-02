@@ -1,8 +1,68 @@
-(ns flow.lenses.core
-  (:require [flow.lenses.common :refer [Lens lens? -value get-at-path assoc-at-path]]))
+(ns flow.lenses)
 
-(declare ->lens)
+;; Most of this adapted from either from CLJS core or Om, thanks David
+;; Nolan & contributors for the design ideas, inspiration and code :)
 
+;; The Clojure implementation is a small subset of the CLJS lens
+;; functionality (due to the difference in interfaces between Clojure
+;; 1.6 and CLJS). It's really only meant for testing Flow.
+
+(defprotocol Lens
+  (-value [_])
+  (-!state [_])
+  (-path [_])
+  (->atom [_ extra-path]))
+
+(defn lens? [v]
+  (satisfies? Lens v))
+
+(defn get-at-path [m [p & more-path :as path]]
+  (if (and m (seq path))
+    (cond
+      (or #+clj (instance? clojure.lang.ILookup m)
+          #+cljs (satisfies? #+cljs ILookup m)
+          (nil? m))
+      
+      (get-at-path (get m p) more-path)
+      
+      (number? p)
+      (get-at-path (nth m p) more-path))
+    
+    m))
+
+(defn assoc-at-path [m [p & more-path :as path] v]
+  (if (seq path)
+    (cond
+      (or #+clj (instance? clojure.lang.Associative m)
+          #+cljs (satisfies? #+cljs IAssociative m)
+          (nil? m))
+      (assoc m p (assoc-at-path (get m p) more-path v))
+
+      (and (seq? m)
+           (number? p))
+      (if (zero? p)
+        (cons (assoc-at-path (first m) more-path v)
+              (rest m))
+        (cons (first m)
+              (assoc-at-path (rest m) (cons (dec p) more-path) v))))
+    
+    v))
+
+#+clj
+(defn lens->atom [!state path]
+  (reify
+    Lens
+    (-value [this] (deref this))
+    (-!state [_] !state)
+    (-path [_] path)
+    (->atom [_ extra-path]
+      (lens->atom !state (vec (concat path extra-path))))
+    
+    clojure.lang.IDeref
+    (deref [this]
+      (get-at-path @!state path))))
+
+#+cljs
 (defn lens->atom [!state path]
   ;; This part adapted from CLJS core.
   (reify
@@ -52,6 +112,47 @@
     (-hash [this]
       (goog/getUid this))))
 
+(declare ->lens)
+
+#+clj
+(defn map-lens [value !state path]
+  (reify
+    Lens
+    (-value [_] value)
+    (-!state [_] !state)
+    (-path [_] path)
+    (->atom [_ extra-path]
+      (lens->atom !state (vec (concat path extra-path))))
+    
+    clojure.lang.ILookup
+    (valAt [this k]
+      (get this k nil))
+    (valAt [this k not-found]
+      (let [v (get value k not-found)]
+        (if-not (= v not-found)
+          (->lens v !state (conj path k))
+          not-found)))
+    
+    clojure.lang.IFn
+    (invoke [this k]
+      (get this k))
+    (invoke [this k not-found]
+      (get this k not-found))
+
+    clojure.lang.Seqable
+    (seq [this]
+      (when (pos? (count value))
+        (map (fn [[k v]]
+               (clojure.lang.MapEntry. k (->lens v !state (conj path k))))
+             value)))
+    
+    clojure.lang.IPersistentMap
+    (assoc [_ k v]
+      (map-lens (assoc value k v) !state path))
+    (without [_ k]
+      (map-lens (dissoc value k) !state path))))
+
+#+cljs
 (defn map-lens [value !state path]
   (reify
     Lens
@@ -122,6 +223,52 @@
     (-pr-writer [_ writer opts]
       (-write writer (pr-str value)))))
 
+#+clj
+(defn vec-lens [value !state path]
+  (reify
+    Lens
+    (-value [_] value)
+    (-!state [_] !state)
+    (-path [_] path)
+    (->atom [_ extra-path]
+      (lens->atom !state (vec (concat path extra-path))))
+    
+    clojure.lang.Sequential
+
+    clojure.lang.IPersistentCollection
+    (count [_]
+      (count value))
+
+    clojure.lang.ILookup
+    (valAt [this n]
+      (nth this n nil))
+    (valAt [this n not-found]
+      (nth this n not-found))
+
+    clojure.lang.IFn
+    (invoke [this k]
+      (get this k))
+    (invoke [this k not-found]
+      (get this k not-found))
+
+    clojure.lang.Indexed
+    (nth [this n]
+      (->lens (nth value n) !state (conj path n)))
+    (nth [this n not-found]
+      (if (< n (count value))
+        (->lens (nth value n) !state (conj path n))
+        not-found))
+
+    clojure.lang.Seqable
+    (seq [this]
+      (when (pos? (count value))
+        (map (fn [v i] (->lens v !state (conj path i))) value (range))))
+
+    clojure.lang.Associative
+    (assoc [this n v]
+      (->lens (assoc value n v) !state path))))
+
+#+cljs
 (defn vec-lens [value !state path]
   (reify
     Lens
@@ -198,6 +345,7 @@
     (-pr-writer [_ writer opts]
       (-write writer (pr-str value)))))
 
+#+cljs
 (defn cloneable->lens [value !state path]
   (specify value
     Lens
@@ -216,7 +364,11 @@
 (defn ->lens [value !state path]
   (cond
     (lens? value) value
-    (or (indexed? value) (seq? value)) (vec-lens value !state path)
+
     (map? value) (map-lens value !state path)
-    (satisfies? ICloneable value) (cloneable->lens value !state path)
+    (or (coll? value) (seq? value)) (vec-lens value !state path)
+
+    #+cljs (satisfies? ICloneable value)
+    #+cljs (cloneable->lens value !state path)
+
     :else value))

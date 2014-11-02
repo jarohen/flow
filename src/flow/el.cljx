@@ -2,7 +2,7 @@
   (:require [flow.dom.children :as fdc]
             [flow.dom.elements :as fde]
             [flow.deps :as fd]
-            [flow.lenses.common :refer [Lens]]
+            [flow.lenses :as fl]
             [flow.state :as fs]
             [flow.render :as fr]
             [clojure.set :as set]))
