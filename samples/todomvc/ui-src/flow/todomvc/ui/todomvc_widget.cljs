@@ -55,9 +55,9 @@
       [:li {::f/classes [(when done? "completed")
                          (when editing? "editing")]}
        (if-not editing?
-         (render-todo !todo-entry events-ch)
+         [render-todo !todo-entry events-ch]
          
-         (edit-input !todo-entry events-ch))])))
+         [edit-input !todo-entry events-ch])])))
 
 (defn new-todo-widget [events-ch]
   (let [!input-value (atom nil)]
@@ -81,7 +81,7 @@
     [:ul#todo-list
      (for [[id todo] ^{::f/key-fn key} (->> (<< !todos)
                                             (filter (comp (filter-todos (<< !todo-filter)) val)))]
-       (todo-item-widget (!<< todo) events-ch))]))
+       [todo-item-widget (!<< todo) events-ch])]))
 
 (defn stats-widget [!todos]
   (f/el
@@ -126,19 +126,19 @@
       [:section#todoapp
        [:header#header
         [:h1 "todos"]
-        (new-todo-widget events-ch)]
+        [new-todo-widget events-ch]]
 
        [:section#main
-        (toggle-all-widget !todos events-ch)
+        [toggle-all-widget !todos events-ch]
         [:label {:for "toggle-all"}
          "Mark all as complete"]
 
-        (todo-list-widget !todos !todo-filter events-ch)]
+        [todo-list-widget !todos !todo-filter events-ch]]
 
        [:footer#info
         [:p "Double-click to edit a todo"]]
 
        [:footer#footer
-        (stats-widget !todos)
-        (filters-widget !todo-filter)
-        (clear-completed-widget !todos events-ch)]])))
+        [stats-widget !todos]
+        [filters-widget !todo-filter]
+        [clear-completed-widget !todos events-ch]]])))

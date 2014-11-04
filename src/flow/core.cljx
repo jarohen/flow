@@ -1,60 +1,33 @@
 (ns flow.core
-  #+clj (:require [flow.expand :refer [expand-macros]]
-                  [flow.parse :refer [parse-form]]
-                  [flow.compile :refer [compile-identity]]
-                  [flow.render :refer [render-elem]]
-                  [flow.protocols :as fp])
-  
-  #+cljs (:require flow.state
-                   flow.render
-                   flow.lens
-                   flow.util
-                   flow.forms.if
-                   flow.forms.let
-                   flow.forms.fn-call
-                   flow.forms.case
-                   flow.forms.for
-                   [flow.dom :as fd]))
+  (:require [flow.el :as fel]
+            [flow.dom.elements :as fde]
+            [flow.forms.text]
+            [flow.forms.node]
+            [flow.forms.primitive]
+            [flow.forms.lenses]
+            [flow.forms.collections]
+            [flow.forms.symbols]
+            [flow.forms.fn-calls]
+            [flow.forms.fn-decls]
+            [flow.forms.do]
+            [flow.forms.if]
+            [flow.forms.case]
+            [flow.forms.let]
+            [flow.forms.for]
+            [flow.forms.sub-component])
+  #+clj (:require [flow.compiler :as fc]))
+
+(defn root [$container el]
+  (fel/root $container el))
 
 #+clj
-(defn debug-compiled-el [compiled-el]
-  (spit "/tmp/compiled.edn"
-        {:hard-deps (fp/hard-deps compiled-el)
-         :soft-deps (fp/soft-deps compiled-el)
-         :declarations (fp/declarations compiled-el)
-         :build-form (fp/build-form compiled-el)}))
-
-#+clj
-(defmacro el [elem]
-  (let [el-sym (gensym "flow-el")]
-    ;; (spit "/tmp/elem.edn" (binding [*print-meta* true]
-    ;;                         (pr-str elem)))
-    (-> (expand-macros elem &env)
-        ;; (doto (#(binding [*print-meta* true]
-        ;;           (spit "/tmp/expanded.edn" (pr-str %)))))
-        (parse-form {:elem? true})
-        ;; (doto (->> (spit "/tmp/parsed.edn")))
-        (compile-identity {:dynamic-syms #{}
-                           :local-syms #{}
-                           :path [el-sym]})
-        ;; (doto debug-compiled-el)
-        (render-elem)
-        ;; (doto (->> (spit "/tmp/rendered.edn")))
-        )))
-
-#+cljs
-(defn root [$container $elem]
-  (loop []
-    (when-let [$child (.-firstChild $container)]
-      (fd/remove! $child)
-      (recur)))
-        
-  (fd/append-child! $container $elem))
+(defmacro el [el]
+  `(fel/render-el ~(fc/compile-el el &env)))
 
 #+cljs
 (defn bind-value! [lens]
-  (fd/bind-value! lens))
+  (fde/bind-value! lens))
 
 #+cljs
 (defn on [$el event listener]
-  (fd/add-listener! $el event listener))
+  (fde/add-listener! $el event listener))

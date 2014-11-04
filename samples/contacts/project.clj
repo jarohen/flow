@@ -9,7 +9,7 @@
                  [compojure "1.1.6"]
                  [hiccup "1.0.5"]
 
-                 [jarohen/flow "0.2.0-beta1"]
+                 [jarohen/flow "0.2.0-SNAPSHOT"]
                  
                  [org.clojure/clojurescript "0.0-2268"]
                  [org.clojure/core.async "0.1.303.0-886421-alpha"]]

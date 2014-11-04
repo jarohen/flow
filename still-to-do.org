@@ -1,0 +1,15 @@
+* What's to do before next release?
+** TODO Forms still to implement
+*** DONE =let=
+*** DONE =for=
+*** DONE =do=
+*** TODO =fn-decl=
+**** Written but not fully tested
+**** Need to move the comment tests to real test
+** TODO Event listeners
+** TODO Lenses
+** TODO Sub-components
+*** Done the component
+*** Need to move the comment tests to real test
+** TODO ClojureScript bindings
+*** Done but not tested
