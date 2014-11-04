@@ -15,7 +15,7 @@
 
                  [gaka "0.3.0"]
 
-                 [jarohen/flow "0.2.0-beta2"]]
+                 [jarohen/flow "0.2.0-beta3"]]
 
   :plugins [[jarohen/lein-frodo "0.3.2"]
             [jarohen/simple-brepl "0.1.1"]

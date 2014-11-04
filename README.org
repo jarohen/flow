@@ -5,7 +5,7 @@ declarative style, without worrying how/when the DOM needs to be
 updated.
 
 #+BEGIN_SRC clojure
-  [jarohen/flow "0.2.0-beta2"]
+  [jarohen/flow "0.2.0-beta3"]
 
   (:require [flow.core :as f :include-macros true]) 
 #+END_SRC
@@ -186,6 +186,27 @@ value of an HTML input to a dynamic value or atom:
                ::f/on {:keyup (f/bind-value! !textbox-value)}}]))
 #+END_SRC
 
+*** Subcomponents
+
+Flow components can be easily composed - simply call them as you would
+a normal function (with any necessary parameters) but, rather than
+parens, enclose them in a vector:
+
+#+BEGIN_SRC clojure
+  (defn render-list-item [elem]
+    (f/el
+      [:li
+       [:span "Item: " elem]]))
+
+  (defn render-list [elems]
+    (f/el
+      [:ul
+       (for [elem elems]
+         [render-list-item elem])]))
+#+END_SRC
+
+
+
 *** =!<<= - Passing dynamic values outside of the =f/el=
 
 The values extracted from an atom with =<<= are only dynamic within
@@ -203,7 +224,7 @@ subcomponents also react to dynamic values, we re-wrap them using
   (defn render-todo-list [!todos]
     (f/el
       (for [todo (<< !todos)]
-        (render-todo-item (!<< todo)))))
+        [render-todo-item (!<< todo)])))
 #+END_SRC
 
 Notice here that we don't need to re-wrap the original atom for the
@@ -219,12 +240,12 @@ collection, and provide an extra key to find the corresponding value:
     ;; Here '!caption' is an atom containing a string.
     (f/el
       [:li caption]))
-  
+
   (defn render-todo-list [!todos]
     (f/el
       (for [todo (<< !todos)]
         ;; we only want to pass the ':caption' key as a dynamic value
-        (render-todo-item (!<< todo [:caption])))))
+        [render-todo-item (!<< todo [:caption])])))
 #+END_SRC
 
 Here, we can't wrap 'caption', because it's a string, so we tell
@@ -236,9 +257,6 @@ There are a couple of features still to be implemented:
 
 - Flow's 'for' doesn't yet support ':when', ':let' or ':while'
   clauses - support for this will be added in the future.
-- It is currently required to declare atoms outside of =f/el=
-  clauses - this is not a limitation I like as it violates the 'no
-  surprises' rule - it will get fixed!
 
 #+BEGIN_SRC clojure
   ;; Replace:
@@ -268,13 +286,13 @@ Thanks!
 
 ** Thanks
 
-A big thanks to [[https://github.com/lsnape][Luke Snape]] and [[https://github.com/henrygarner][Henry Garner]] for their feedback and
-advice on early versions of the library, and their help through
-numerous design/implementation conversations. Thanks also to Henry for
-his excellent suggestion of the =<<= syntax.
+A big thanks to [[https://github.com/malcolmsparks][Malcolm Sparks]], [[https://github.com/lsnape][Luke Snape]] and [[https://github.com/henrygarner][Henry Garner]] for their
+feedback and advice on early versions of the library, and their help
+through numerous design/implementation conversations. Thanks also to
+Henry for his excellent suggestion of the =<<= syntax.
 
-Also, thanks to [[https://github.com/matlux][Mathieu Gauthron]], [[https://github.com/n8dawgrr][Nathan Matthews]] and [[https://github.com/malcolmsparks][Malcolm Sparks]],
-whose feedback on Clidget helped shape the direction of Flow.
+Also, thanks to [[https://github.com/matlux][Mathieu Gauthron]] and [[https://github.com/n8dawgrr][Nathan Matthews]] whose feedback on
+Clidget helped shape the direction of Flow.
 
 Cheers!
 

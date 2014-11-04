@@ -122,7 +122,7 @@
     
     ICounted
     (-count [_]
-      (-count value))
+      (count value))
 
     ICollection
     (-conj [this o]
@@ -194,10 +194,10 @@
 
     ICounted
     (-count [_]
-      (-count value))
+      (count value))
     ICollection
     (-conj [_ o]
-      (vec-lens (-conj value o) !state path))
+      (vec-lens (conj value o) !state path))
 
     ILookup
     (-lookup [this n]

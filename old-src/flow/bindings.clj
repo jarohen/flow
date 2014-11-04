@@ -15,7 +15,7 @@
                                               (mapcat dbs* (keys (dissoc bind :keys :as)))))
                         (vector? bind) (-> (mapcat dbs* bind)
                                            set
-                                           (disj '&))
+                                           (disj '& :as))
                         (symbol? bind) [(symbol (name bind))]))]
     (set (dbs* bind))))
 
