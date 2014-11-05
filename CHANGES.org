@@ -1,6 +1,28 @@
 * ChangeLog
 ** 0.2.x (complete re-write)
 
+*** 0.2.0-beta3
+
+Complete re-write from 0.2.0-beta2 - massive simplification of the
+internal workings.
+
+One breaking change from b2: sub-components now need to be 'called'
+with vectors, rather than parens:
+
+#+BEGIN_SRC clojure
+  (defn render-list-item [elem]
+    (f/el
+      [:li elem]))
+
+  (defn render-list [coll]
+    (f/el
+      [:ul
+       (for [elem coll]
+         ;; previously: (render-list-item elem)
+         [render-list-item elem])]))
+
+#+END_SRC
+
 *** 0.2.0-beta2
 
 Bugfix to macro-expansion stage - needs to be a prewalk rather than a postwalk
