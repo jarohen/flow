@@ -1,6 +1,12 @@
 * ChangeLog
 ** 0.2.x (complete re-write)
 
+*** 0.2.0-beta4
+
+Bug in f/on - fixed.
+
+No breaking changes
+
 *** 0.2.0-beta3
 
 Complete re-write from 0.2.0-beta2 - massive simplification of the
