@@ -30,4 +30,4 @@
 
 #+cljs
 (defn on [$el event listener]
-  (fde/add-listener! $el event listener))
+  (fde/add-event-listener! $el event listener))
