@@ -28,7 +28,7 @@
                                      {:$el $el
                                       :update! update-body!
                                       :values values})))]
-                [(or (seq (map :$el for-bodies))
+                [(or (doall (seq (map :$el for-bodies)))
                      (fde/null-elem))
                  #(update-for! (->> for-bodies
                                     (map (juxt :values :update!))

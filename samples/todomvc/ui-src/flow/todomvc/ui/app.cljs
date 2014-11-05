@@ -17,7 +17,7 @@
 (defn run-benchmark! [!todos]
   (reset! !todos {})
   (go
-    (let [els 250]
+    (let [els 200]
       (dotimes [i els]
         (swap! !todos
                assoc i {:id i
