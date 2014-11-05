@@ -8,6 +8,8 @@
 
   :dependencies [[org.clojure/clojure "1.6.0"]]
 
+  :exclusions [org.clojure/clojure]
+
   :plugins [[com.keminglabs/cljx "0.4.0"]]
 
   :source-paths ["src" "target/generated/clj"]
