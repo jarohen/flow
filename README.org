@@ -258,22 +258,6 @@ There are a couple of features still to be implemented:
 - Flow's 'for' doesn't yet support ':when', ':let' or ':while'
   clauses - support for this will be added in the future.
 
-#+BEGIN_SRC clojure
-  ;; Replace:
-  
-  (f/el
-    (let [!state (atom {})]
-      [:p {::f/style {:color (:color (<< !state))}}
-       "Hello!"]))
-  
-  ;; With:
-  
-  (let [!state (atom {})]
-    (f/el
-      [:p {::f/style {:color (:color (<< !state))}}
-       "Hello!"]))
-#+END_SRC
-
 ** Questions/suggestions/bug fixes?
 
 Yes please!
