@@ -28,10 +28,16 @@
   :resource-paths ["resources" "target/resources"]
 
   :cljsbuild {:builds {:dev
-                       {:source-paths ["ui-src" "../../target/generated/cljs"]
+                       {:source-paths ["ui-src"]
                         :compiler {:output-to "target/resources/js/todomvc.js"
                                    :output-dir "target/resources/js/"
                                    :optimizations :whitespace
+                                   :pretty-print true}}
+
+                       :prod
+                       {:source-paths ["ui-src"]
+                        :compiler {:output-to "target/resources/js/todomvc.js"
+                                   :optimizations :advanced
                                    :pretty-print true}}}}
 
   :aliases {"dev" ["do"

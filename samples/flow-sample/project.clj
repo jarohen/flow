@@ -15,12 +15,12 @@
                  [org.clojure/core.async "0.1.303.0-886421-alpha"]
                  [org.clojure/clojurescript "0.0-2268"]
 
-                 [jarohen/flow "0.2.0-beta3"]
+                 [jarohen/flow "0.2.0-beta4"]
 
                  [garden "1.2.1"]]
 
   :plugins [[jarohen/lein-frodo "0.3.2"]
-            [jarohen/simple-brepl "0.1.1"]
+            [jarohen/simple-brepl "0.1.2"]
             [lein-cljsbuild "1.0.3"]
             [com.keminglabs/cljx "0.4.0"]
             [lein-pdo "0.1.1"]
@@ -31,7 +31,7 @@
   :resource-paths ["resources" "target/resources"]
 
   :cljsbuild {:builds {:dev
-                       {:source-paths ["ui-src"]
+                       {:source-paths ["ui-src" "../../src" "../../target/generated/cljs"]
                         :compiler {:output-to "target/resources/js/flow-sample.js"
                                    :output-dir "target/resources/js/"
                                    :optimizations :whitespace

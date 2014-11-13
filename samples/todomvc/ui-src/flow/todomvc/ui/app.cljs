@@ -41,6 +41,6 @@
           (f/root js/document.body
             (make-todomvc !todos events-ch))
 
-          #_(go
-              (a/<! (a/timeout 1000))
-              (run-benchmark! !todos)))))
+          (go
+            (a/<! (a/timeout 1000))
+            (run-benchmark! !todos)))))
