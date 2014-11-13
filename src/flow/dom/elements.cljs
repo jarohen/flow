@@ -50,11 +50,10 @@
   (fn [e]
     (reset! !atom (value (.-target e)))))
 
-(let [$null-elem (doto (js/document.createElement "span")
-                   (fda/set-style! :display :none)
-                   (fda/set-attr! :data-flow-placeholder true))]
-  (defn null-elem []
-    (.cloneNode $null-elem)))
+(defn null-elem []
+  (doto (js/document.createElement "span")
+    (fda/set-style! :display :none)
+    (fda/set-attr! :data-flow-placeholder true)))
 
 (defn ->el [el-ish]
   (cond
