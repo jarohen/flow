@@ -35,7 +35,8 @@
                                        :destructure-fn `(fn [~binding]
                                                           ~(->> (for [bind-sym bind-syms]
                                                                   [`(quote ~bind-sym) bind-sym])
-                                                                (into {})))})
+                                                                (into {})))
+                                       :pk-fn (:flow.core/pk (meta value))})
              :opts (update-in opts [:bound-syms] set/union bind-syms)})
 
           {:compiled-bindings []
