@@ -7,13 +7,13 @@
 
 (defn value-pk [value pk-fn]
   (cond
-    pk-fn (pk-fn value)
+    pk-fn (value-pk (pk-fn value) nil)
     (fl/lens? value) [::lens (fl/-!state value) (fl/-path value)]
     :else value))
 
 (defn for-values [compiled-bindings]
   (reduce (fn [acc {:keys [value-fn destructure-fn pk-fn]}]
-            (->> (for [{:keys [values state pks]} acc]
+            (->> (for [{:keys [state pks]} acc]
                    (binding [fs/*state* state]
                      (for [value (value-fn)]
                        {:state (merge state
@@ -22,8 +22,7 @@
                  (apply concat)))
           
           [{:state fs/*state*
-            :pks []
-            :values []}]
+            :pks []}]
           
           compiled-bindings))
 

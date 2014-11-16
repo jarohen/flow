@@ -79,8 +79,8 @@
 (defn todo-list-widget [!todos !todo-filter events-ch]
   (f/el
     [:ul#todo-list
-     (for [[id todo] ^{::f/key-fn key} (->> (<< !todos)
-                                            (filter (comp (filter-todos (<< !todo-filter)) val)))]
+     (for [[id todo] ^{::f/pk key} (->> (<< !todos)
+                                        (filter (comp (filter-todos (<< !todo-filter)) val)))]
        [todo-item-widget (!<< todo) events-ch])]))
 
 (defn stats-widget [!todos]
