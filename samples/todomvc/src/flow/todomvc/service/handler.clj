@@ -1,5 +1,6 @@
 (ns flow.todomvc.service.handler
-  (:require [compojure.core :refer [routes GET]]
+  (:require [clojure.java.io :as io]
+            [compojure.core :refer [routes GET]]
             [compojure.handler :refer [api]]
             [compojure.route :refer [resources]]
             [hiccup.page :refer [html5 include-css include-js]]
@@ -14,8 +15,15 @@
 
     [:script (brepl-js)]
     
-    (include-js "/js/todomvc.js")
+    (if-let [cljs-base (io/resource "js/goog/base.js")]
+      (list (include-js "/js/goog/base.js")
+            (include-js "/js/todomvc.js")
+            [:script "goog.require('flow.todomvc.ui.app');"])
+      
+      (include-js "/js/todomvc.js"))
+    
     (include-css "/todomvc/todomvc.css")]
+   
    [:body
     [:div#content]]))
 

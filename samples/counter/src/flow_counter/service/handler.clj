@@ -1,10 +1,11 @@
 (ns flow-counter.service.handler
-  (:require [ring.util.response :refer [response]]
+  (:require [frodo.web :refer [App]]
+            [clojure.java.io :as io]
             [compojure.core :refer [routes GET]]
-            [compojure.route :refer [resources]]
             [compojure.handler :refer [api]]
+            [compojure.route :refer [resources]]
             [hiccup.page :refer [html5 include-css include-js]]
-            [frodo.web :refer [App]]
+            [ring.util.response :refer [response]]
             [simple-brepl.service :refer [brepl-js]]))
 
 (defn page-frame []
@@ -18,7 +19,12 @@
     (include-js "//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js")
     (include-css "//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css")
 
-    (include-js "/js/flow.counter.js")]
+    (if-let [cljs-base (io/resource "js/goog/base.js")]
+      (list (include-js "/js/goog/base.js")
+            (include-js "/js/counter.js")
+            [:script "goog.require('flow_counter.ui.app');"])
+      
+      (include-js "/js/counter.js"))]
    [:body]))
 
 (defn app-routes []
