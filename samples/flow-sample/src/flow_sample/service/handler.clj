@@ -1,5 +1,6 @@
 (ns flow-sample.service.handler
-  (:require [compojure.core :refer [routes GET]]
+  (:require [clojure.java.io :as io]
+            [compojure.core :refer [routes GET]]
             [compojure.handler :refer [api]]
             [compojure.route :refer [resources]]
             [hiccup.page :refer [html5 include-css include-js]]
@@ -15,8 +16,13 @@
     (include-css "//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css")
 
     [:script (brepl-js)]
-    
-    (include-js "/js/flow-sample.js")]
+
+    (if-let [cljs-base (io/resource "js/goog/base.js")]
+      (list (include-js "/js/goog/base.js")
+            (include-js "/js/flow-sample.js")
+            [:script "goog.require('flow_sample.ui.app');"])
+      
+      (include-js "/js/flow-sample.js"))]
 
    [:body]))
 
