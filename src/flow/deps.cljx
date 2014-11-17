@@ -34,7 +34,7 @@
 (defn tree-unchanged? [new-value tree]
   (if (and (map? tree)
            (contains? tree ::value))
-    (identical? (::value tree) new-value)
+    (= (::value tree) new-value)
 
     (every? (fn [[path sub-tree]]
               (tree-unchanged? (get new-value path) sub-tree))
