@@ -15,7 +15,7 @@
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [org.clojure/clojurescript "0.0-2371"]
 
-                 [jarohen/flow "0.2.0-beta4"]
+                 [jarohen/flow "0.2.0-beta5"]
 
                  [garden "1.2.1"]]
 
