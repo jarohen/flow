@@ -2,36 +2,43 @@
   (:require #+clj [flow.compiler :as fc]
             #+clj [flow.forms.bindings :as fb]
             [flow.dom.elements :as fde]
+            [flow.lenses :as fl]
             [flow.state :as fs]))
 
+(defn value-pk [value pk-fn]
+  (cond
+    pk-fn (value-pk (pk-fn value) nil)
+    (fl/lens? value) [::lens (fl/-!state value) (fl/-path value)]
+    :else value))
+
 (defn for-values [compiled-bindings]
-  (reduce (fn [acc {:keys [value-fn destructure-fn]}]
-            (->> (for [{:keys [values state]} acc]
+  (reduce (fn [acc {:keys [value-fn destructure-fn pk-fn]}]
+            (->> (for [{:keys [state pks]} acc]
                    (binding [fs/*state* state]
                      (for [value (value-fn)]
                        {:state (merge state
                                       (destructure-fn value))
-                        :values (conj values value)})))
+                        :pks (conj pks (value-pk value pk-fn))})))
                  (apply concat)))
           
           [{:state fs/*state*
-            :values []}]
+            :pks []}]
           
           compiled-bindings))
 
 (defn build-for [compiled-bindings build-body]
   (fn []
     (letfn [(update-for! [body-cache]
-              (let [for-bodies (for [{:keys [state values]} (for-values compiled-bindings)]
+              (let [for-bodies (for [{:keys [state pks]} (for-values compiled-bindings)]
                                  (binding [fs/*state* state]
-                                   (let [[$el update-body!] ((or (get body-cache values) (build-body)))]
+                                   (let [[$el update-body!] ((or (get body-cache pks) (build-body)))]
                                      {:$el $el
                                       :update! update-body!
-                                      :values values})))]
+                                      :pks pks})))]
                 [(or (doall (seq (map :$el for-bodies)))
                      (fde/null-elem))
                  #(update-for! (->> for-bodies
-                                    (map (juxt :values :update!))
+                                    (map (juxt :pks :update!))
                                     (into {})))]))]
       
       (update-for! {}))))

@@ -1,6 +1,12 @@
 * ChangeLog
 ** 0.2.x (complete re-write)
 
+*** 0.2.0-beta5
+
+Performance improvements - ensuring that all of our caching works
+
+No breaking changes.
+
 *** 0.2.0-beta4
 
 Bug in f/on - fixed.

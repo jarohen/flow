@@ -5,7 +5,7 @@ declarative style, without worrying how/when the DOM needs to be
 updated.
 
 #+BEGIN_SRC clojure
-  [jarohen/flow "0.2.0-beta4"]
+  [jarohen/flow "0.2.0-beta5"]
 
   (:require [flow.core :as f :include-macros true]) 
 #+END_SRC
@@ -257,22 +257,6 @@ There are a couple of features still to be implemented:
 
 - Flow's 'for' doesn't yet support ':when', ':let' or ':while'
   clauses - support for this will be added in the future.
-
-#+BEGIN_SRC clojure
-  ;; Replace:
-  
-  (f/el
-    (let [!state (atom {})]
-      [:p {::f/style {:color (:color (<< !state))}}
-       "Hello!"]))
-  
-  ;; With:
-  
-  (let [!state (atom {})]
-    (f/el
-      [:p {::f/style {:color (:color (<< !state))}}
-       "Hello!"]))
-#+END_SRC
 
 ** Questions/suggestions/bug fixes?
 

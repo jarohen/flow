@@ -20,7 +20,6 @@
         $next-sibling (fde/next-sibling $parent $last-elem)
 
         diff (fdd/vector-diff old-els new-els)]
-
     (doseq [[action $el] diff]
       (when (= action :moved-out)
         (fde/remove-child! $parent $el)))
@@ -42,7 +41,8 @@
 
 (defn swap-child-el! [$parent $old-el $new-el]
   (case [(coll? $old-el) (coll? $new-el)]
-    [false false] (fde/replace-child! $parent $old-el $new-el)
+    [false false] (when-not (identical? $old-el $new-el)
+                    (fde/replace-child! $parent $old-el $new-el))
     [false true] (do
                    (doseq [$el $new-el]
                      (fde/insert-before! $parent $old-el $el))
