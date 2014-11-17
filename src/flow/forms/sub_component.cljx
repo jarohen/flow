@@ -2,7 +2,7 @@
   (:require #+clj [flow.compiler :as fc]
             [flow.lenses :as fl]))
 
-(defn unchanged? [old-value new-value]
+(defn unchanged? [[old-value new-value]]
   (or (and (satisfies? fl/Lens old-value)
            (satisfies? fl/Lens new-value)
            (= (fl/-!state old-value) (fl/-!state new-value))
@@ -20,8 +20,7 @@
 
                     [$el update-component!] ((if (or (not= (count old-arg-values)
                                                            (count new-arg-values))
-                                                     (not (every? #(apply unchanged? %)
-                                                                  arg-pairs)))
+                                                     (not (every? unchanged? arg-pairs)))
                                                (build-component new-arg-values)
                                                update-component!))]
               
