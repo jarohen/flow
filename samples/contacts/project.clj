@@ -9,13 +9,13 @@
                  [compojure "1.1.6"]
                  [hiccup "1.0.5"]
 
-                 [jarohen/flow "0.2.0-beta3"]
+                 [jarohen/flow "0.2.0-beta4"]
                  
-                 [org.clojure/clojurescript "0.0-2268"]
-                 [org.clojure/core.async "0.1.303.0-886421-alpha"]]
+                 [org.clojure/core.async "0.1.346.0-17112a-alpha"]
+                 [org.clojure/clojurescript "0.0-2371"]]
 
-  :plugins [[jarohen/lein-frodo "0.3.2"]
-            [jarohen/simple-brepl "0.1.1"]
+  :plugins [[jarohen/lein-frodo "0.4.1"]
+            [jarohen/simple-brepl "0.1.2"]
             [lein-cljsbuild "1.0.3"]
             [lein-pdo "0.1.1"]
 
@@ -37,22 +37,18 @@
                    :rules :cljs}]}
 
   :cljsbuild {:builds {:dev
-                       {:source-paths ["ui-src" "target/generated/cljs"]
+                       {:source-paths ["ui-src"]
                         :compiler {:output-to "target/resources/js/contacts.js"
                                    :output-dir "target/resources/js/"
-                                   :optimizations :whitespace
-                                   :pretty-print true
-
-                                   ;; uncomment for source-maps
-                                        ; :source-map "target/resources/js/contacts.js.map"
-                                   }}
+                                   :optimizations :none
+                                   :pretty-print true}}
 
                        :prod
-                       {:source-paths ["ui-src" "target/generated/cljs"]
+                       {:source-paths ["ui-src"]
                         :compiler {:output-to "target/resources/js/contacts.js"
                                    :optimizations :advanced
-                                   :pretty-print false
-                                   :externs ["externs/jquery.js"]}}}}
+
+                                   :pretty-print true}}}}
 
   :aliases {"dev" ["do"
                    ["shell" "mkdir" "-p"

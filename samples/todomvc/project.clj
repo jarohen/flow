@@ -10,15 +10,15 @@
                  [compojure "1.1.5"]
                  [hiccup "1.0.4"]
                  
-                 [org.clojure/core.async "0.1.301.0-deb34a-alpha"]
-                 [org.clojure/clojurescript "0.0-2280"]
+                 [org.clojure/core.async "0.1.346.0-17112a-alpha"]
+                 [org.clojure/clojurescript "0.0-2371"]
 
                  [gaka "0.3.0"]
 
-                 [jarohen/flow "0.2.0-SNAPSHOT"]]
+                 [jarohen/flow "0.2.0-beta4"]]
 
-  :plugins [[jarohen/lein-frodo "0.3.2"]
-            [jarohen/simple-brepl "0.1.1"]
+  :plugins [[jarohen/lein-frodo "0.4.1"]
+            [jarohen/simple-brepl "0.1.2"]
             [lein-cljsbuild "1.0.3"]
             [lein-pdo "0.1.1"]
             [lein-shell "0.4.0"]]
@@ -31,14 +31,13 @@
                        {:source-paths ["ui-src"]
                         :compiler {:output-to "target/resources/js/todomvc.js"
                                    :output-dir "target/resources/js/"
-                                   :optimizations :whitespace
+                                   :optimizations :none
                                    :pretty-print true}}
 
                        :prod
                        {:source-paths ["ui-src"]
                         :compiler {:output-to "target/resources/js/todomvc.js"
-                                   :optimizations :advanced
-                                   :pretty-print true}}}}
+                                   :optimizations :advanced}}}}
 
   :aliases {"dev" ["do"
                    ["shell" "mkdir" "-p" "target/resources"]
