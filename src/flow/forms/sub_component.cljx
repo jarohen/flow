@@ -18,7 +18,8 @@
               (let [new-arg-values (map #(apply % []) args)
                     arg-pairs (map vector old-arg-values new-arg-values)
 
-                    [$el update-component!] ((if (or (not= (count old-arg-values)
+                    [$el update-component!] ((if (or (nil? update-component!)
+                                                     (not= (count old-arg-values)
                                                            (count new-arg-values))
                                                      (not (every? unchanged? arg-pairs)))
                                                (build-component new-arg-values)
