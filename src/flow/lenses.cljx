@@ -75,7 +75,9 @@
     
     IEquiv
     (-equiv [this other]
-      (identical? this other))
+      (and (lens? other)
+           (identical? !state (-!state other))
+           (= path (path other))))
 
     IMeta
     (-meta [_]
