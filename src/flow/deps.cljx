@@ -21,7 +21,9 @@
                     (dep-marked? (get dep-tree p) more))))]
       (if (dep-marked? dep-tree state+path)
         dep-tree
-        (assoc-in dep-tree state+path {::value value})))))
+        (assoc-in dep-tree state+path {::value (if (fl/lens? value)
+                                                 (fl/-value value)
+                                                 value)})))))
 
 (defn merge-deps [deps-1 deps-2]
   (merge-with (fn [v1 v2]
