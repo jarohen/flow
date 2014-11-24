@@ -31,7 +31,9 @@
       (recur))))
 
 (defn replace-child! [$parent $old-child $new-child]
-  (.replaceChild $parent $new-child $old-child))
+  (if $old-child
+    (.replaceChild $parent $new-child $old-child)
+    (append-child! $parent $new-child)))
 
 (defn next-sibling [$parent $child]
   (.-nextSibling $child))
