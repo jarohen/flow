@@ -37,9 +37,7 @@
                                       :pks pks})))]
                 [(or (doall (seq (map :$el for-bodies)))
                      (fde/null-elem))
-                 #(update-for! (->> for-bodies
-                                    (map (juxt :pks :update!))
-                                    (into {})))]))]
+                 #(update-for! (into {} (map (juxt :pks :update!)) for-bodies))]))]
       
       (update-for! {}))))
 
