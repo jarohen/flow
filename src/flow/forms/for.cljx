@@ -30,13 +30,14 @@
 (defn build-for [compiled-bindings build-body]
   (fn []
     (letfn [(update-for! [body-cache]
-              (let [for-bodies (for [{:keys [state pks]} (for-values compiled-bindings)]
-                                 (binding [fs/*state* state]
-                                   (let [[$el update-body!] ((or (get body-cache pks) (build-body)))]
-                                     {:$el $el
-                                      :update! update-body!
-                                      :pks pks})))]
-                [(or (doall (seq (map :$el for-bodies)))
+              (let [for-bodies (->> (for [{:keys [state pks]} (for-values compiled-bindings)]
+                                      (binding [fs/*state* state]
+                                        (let [[$el update-body!] ((or (get body-cache pks) (build-body)))]
+                                          {:$el $el
+                                           :update! update-body!
+                                           :pks pks})))
+                                    doall)]
+                [(or (seq (map :$el for-bodies))
                      (fde/null-elem))
                  #(update-for! (into {} (map (juxt :pks :update!)) for-bodies))]))]
       
@@ -66,3 +67,4 @@
         (let [[new-els update-for!] (update-for!)]
           [els new-els]
           (identical? (second els) (first new-els)))))))
+
