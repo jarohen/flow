@@ -7,13 +7,8 @@
   #+cljs (f))
 
 (defn new-child-holder! [$parent]
-  (let [$initial-el (fde/null-elem)
-        !child (atom {:$parent $parent
-                      :el-ish ::init
-                      :$el $initial-el})]
-
-    (fde/append-child! $parent $initial-el)
-    !child))
+  (atom {:$parent $parent
+         :el-ish ::init}))
 
 (defn swap-child-seqs! [$parent old-els new-els]
   (let [$last-elem (last old-els)

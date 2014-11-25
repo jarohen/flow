@@ -15,10 +15,11 @@
   (reduce (fn [acc {:keys [value-fn destructure-fn pk-fn]}]
             (->> (for [{:keys [state pks]} acc]
                    (binding [fs/*state* state]
-                     (for [value (value-fn)]
-                       {:state (merge state
-                                      (destructure-fn value))
-                        :pks (conj pks (value-pk value pk-fn))})))
+                     (->> (for [value (value-fn)]
+                            {:state (merge state
+                                           (destructure-fn value))
+                             :pks (conj pks (value-pk value pk-fn))})
+                          doall)))
                  (apply concat)))
           
           [{:state fs/*state*
@@ -29,17 +30,16 @@
 (defn build-for [compiled-bindings build-body]
   (fn []
     (letfn [(update-for! [body-cache]
-              (let [for-bodies (for [{:keys [state pks]} (for-values compiled-bindings)]
-                                 (binding [fs/*state* state]
-                                   (let [[$el update-body!] ((or (get body-cache pks) (build-body)))]
-                                     {:$el $el
-                                      :update! update-body!
-                                      :pks pks})))]
-                [(or (doall (seq (map :$el for-bodies)))
+              (let [for-bodies (->> (for [{:keys [state pks]} (for-values compiled-bindings)]
+                                      (binding [fs/*state* state]
+                                        (let [[$el update-body!] ((or (get body-cache pks) (build-body)))]
+                                          {:$el $el
+                                           :update! update-body!
+                                           :pks pks})))
+                                    doall)]
+                [(or (seq (map :$el for-bodies))
                      (fde/null-elem))
-                 #(update-for! (->> for-bodies
-                                    (map (juxt :pks :update!))
-                                    (into {})))]))]
+                 #(update-for! (into {} (map (juxt :pks :update!)) for-bodies))]))]
       
       (update-for! {}))))
 
@@ -67,3 +67,4 @@
         (let [[new-els update-for!] (update-for!)]
           [els new-els]
           (identical? (second els) (first new-els)))))))
+

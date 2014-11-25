@@ -19,7 +19,9 @@
   (swap! !parent update-in [:children] #(remove #{!child} %)))
 
 (defn replace-child! [!parent !old-child !new-child]
-  (swap! !parent update-in [:children] #(map (some-fn {!old-child !new-child} identity) %)))
+  (if !old-child
+    (swap! !parent update-in [:children] #(map (some-fn {!old-child !new-child} identity) %))
+    (append-child! !parent !new-child)))
 
 (defn next-sibling [!parent !child]
   (->> (:children @!parent)

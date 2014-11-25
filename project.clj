@@ -1,4 +1,4 @@
-(defproject jarohen/flow "0.2.0-beta5"
+(defproject jarohen/flow "0.2.0-beta6"
   :description "Lightweight library to help you write dynamic CLJS webapps"
 
   :url "https://github.com/james-henderson/flow"
@@ -6,7 +6,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
-  :dependencies [[org.clojure/clojure "1.6.0"]]
+  :dependencies [[org.clojure/clojure "1.7.0-alpha4"]]
 
   :exclusions [org.clojure/clojure]
 
