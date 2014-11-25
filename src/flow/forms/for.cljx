@@ -15,10 +15,11 @@
   (reduce (fn [acc {:keys [value-fn destructure-fn pk-fn]}]
             (->> (for [{:keys [state pks]} acc]
                    (binding [fs/*state* state]
-                     (for [value (value-fn)]
-                       {:state (merge state
-                                      (destructure-fn value))
-                        :pks (conj pks (value-pk value pk-fn))})))
+                     (->> (for [value (value-fn)]
+                            {:state (merge state
+                                           (destructure-fn value))
+                             :pks (conj pks (value-pk value pk-fn))})
+                          doall)))
                  (apply concat)))
           
           [{:state fs/*state*
