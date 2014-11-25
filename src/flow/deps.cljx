@@ -39,7 +39,7 @@
     (= (::value tree) new-value)
 
     (every? (fn [[path sub-tree]]
-              (tree-unchanged? (get new-value path) sub-tree))
+              (tree-unchanged? (fl/get-at-path new-value [path]) sub-tree))
             tree)))
 
 (defn deps-unchanged? [deps]
