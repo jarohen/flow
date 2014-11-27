@@ -1,6 +1,10 @@
 * ChangeLog
 ** 0.2.x (complete re-write)
 
+The 0.2.x branch was abandoned - after the big re-write between beta2
+and beta3 I decided that it was probably best to bump the version to
+0.3.0, and start again with SNAPSHOTs/alphas.
+
 *** 0.2.0-beta6
 
 Performance improvements + bug fixes
