@@ -5,8 +5,17 @@
 (defn unchanged? [[old-value new-value]]
   (or (and (satisfies? fl/Lens old-value)
            (satisfies? fl/Lens new-value)
+
+           (satisfies? #+clj clojure.lang.IDeref
+                       #+cljs IDeref
+                       old-value)
+           (satisfies? #+clj clojure.lang.IDeref
+                       #+cljs IDeref
+                       new-value)
+           
            (= (fl/-!state old-value) (fl/-!state new-value))
            (= (fl/-path old-value) (fl/-path new-value)))
+      
       (= old-value new-value)))
 
 (defn build-sub-component [args]
