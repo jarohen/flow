@@ -1,20 +1,33 @@
 (ns flow.core
-  (:require [flow.for :as f :include-macros true]
-            [flow.let :as l :include-macros true]
-            [flow.el :as el :include-macros true]))
+  (:require [flow.el :as fel]
+            [flow.dom.elements :as fde]
+            [flow.forms.text]
+            [flow.forms.node]
+            [flow.forms.primitive]
+            [flow.forms.lenses]
+            [flow.forms.collections]
+            [flow.forms.symbols]
+            [flow.forms.fn-calls]
+            [flow.forms.fn-decls]
+            [flow.forms.do]
+            [flow.forms.if]
+            [flow.forms.case]
+            [flow.forms.let]
+            [flow.forms.for]
+            [flow.forms.sub-component])
+  #+clj (:require [flow.compiler :as fc]))
+
+(defn root [$container el]
+  (fel/root $container el))
 
 #+clj
-(defmacro let<< [bindings & body]
-  `(l/let<< ~bindings ~@body))
+(defmacro el [el]
+  `(fel/render-el ~(fc/compile-el el &env)))
 
-#+clj
-(defmacro for<< [bindings & body]
-  `(f/for<< ~bindings ~@body))
+#+cljs
+(defn bind-value! [lens]
+  (fde/bind-value! lens))
 
-#+clj
-(defmacro el<< [el-stream]
-  `(el/el<< ~el-stream))
-
-#+clj
-(defmacro << [stream]
-  (throw (ex-info "'<<' used outside of let<</for<<" {:stream stream})))
+#+cljs
+(defn on [$el event listener]
+  (fde/add-event-listener! $el event listener))

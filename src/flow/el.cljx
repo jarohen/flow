@@ -1,28 +1,77 @@
 (ns flow.el
-  (:require #+clj [clojure.core.async :as a :refer [go go-loop alt!]]
-            #+cljs [cljs.core.async :as a]
-            #+cljs [dommy.core :as d]
-            [clojure.data :refer [diff]]
-            [clojure.set :as set]
-            [flow.stream :refer [unwrap-nil stream-ch]])
+  (:require [flow.dom.children :as fdc]
+            [flow.dom.elements :as fde]
+            [flow.deps :as fd]
+            [flow.lenses :as fl]
+            [flow.state :as fs]
+            [flow.render :as fr]
+            [clojure.set :as set]))
 
-  #+cljs
-  (:require-macros [dommy.macros :refer [node sel1]]
-                   [cljs.core.async.macros :refer [go go-loop alt!]]))
+(defn update-watches! [{:keys [old-deps new-deps on-change watch-id]}]
+  (let [old-atoms (set (keys old-deps))
+        new-atoms (set (keys new-deps))]
+    (doseq [old-atom (set/difference old-atoms new-atoms)]
+      (remove-watch old-atom watch-id))
 
-#+cljs
-(let [container (node [:div {:style {:display "inline"}}])]
-  (defn- new-container []
-    (.cloneNode container)))
+    (doseq [new-atom (set/difference new-atoms old-atoms)]
+      (add-watch new-atom watch-id
+                 (fn [_ _ old new]
+                   (when-not (identical? old new)
+                     (on-change)))))))
 
-#+cljs
-(defn el<< [el-stream]
-  (let [$container (new-container)
-        el-ch (stream-ch el-stream (a/chan) #(a/sliding-buffer 1))]
-    
-    (go-loop []
-      (when-let [$el (a/<! el-ch)]
-        (d/replace-contents! $container (unwrap-nil $el))
-        (recur)))
-    
-    $container))
+(defn root [$container el]
+  (let [!deps (atom {})
+        !child (atom el)
+        el-holder (fdc/new-child-holder! $container)
+        !dirty? (atom true)
+        watch-id (gensym "watch")]
+    (letfn [(update-root! []
+              (fr/schedule-rendering-frame
+               (fn []
+                 (reset! !dirty? false)
+                 
+                 (let [{:keys [result deps]} (fd/with-watch-context
+                                               (fn []
+                                                 (@!child)))]
+                   
+                   (let [[$child update-child!] result]
+                     (reset! !child update-child!)
+                     (fdc/replace-child! el-holder $child))
+
+                   (let [old-deps @!deps]
+                     (update-watches! {:old-deps old-deps
+                                       :new-deps deps
+                                       :watch-id watch-id
+                                       :on-change (fn []
+                                                    (when (compare-and-set! !dirty?
+                                                                            false
+                                                                            true)
+                                                      (update-root!)))})
+                     (reset! !deps deps))
+
+                   $container))))]
+      
+      (update-root!))))
+
+(defn render-el [build-el]
+  (fn []
+    (letfn [(update-el! [{:keys [update-component! $el deps]}]
+              (let [{:keys [result deps]} (or (when (and update-component!
+                                                         (fd/deps-unchanged? deps))
+
+                                                (fd/mark-deps! deps)
+                                                
+                                                {:result [$el update-component!]
+                                                 :deps deps})
+
+                                              (fd/with-watch-context
+                                                (fn []
+                                                  ((or update-component! build-el)))))
+                    
+                    [$el update-component!] result]
+                
+                [$el #(update-el! {:$el $el
+                                   :update-component! update-component!
+                                   :deps deps})]))]
+      
+      (update-el! {}))))

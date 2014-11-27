@@ -1,0 +1,281 @@
+* Flow in 5 Minutes Tutorial - Simple Counter
+
+This tutorial will show you how to write a simple 'counter'
+application using the Flow library.
+
+It doesn't assume any previous knowledge of Flow, although a
+reasonable knowledge of ClojureScript and Hiccup will definitely help!
+
+We'll create a Flow project, connect to the browser REPL, and write an
+application that increments a counter when a button is pressed.
+
+To see a full working example, clone this repo, and head to the
+=samples/counter= directory.
+
+** Getting started:
+
+There are a couple of ways to get started with Flow - adding it into
+an existing ClojureScript project, or using a Lein project
+template. For this tutorial, we'll be using the *SPLAT* template - so
+create yourself a project by executing =lein new splat flow-counter=.
+
+I'm using SPLAT here because it sets up all of the following for you:
+
+- Clojure/ClojureScript (obviously!)
+- [[https://github.com/emezeske/lein-cljsbuild][lein-cljsbuild]] - to compile your ClojureScript files automatically
+- [[https://github.com/james-henderson/frodo][Frodo]] - a web server, similar to Ring/Jetty, that's backed by
+  http-kit, gets you a Clojure REPL quickly and is easily configurable
+  through [[https://github.com/james-henderson/nomad][Nomad]].
+- [[https://github.com/james-henderson/simple-brepl][simple-bREPL]] - the easiest way I know to get a browser REPL up and
+  running, built atop [[https://github.com/tomjakubowski/weasel][Weasel]].
+- [[https://github.com/lynaghk/cljx][CLJX]] - a great way to share code between Clojure and ClojureScript
+- Flow :)
+- A =lein dev= alias to start the development environment.
+
+To add Flow to an existing project, you can add 
+
+#+BEGIN_SRC clojure
+  [jarohen/flow "<version>"]
+#+END_SRC
+
+to your project dependencies, and 
+
+#+BEGIN_SRC clojure
+  [flow.core :as f :include-macros true]
+#+END_SRC
+
+to your ClojureScript file.
+
+Once you've run =lein new splat flow-counter=, =cd flow-counter= and
+run =lein dev=.
+
+You should see an nREPL started on port 7888, a web server opened on
+port 3000, and your ClojureScript should be automatically re-compiled
+when you save your CLJS files.
+
+Head over to [[http://localhost:3000]] and you should see the SPLAT
+welcome page. Make sure you come back here when you're done :)
+
+** 'Hello world!'
+
+No self-respecting tutorial would be complete without printing
+'Hello World', so let's see how this is done in Flow:
+
+In =ui-src/flow-counter/ui/app.cljs=, you should see the code for the
+SPLAT introduction - feel free to delete this, and replace it with:
+
+#+BEGIN_SRC clojure
+  (ns flow-counter.ui.app
+    (:require [flow.core :as f :include-macros true]
+              simple-brepl.client))
+  
+  (enable-console-print!)
+  
+  (set! (.-onload js/window)
+        (fn []
+          (f/root js/document.body
+            (f/el
+              [:p "Hello world!"]))))
+#+END_SRC
+
+We've kept =simple-brepl.client= so that we can connect to the browser
+REPL (later), and =(enable-console-print!)= so that when we call
+=(println ...)= etc, our messages appear in your browser's JS console.
+
+What's this doing?
+
+When the window loads, we're telling Flow that the =<body>= tag
+should contain the element =<p>Hello world!</p>=. There's a couple of
+Flow concepts introduced here:
+
+- =f/root= - function that takes a parent element and a Flow
+  component, clears the parent element, and adds the component to the
+  parent.
+- =f/el= - macro that turns a component, defined using Flow's
+  declarative component DSL, into a DOM element. We'll cover Flow's
+  DSL in more detail throughout this tutorial.
+- =[:p "Hello world!"]= - for those unfamiliar with Hiccup, this
+  creates a =<p>= tag containing "Hello world!"
+
+The Flow DSL is designed to be as close to ClojureScript as possible,
+so you hopefully shouldn't have any surprises about how it works!
+There are a couple of additions to ClojureScript in order to handle
+dynamic behaviour, but we'll cover those as we go.
+
+When you save the file, you should see the CLJS compiler re-compile
+your project (should take less than a couple of seconds). Then, when
+you refresh your browser, you should see that most clichéd of lines!
+
+** (Optional) Connecting to the browser REPL
+
+You can execute ClojureScript commands through a ClojureScript
+browser REPL. Essentially, the REPL compiles each command to JS,
+and sends it to the browser. The browser then runs your command, and
+sends the result back.
+
+With *simple-brepl*, connecting to a browser REPL is, well, simple!
+
+Once you've connected to a standard Clojure REPL, probably through
+your favourite editor, you can then run =(user/simple-brepl)= to
+transform your Clojure REPL into a ClojureScript REPL.
+
+Once the REPL server has started, refresh your browser to connect it
+to the REPL, and then you should be able to execute ClojureScript
+commands, the same way as you would with a Clojure REPL. A couple of
+my favourite smoke tests are:
+
+- =(+ 1 1)= - just checking Maths still works!
+- =(js/alert "Hello world!")=
+- =(set! (.-backgroundColor js/document.body.style) "green")=
+
+If you're easily pleased by colourful/shiny things (like me), this can
+be quite a time sink. See you in a bit!
+
+You can then run =(in-ns 'flow-counter.ui.app)= (or, if you're using
+Emacs, =C-c M-n= from your =app.cljs= file) to change the REPL to the
+=flow-counter.ui.app= namespace. You might also need to evaluate the
+=(ns ...)= form - you can do this with =C-c C-n=.
+
+** Displaying a static counter
+
+First, we'll need some way of storing the current value of the
+counter. Flow uses standard ClojureScript atoms to hold state, so
+we'll declare an atom at the top-level in our =app.cljs= file:
+
+#+BEGIN_SRC clojure
+  (def !counter
+    (atom 0))
+#+END_SRC
+
+The '!' before the name is an optional naming convention - it doesn't
+have any effect on Flow. Personally, as a developer, I like using it
+because it makes a clear distinction in my code between stateful
+variables and immutable values.
+
+We now need to tell Flow to include the current value of the counter
+in our element, which we do using Flow's =(<< ...)= operator. It's
+similar in nature to '@'/'deref', and it's used as follows:
+
+#+BEGIN_SRC clojure
+  (f/el
+    [:p "The current value of the counter is " (<< !counter)])
+#+END_SRC
+
+As it's part of the Flow DSL, =<<= only works inside the =f/el= macro.
+
+Flow is fundamentally declarative in nature. We don't specify any
+imperative behaviour here; no 'when the counter updates, then update
+this element' - we simply say 'this element contains the up-to-date
+value of my atom' and Flow does the rest.
+
+*If Flow's done its job correctly, you shouldn't ever have to write
+imperative code to update the DOM.* (If you do, please let me know!)
+
+With this in place, we can save the file, refresh the browser, and we
+should see 'The current value of the counter is 0'.
+
+** Updating the atom using the REPL
+
+If you connected to the browser REPL earlier, you should now be able
+to update the atom, and see the change effected immediately in your
+browser. You can run, for example, =@!counter= to see the current
+value, or =(swap! !counter inc)= to increment it.
+
+** It wouldn't complete without a button, though...
+
+You're quite right.
+
+We can add a button by using the =[:button]= element, but first, we
+have to wrap the component in a =[:div]= - =f/el= expects a single
+top-level element.
+
+#+BEGIN_SRC clojure
+  (f/el
+    [:div
+     [:p "The value of the counter is " (<< !counter)]
+     [:p [:button "Increment me!"]]])
+#+END_SRC
+
+To add a listener to the button, we add an attribute to the button,
+with an anonymous function to update the atom:
+
+#+BEGIN_SRC clojure
+  (f/el
+    [:div
+     [:p "The value of the counter is " (<< !counter)]
+     [:p [:button {::f/on {:click #(swap! !counter inc)}}
+          "Increment me!"]]])
+#+END_SRC
+
+As you can see, we add listeners through the =::f/on= attribute (note
+the double colon!). We can add any number of DOM listeners to this map,
+for example =:change=, =:keyup= or =:mouseover=. Each listener is
+just a function - anything you'd pass to =(map ...)= or =(filter
+...)= works here too.
+
+*You should now have a working counter!*
+
+** Give it some style!
+
+The SPLAT template includes Bootstrap by default, so we can apply
+Bootstrap's styles in the traditional Hiccup way, by adding them to
+the tag keyword:
+
+#+BEGIN_SRC clojure
+  (f/el
+    [:div.container
+     [:p "The value of the counter is " (<< !counter)]
+  
+     [:p
+      [:button.btn.btn-default
+       "Increment me!"]]])
+#+END_SRC
+
+To add inline styles, use the =::f/style= attribute. For example:
+
+#+BEGIN_SRC clojure
+  (f/el
+    [:div.container {::f/style {:margin-top "2em"}}
+     [:p "The value of the counter is " (<< !counter)]
+               
+     [:p [:button.btn.btn-default {::f/on {:click #(swap! !counter inc)}}
+          "Increment me!"]]])
+#+END_SRC
+
+Style values can also be keywords, e.g. ={:text-align :right}=.
+
+Finally, you can also add dynamic classes, using =::f/classes= - to
+add a style only when the counter is even, you might do something
+like:
+
+#+BEGIN_SRC clojure
+  (let [counter (<< !counter)]
+    [:p {::f/classes [(when (even? counter)
+                        "even")]}
+     "The value of the counter is " counter])
+#+END_SRC
+
+Here we're introducing a =let= binding in the same way as we would in
+vanilla Clojure - Flow will analyse the data dependencies here and
+update the DOM elements as required.
+
+** Extending the 'counter' example
+
+The Flow DSL is designed to work as much like ClojureScript as
+possible, in order to minimise the learning curve. So far, we've seen
+one addition to ClojureScript, =<<=, but you can also use Clojure's
+standard =let= (including destructuring), =for=, =if=, =case=, =when=,
+etc - all of which have been extended to cope with Flow's declarative
+dynamic behaviours.
+
+They should all work as you'd expect - again, no surprises!
+
+The one exception to this rule (there's always one!) is that Flow's
+'for' doesn't currently support ':when', ':let' or ':while' clauses
+(although support is planned in a future release).
+
+** What's next?
+
+In future tutorials, we'll look at how to split Flow applications into
+separate components, and introduce =<<='s brother (the only other
+addition to ClojureScript in the DSL), =!<<=.

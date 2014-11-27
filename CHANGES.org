@@ -1,4 +1,105 @@
 * ChangeLog
+** 0.2.x (complete re-write)
+
+The 0.2.x branch was abandoned - after the big re-write between beta2
+and beta3 I decided that it was probably best to bump the version to
+0.3.0, and start again with SNAPSHOTs/alphas.
+
+*** 0.2.0-beta6
+
+Performance improvements + bug fixes
+
+No breaking changes.
+
+*** 0.2.0-beta5
+
+Performance improvements - ensuring that all of our caching works
+
+No breaking changes.
+
+*** 0.2.0-beta4
+
+Bug in f/on - fixed.
+
+No breaking changes
+
+*** 0.2.0-beta3
+
+Complete re-write from 0.2.0-beta2 - massive simplification of the
+internal workings.
+
+One breaking change from b2: sub-components now need to be 'called'
+with vectors, rather than parens:
+
+#+BEGIN_SRC clojure
+  (defn render-list-item [elem]
+    (f/el
+      [:li elem]))
+
+  (defn render-list [coll]
+    (f/el
+      [:ul
+       (for [elem coll]
+         ;; previously: (render-list-item elem)
+         [render-list-item elem])]))
+
+#+END_SRC
+
+*** 0.2.0-beta2
+
+Bugfix to macro-expansion stage - needs to be a prewalk rather than a postwalk
+
+*** 0.2.0-beta1
+
+Lots of documentation and tutorials.
+
+Also, more bugfixes.
+
+*** 0.2.0-alpha5
+
+More minor bugfixes as a result of using Flow in other projects
+
+*** 0.2.0-alpha4
+
+Minor typo. :(
+
+*** 0.2.0-alpha3
+
+Minor bugfix - lens atoms weren't being updated when their parent
+atoms changed.
+
+*** 0.2.0-alpha2
+
+Added:
+- Read-Write support for lenses
+- Batching of updates
+- Using =requestAnimationFrame= if available
+
+Still to do:
+
+- Docs
+- Sample apps
+- Even more copious testing
+
+*** 0.2.0-alpha1
+
+Complete re-write of the Flow library (it's probably best thought of
+as a different library tbh!)
+
+Flow is now a compiled DSL - the compiler analyses all of the
+dependencies at compile-time, and only updates what is necessary at
+run-time. The new DSL is a lot more expressive than the old =let<<= /
+=for<<= combination.
+
+Still missing before I can go to 0.2.0:
+
+- Updated docs
+- Updating sample apps
+- Currently only read-only wrapped lenses
+- Copious testing
+
+A big thanks to [[https://github.com/lsnape][Luke Snape]] for all his help in design/implementation
+discussions - it really helped in getting my head around all of this!
 
 ** 0.1.0
 

@@ -12,24 +12,40 @@
 
                  [prismatic/dommy "0.1.2"]
 
-                 [org.clojure/core.async "0.1.267.0-0d7780-alpha"]
-                 [org.clojure/clojurescript "0.0-2202"]
+                 [org.clojure/core.async "0.1.346.0-17112a-alpha"]
+                 [org.clojure/clojurescript "0.0-2371"]
 
-                 [jarohen/flow "0.1.0"]]
+                 [jarohen/flow "0.2.0-beta5"]
 
-  :plugins [[jarohen/lein-frodo "0.3.0"]
+                 [garden "1.2.1"]]
+
+  :plugins [[jarohen/lein-frodo "0.3.2"]
+            [jarohen/simple-brepl "0.1.2"]
             [lein-cljsbuild "1.0.3"]
-            [lein-pdo "0.1.1"]]
+            [lein-pdo "0.1.1"]
+            [lein-shell "0.4.0"]]
 
   :frodo/config-resource "flow-sample-config.edn"
 
   :resource-paths ["resources" "target/resources"]
 
   :cljsbuild {:builds {:dev
-                       {:source-paths ["src"]
+                       {:source-paths ["ui-src" "../../src" "../../target/generated/cljs"]
                         :compiler {:output-to "target/resources/js/flow-sample.js"
                                    :output-dir "target/resources/js/"
-                                   :optimizations :whitespace
+                                   :optimizations :none
+                                   :pretty-print true}}
+
+                       :prod
+                       {:source-paths ["ui-src"]
+                        :compiler {:output-to "target/resources/js/flow-sample.js"
+                                   :optimizations :advanced
+
                                    :pretty-print true}}}}
 
-  :aliases {"dev" ["pdo" "cljsbuild" "auto" "dev," "frodo"]})
+  :aliases {"dev" ["do"
+                   ["shell" "mkdir" "-p"
+                    "target/resources"]
+                   ["pdo"
+                    ["cljsbuild" "auto" "dev"]
+                    "frodo"]]})
