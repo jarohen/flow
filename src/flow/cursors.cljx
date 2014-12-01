@@ -1,20 +1,21 @@
-(ns flow.lenses)
+(ns flow.cursors)
 
 ;; Most of this adapted from either from CLJS core or Om, thanks David
 ;; Nolan & contributors for the design ideas, inspiration and code :)
 
-;; The Clojure implementation is a small subset of the CLJS lens
+;; The Clojure implementation is a small subset of the CLJS cursor
 ;; functionality (due to the difference in interfaces between Clojure
 ;; 1.6 and CLJS). It's really only meant for testing Flow.
 
-(defprotocol Lens
+(defprotocol Cursor
   (-value [_])
   (-!state [_])
   (-path [_])
-  (->atom [_ extra-path]))
+  (->atom [_ extra-path])
+  (keyed-by [_ f]))
 
-(defn lens? [v]
-  (satisfies? Lens v))
+(defn cursor? [v]
+  (satisfies? Cursor v))
 
 (defn get-at-path [m [p & more-path :as path]]
   (if (and m (seq path))
@@ -49,33 +50,33 @@
     v))
 
 #+clj
-(defn lens->atom [!state path]
+(defn cursor->atom [!state path]
   (reify
-    Lens
+    Cursor
     (-value [this] (deref this))
     (-!state [_] !state)
     (-path [_] path)
     (->atom [_ extra-path]
-      (lens->atom !state (vec (concat path extra-path))))
+      (cursor->atom !state (vec (concat path extra-path))))
     
     clojure.lang.IDeref
     (deref [this]
       (get-at-path @!state path))))
 
 #+cljs
-(defn lens->atom [!state path]
+(defn cursor->atom [!state path]
   ;; This part adapted from CLJS core.
   (reify
-    Lens
+    Cursor
     (-value [this] @this)
     (-!state [_] !state)
     (-path [_] path)
     (->atom [_ extra-path]
-      (lens->atom !state (vec (concat path extra-path))))
+      (cursor->atom !state (vec (concat path extra-path))))
     
     IEquiv
     (-equiv [this other]
-      (and (lens? other)
+      (and (cursor? other)
            (identical? !state (-!state other))
            (= path (path other))))
 
@@ -114,17 +115,19 @@
     (-hash [this]
       (goog/getUid this))))
 
-(declare ->lens)
+(declare ->cursor)
 
 #+clj
-(defn map-lens [value !state path]
+(defn map-cursor [value !state path key-fn]
   (reify
-    Lens
+    Cursor
     (-value [_] value)
     (-!state [_] !state)
     (-path [_] path)
     (->atom [_ extra-path]
-      (lens->atom !state (vec (concat path extra-path))))
+      (cursor->atom !state (vec (concat path extra-path))))
+    (keyed-by [_ f]
+      (map-cursor value !state path f))
     
     clojure.lang.ILookup
     (valAt [this k]
@@ -132,7 +135,7 @@
     (valAt [this k not-found]
       (let [v (get value k not-found)]
         (if-not (= v not-found)
-          (->lens v !state (conj path k))
+          (->cursor v !state (conj path k))
           not-found)))
     
     clojure.lang.IFn
@@ -145,35 +148,37 @@
     (seq [this]
       (when (pos? (count value))
         (map (fn [[k v]]
-               (clojure.lang.MapEntry. k (->lens v !state (conj path k))))
+               (clojure.lang.MapEntry. k (->cursor v !state (conj path k))))
              value)))
     
     clojure.lang.IPersistentMap
     (assoc [_ k v]
-      (map-lens (assoc value k v) !state path))
+      (map-cursor (assoc value k v) !state path))
     (without [_ k]
-      (map-lens (dissoc value k) !state path))))
+      (map-cursor (dissoc value k) !state path))))
 
 #+cljs
-(defn map-lens [value !state path]
+(defn map-cursor [value !state path key-fn]
   (reify
-    Lens
+    Cursor
     (-value [_] value)
     (-!state [_] !state)
     (-path [_] path)
     (->atom [_ extra-path]
-      (lens->atom !state (vec (concat path extra-path))))
+      (cursor->atom !state (vec (concat path extra-path))))
+    (keyed-by [_ f]
+      (map-cursor value !state path f))
     
     IWithMeta
     (-with-meta [_ new-meta]
-      (map-lens (with-meta value new-meta) !state path))
+      (map-cursor (with-meta value new-meta) !state path))
     IMeta
     (-meta [_]
       (meta value))
 
     ICloneable
     (-clone [_]
-      (map-lens value !state path))
+      (map-cursor value !state path))
     
     ICounted
     (-count [_]
@@ -181,7 +186,7 @@
 
     ICollection
     (-conj [this o]
-      (->lens (-conj value o) !state path))
+      (->cursor (-conj value o) !state path))
 
     ILookup
     (-lookup [this k]
@@ -189,7 +194,7 @@
     (-lookup [this k not-found]
       (let [v (-lookup value k not-found)]
         (if-not (= v not-found)
-          (->lens v !state (conj path k))
+          (->cursor v !state (conj path k))
           not-found)))
     
     IFn
@@ -202,22 +207,22 @@
     (-seq [this]
       (when (pos? (count value))
         (map (fn [[k v]]
-               [k (->lens v !state (conj path k))])
+               [k (->cursor v !state (conj path k))])
              value)))
     
     IAssociative
     (-contains-key? [_ k]
       (-contains-key? value k))
     (-assoc [_ k v]
-      (map-lens (-assoc value k v) !state path))
+      (map-cursor (-assoc value k v) !state path))
 
     IMap
     (-dissoc [_ k]
-      (map-lens (-dissoc value k) !state path))
+      (map-cursor (-dissoc value k) !state path))
 
     IEquiv
     (-equiv [_ other]
-      (if (lens? other)
+      (if (cursor? other)
         (= value (-value other))
         (= value other)))
 
@@ -226,14 +231,16 @@
       (-write writer (pr-str value)))))
 
 #+clj
-(defn vec-lens [value !state path]
+(defn vec-cursor [value !state path key-fn]
   (reify
-    Lens
+    Cursor
     (-value [_] value)
     (-!state [_] !state)
     (-path [_] path)
     (->atom [_ extra-path]
-      (lens->atom !state (vec (concat path extra-path))))
+      (cursor->atom !state (vec (concat path extra-path))))
+    (keyed-by [_ f]
+      (vec-cursor value !state path f))
     
     clojure.lang.Sequential
 
@@ -255,50 +262,52 @@
 
     clojure.lang.Indexed
     (nth [this n]
-      (->lens (nth value n) !state (conj path n)))
+      (->cursor (nth value n) !state (conj path n)))
     (nth [this n not-found]
       (if (< n (count value))
-        (->lens (nth value n) !state (conj path n))
+        (->cursor (nth value n) !state (conj path n))
         not-found))
 
     clojure.lang.Seqable
     (seq [this]
       (when (pos? (count value))
-        (map (fn [v i] (->lens v !state (conj path i))) value (range))))
+        (map (fn [v i] (->cursor v !state (conj path i))) value (range))))
 
     clojure.lang.Associative
     (assoc [this n v]
-      (->lens (assoc value n v) !state path))))
+      (->cursor (assoc value n v) !state path))))
 
 #+cljs
-(defn vec-lens [value !state path]
+(defn vec-cursor [value !state path key-fn]
   (reify
-    Lens
+    Cursor
     (-value [_] value)
     (-!state [_] !state)
     (-path [_] path)
     (->atom [_ extra-path]
-      (lens->atom !state (vec (concat path extra-path))))
+      (cursor->atom !state (vec (concat path extra-path))))
+    (keyed-by [_ f]
+      (vec-cursor value !state path f))
     
     ISequential
 
     IWithMeta
     (-with-meta [_ new-meta]
-      (vec-lens (with-meta value new-meta) !state path))
+      (vec-cursor (with-meta value new-meta) !state path))
     IMeta
     (-meta [_]
       (meta value))
 
     ICloneable
     (-clone [_]
-      (vec-lens value !state path))
+      (vec-cursor value !state path))
 
     ICounted
     (-count [_]
       (count value))
     ICollection
     (-conj [_ o]
-      (vec-lens (conj value o) !state path))
+      (vec-cursor (conj value o) !state path))
 
     ILookup
     (-lookup [this n]
@@ -314,32 +323,32 @@
 
     IIndexed
     (-nth [this n]
-      (->lens (nth value n) !state (conj path n)))
+      (->cursor (nth value n) !state (conj path n)))
     (-nth [this n not-found]
       (if (< n (-count value))
-        (->lens (nth value n) !state (conj path n))
+        (->cursor (nth value n) !state (conj path n))
         not-found))
 
     ISeqable
     (-seq [this]
       (when (pos? (count value))
-        (map (fn [v i] (->lens v !state (conj path i))) value (range))))
+        (map (fn [v i] (->cursor v !state (conj path i))) value (range))))
 
     IAssociative
     (-contains-key? [_ k]
       (-contains-key? value k))
     (-assoc [this n v]
-      (->lens (-assoc-n value n v) !state path))
+      (->cursor (-assoc-n value n v) !state path))
 
     IStack
     (-peek [this]
-      (->lens (-peek value) !state path))
+      (->cursor (-peek value) !state path))
     (-pop [this]
-      (->lens (-pop value) !state path))
+      (->cursor (-pop value) !state path))
     
     IEquiv
     (-equiv [_ other]
-      (if (lens? other)
+      (if (cursor? other)
         (= value (-value other))
         (= value other)))
     
@@ -348,29 +357,29 @@
       (-write writer (pr-str value)))))
 
 #+cljs
-(defn cloneable->lens [value !state path]
+(defn cloneable->cursor [value !state path]
   (specify value
-    Lens
+    Cursor
     (-value [_] value)
     (-!state [_] !state)
     (-path [_] path)
     (->atom [_ extra-path]
-      (lens->atom !state (vec (concat path extra-path))))
+      (cursor->atom !state (vec (concat path extra-path))))
     
     IEquiv
     (-equiv [_ other]
-      (if (lens? other)
+      (if (cursor? other)
         (= val (-value other))
         (= val other)))))
 
-(defn ->lens [value !state path]
+(defn ->cursor [value !state path]
   (cond
-    (lens? value) value
+    (cursor? value) value
 
-    (map? value) (map-lens value !state path)
-    (or (coll? value) (seq? value)) (vec-lens value !state path)
+    (map? value) (map-cursor value !state path nil)
+    (or (coll? value) (seq? value)) (vec-cursor value !state path nil)
 
     #+cljs (satisfies? ICloneable value)
-    #+cljs (cloneable->lens value !state path)
+    #+cljs (cloneable->cursor value !state path)
 
     :else value))

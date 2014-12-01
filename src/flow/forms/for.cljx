@@ -2,23 +2,22 @@
   (:require #+clj [flow.compiler :as fc]
             #+clj [flow.forms.bindings :as fb]
             [flow.dom.elements :as fde]
-            [flow.lenses :as fl]
+            [flow.cursors :as fcu]
             [flow.state :as fs]))
 
-(defn value-pk [value pk-fn]
-  (cond
-    pk-fn (value-pk (pk-fn value) nil)
-    (fl/lens? value) [::lens (fl/-!state value) (fl/-path value)]
-    :else value))
+(defn value-pk [value]
+  (if (fcu/cursor? value)
+    [::cursor (fcu/-!state value) (fcu/-path value)]
+    value))
 
 (defn for-values [compiled-bindings]
-  (reduce (fn [acc {:keys [value-fn destructure-fn pk-fn]}]
+  (reduce (fn [acc {:keys [value-fn destructure-fn]}]
             (->> (for [{:keys [state pks]} acc]
                    (binding [fs/*state* state]
                      (->> (for [value (value-fn)]
                             {:state (merge state
                                            (destructure-fn value))
-                             :pks (conj pks (value-pk value pk-fn))})
+                             :pks (conj pks (value-pk value))})
                           doall)))
                  (apply concat)))
           
@@ -37,6 +36,7 @@
                                            :update! update-body!
                                            :pks pks})))
                                     doall)]
+                
                 [(or (seq (map :$el for-bodies))
                      (fde/null-elem))
                  #(update-for! (into {} (map (juxt :pks :update!)) for-bodies))]))]

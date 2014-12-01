@@ -13,8 +13,8 @@
 
 (defn fn-call-type [[called-fn & args]]
   (condp = (resolve-fn called-fn)
-    '<< :unwrap-lens
-    '!<< :wrap-lens
+    '<< :watch
+    '!<< :wrap
 
     'if :if
 

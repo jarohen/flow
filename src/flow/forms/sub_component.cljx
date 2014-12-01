@@ -1,10 +1,10 @@
 (ns flow.forms.sub-component
   (:require #+clj [flow.compiler :as fc]
-            [flow.lenses :as fl]))
+            [flow.cursors :as fcu]))
 
 (defn unchanged? [[old-value new-value]]
-  (or (and (satisfies? fl/Lens old-value)
-           (satisfies? fl/Lens new-value)
+  (or (and (satisfies? fcu/Cursor old-value)
+           (satisfies? fcu/Cursor new-value)
 
            (satisfies? #+clj clojure.lang.IDeref
                        #+cljs IDeref
@@ -13,8 +13,8 @@
                        #+cljs IDeref
                        new-value)
            
-           (= (fl/-!state old-value) (fl/-!state new-value))
-           (= (fl/-path old-value) (fl/-path new-value)))
+           (= (fcu/-!state old-value) (fcu/-!state new-value))
+           (= (fcu/-path old-value) (fcu/-path new-value)))
       
       (= old-value new-value)))
 

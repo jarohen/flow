@@ -21,7 +21,9 @@
     [:div
      [:h1 "Contact List:"]
      [:ul
-      (for [contact (sort-by :last (<< !contacts))]
+      (for [contact (->> (<< !contacts)
+                         (f/keyed-by (juxt :first :last))
+                         (sort-by :last))]
         [contact-widget contact event-ch])]
 
      [:div

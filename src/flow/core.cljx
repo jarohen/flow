@@ -1,10 +1,11 @@
 (ns flow.core
   (:require [flow.el :as fel]
+            [flow.cursors :as fcu]
             [flow.dom.elements :as fde]
             [flow.forms.text]
             [flow.forms.node]
             [flow.forms.primitive]
-            [flow.forms.lenses]
+            [flow.forms.cursors]
             [flow.forms.collections]
             [flow.forms.symbols]
             [flow.forms.fn-calls]
@@ -25,9 +26,12 @@
   `(fel/render-el ~(fc/compile-el el &env)))
 
 #+cljs
-(defn bind-value! [lens]
-  (fde/bind-value! lens))
+(defn bind-value! [cursor]
+  (fde/bind-value! cursor))
 
 #+cljs
 (defn on [$el event listener]
   (fde/add-event-listener! $el event listener))
+
+(defn keyed-by [f coll]
+  (fcu/keyed-by coll f))
