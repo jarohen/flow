@@ -11,7 +11,9 @@
   (-value [_])
   (-!state [_])
   (-path [_])
-  (->atom [_ extra-path])
+  (->atom [_ extra-path]))
+
+(defprotocol Keyable
   (keyed-by [_ f]))
 
 (defn cursor? [v]
@@ -20,12 +22,16 @@
 (defn get-at-path [m [p & more-path :as path]]
   (if (and m (seq path))
     (cond
+      (and (vector? p) (= (first p) ::pk))
+      (let [[_ key-fn key-value] p]
+        (get-at-path (first (filter (comp #(= key-value %) key-fn) m)) more-path))
+
       (or #+clj (instance? clojure.lang.ILookup m)
           #+cljs (satisfies? #+cljs ILookup m)
           (nil? m))
       
       (get-at-path (get m p) more-path)
-      
+
       (number? p)
       (get-at-path (nth m p) more-path))
     
@@ -34,6 +40,13 @@
 (defn assoc-at-path [m [p & more-path :as path] v]
   (if (seq path)
     (cond
+      (and (vector? p) (= (first p) ::pk))
+      (let [[_ key-fn key-value] p]
+        (into (empty m) (for [el m]
+                          (if (= key-value (key-fn el))
+                            (assoc-at-path el more-path v)
+                            el))))
+
       (or #+clj (instance? clojure.lang.Associative m)
           #+cljs (satisfies? #+cljs IAssociative m)
           (nil? m))
@@ -118,7 +131,7 @@
 (declare ->cursor)
 
 #+clj
-(defn map-cursor [value !state path key-fn]
+(defn map-cursor [value !state path]
   (reify
     Cursor
     (-value [_] value)
@@ -126,8 +139,6 @@
     (-path [_] path)
     (->atom [_ extra-path]
       (cursor->atom !state (vec (concat path extra-path))))
-    (keyed-by [_ f]
-      (map-cursor value !state path f))
     
     clojure.lang.ILookup
     (valAt [this k]
@@ -158,7 +169,7 @@
       (map-cursor (dissoc value k) !state path))))
 
 #+cljs
-(defn map-cursor [value !state path key-fn]
+(defn map-cursor [value !state path]
   (reify
     Cursor
     (-value [_] value)
@@ -166,8 +177,6 @@
     (-path [_] path)
     (->atom [_ extra-path]
       (cursor->atom !state (vec (concat path extra-path))))
-    (keyed-by [_ f]
-      (map-cursor value !state path f))
     
     IWithMeta
     (-with-meta [_ new-meta]
@@ -232,129 +241,148 @@
 
 #+clj
 (defn vec-cursor [value !state path key-fn]
-  (reify
-    Cursor
-    (-value [_] value)
-    (-!state [_] !state)
-    (-path [_] path)
-    (->atom [_ extra-path]
-      (cursor->atom !state (vec (concat path extra-path))))
-    (keyed-by [_ f]
-      (vec-cursor value !state path f))
+  (letfn [(pk [v i]
+            (if key-fn
+              [::pk key-fn (key-fn v)]
+              i))]
+    (reify
+      Cursor
+      (-value [_] value)
+      (-!state [_] !state)
+      (-path [_] path)
+      (->atom [_ extra-path]
+        (cursor->atom !state (vec (concat path extra-path))))
+
+      Keyable
+      (keyed-by [_ f]
+        (vec-cursor value !state path f))
     
-    clojure.lang.Sequential
+      clojure.lang.Sequential
 
-    clojure.lang.IPersistentCollection
-    (count [_]
-      (count value))
+      clojure.lang.IPersistentCollection
+      (count [_]
+        (count value))
 
-    clojure.lang.ILookup
-    (valAt [this n]
-      (nth this n nil))
-    (valAt [this n not-found]
-      (nth this n not-found))
+      clojure.lang.ILookup
+      (valAt [this n]
+        (nth this n nil))
+      (valAt [this n not-found]
+        (nth this n not-found))
 
-    clojure.lang.IFn
-    (invoke [this k]
-      (get this k))
-    (invoke [this k not-found]
-      (get this k not-found))
+      clojure.lang.IFn
+      (invoke [this k]
+        (get this k))
+      (invoke [this k not-found]
+        (get this k not-found))
 
-    clojure.lang.Indexed
-    (nth [this n]
-      (->cursor (nth value n) !state (conj path n)))
-    (nth [this n not-found]
-      (if (< n (count value))
-        (->cursor (nth value n) !state (conj path n))
-        not-found))
+      clojure.lang.Indexed
+      (nth [this n]
+        (->cursor (nth value n) !state (conj path n)))
+      (nth [this n not-found]
+        (if (< n (count value))
+          (->cursor (nth value n) !state (conj path n))
+          not-found))
 
-    clojure.lang.Seqable
-    (seq [this]
-      (when (pos? (count value))
-        (map (fn [v i] (->cursor v !state (conj path i))) value (range))))
+      clojure.lang.Seqable
+      (seq [this]
+        (when (pos? (count value))
+          (map (fn [v i] (->cursor v !state (conj path i))) value (range))))
 
-    clojure.lang.Associative
-    (assoc [this n v]
-      (->cursor (assoc value n v) !state path))))
+      clojure.lang.Associative
+      (assoc [this n v]
+        (->cursor (assoc value n v) !state path)))))
 
 #+cljs
 (defn vec-cursor [value !state path key-fn]
-  (reify
-    Cursor
-    (-value [_] value)
-    (-!state [_] !state)
-    (-path [_] path)
-    (->atom [_ extra-path]
-      (cursor->atom !state (vec (concat path extra-path))))
-    (keyed-by [_ f]
-      (vec-cursor value !state path f))
-    
-    ISequential
+  (letfn [(pk [v i]
+            (if key-fn
+              [::pk key-fn (key-fn v)]
+              i))]
+    (reify
+      Cursor
+      (-value [_] value)
+      (-!state [_] !state)
+      (-path [_] path)
+      (->atom [_ extra-path]
+        (cursor->atom !state (vec (concat path extra-path))))
 
-    IWithMeta
-    (-with-meta [_ new-meta]
-      (vec-cursor (with-meta value new-meta) !state path))
-    IMeta
-    (-meta [_]
-      (meta value))
+      Keyable
+      (keyed-by [_ f]
+        (vec-cursor value !state path f))
+      
+      ISequential
 
-    ICloneable
-    (-clone [_]
-      (vec-cursor value !state path))
+      IWithMeta
+      (-with-meta [_ new-meta]
+        (vec-cursor (with-meta value new-meta) !state path key-fn))
+      IMeta
+      (-meta [_]
+        (meta value))
 
-    ICounted
-    (-count [_]
-      (count value))
-    ICollection
-    (-conj [_ o]
-      (vec-cursor (conj value o) !state path))
+      ICloneable
+      (-clone [_]
+        (vec-cursor value !state path key-fn))
 
-    ILookup
-    (-lookup [this n]
-      (-nth this n nil))
-    (-lookup [this n not-found]
-      (-nth this n not-found))
+      ICounted
+      (-count [_]
+        (count value))
+      ICollection
+      (-conj [_ o]
+        (vec-cursor (conj value o) !state path key-fn))
 
-    IFn
-    (-invoke [this k]
-      (-lookup this k))
-    (-invoke [this k not-found]
-      (-lookup this k not-found))
+      ILookup
+      (-lookup [this n]
+        (-nth this n nil))
+      (-lookup [this n not-found]
+        (-nth this n not-found))
 
-    IIndexed
-    (-nth [this n]
-      (->cursor (nth value n) !state (conj path n)))
-    (-nth [this n not-found]
-      (if (< n (-count value))
-        (->cursor (nth value n) !state (conj path n))
-        not-found))
+      IFn
+      (-invoke [this k]
+        (-lookup this k))
+      (-invoke [this k not-found]
+        (-lookup this k not-found))
 
-    ISeqable
-    (-seq [this]
-      (when (pos? (count value))
-        (map (fn [v i] (->cursor v !state (conj path i))) value (range))))
+      IIndexed
+      (-nth [this n]
+        (let [v (nth value n)]
+          (->cursor v !state (conj path (pk v n)))))
+      
+      (-nth [this n not-found]
+        (if (< n (-count value))
+          (let [v (nth value n)]
+            (->cursor v !state (conj path (pk v n))))
+          
+          not-found))
 
-    IAssociative
-    (-contains-key? [_ k]
-      (-contains-key? value k))
-    (-assoc [this n v]
-      (->cursor (-assoc-n value n v) !state path))
+      ISeqable
+      (-seq [this]
+        (when (pos? (count value))
+          (map (fn [v i]
+                 (->cursor v !state (conj path (pk v i))))
+               value
+               (range))))
 
-    IStack
-    (-peek [this]
-      (->cursor (-peek value) !state path))
-    (-pop [this]
-      (->cursor (-pop value) !state path))
-    
-    IEquiv
-    (-equiv [_ other]
-      (if (cursor? other)
-        (= value (-value other))
-        (= value other)))
-    
-    IPrintWithWriter
-    (-pr-writer [_ writer opts]
-      (-write writer (pr-str value)))))
+      IAssociative
+      (-contains-key? [_ k]
+        (-contains-key? value k))
+      (-assoc [this n v]
+        (vec-cursor (-assoc-n value n v) !state path key-fn))
+
+      IStack
+      (-peek [this]
+        (vec-cursor (-peek value) !state path key-fn))
+      (-pop [this]
+        (vec-cursor (-pop value) !state path key-fn))
+      
+      IEquiv
+      (-equiv [_ other]
+        (if (cursor? other)
+          (= value (-value other))
+          (= value other)))
+      
+      IPrintWithWriter
+      (-pr-writer [_ writer opts]
+        (-write writer (pr-str value))))))
 
 #+cljs
 (defn cloneable->cursor [value !state path]
@@ -376,10 +404,23 @@
   (cond
     (cursor? value) value
 
-    (map? value) (map-cursor value !state path nil)
+    (map? value) (map-cursor value !state path)
     (or (coll? value) (seq? value)) (vec-cursor value !state path nil)
 
     #+cljs (satisfies? ICloneable value)
     #+cljs (cloneable->cursor value !state path)
 
     :else value))
+
+(extend-protocol Keyable
+  #+clj clojure.lang.LazySeq
+  #+cljs cljs.core.LazySeq
+
+  (keyed-by [coll f]
+    (map (fn [el]
+           (if (cursor? el)
+             (->cursor (-value el)
+                       (-!state el)
+                       (concat (butlast (-path el)) [[::pk f (f el)]]))
+             el))
+         coll)))
