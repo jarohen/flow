@@ -7,6 +7,7 @@
             [flow.forms.primitive]
             [flow.forms.cursors]
             [flow.forms.collections]
+            [flow.forms.list]
             [flow.forms.symbols]
             [flow.forms.fn-calls]
             [flow.forms.fn-decls]

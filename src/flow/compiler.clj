@@ -20,6 +20,9 @@
 
     :core/case :case
     'case :case
+
+    :core/list :list
+    'list :list
     
     :core/let :let
     'let :let
