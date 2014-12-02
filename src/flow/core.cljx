@@ -35,4 +35,5 @@
   (fde/add-event-listener! $el event listener))
 
 (defn keyed-by [f coll]
-  (fcu/keyed-by coll f))
+  (when coll
+    (fcu/keyed-by coll f)))
