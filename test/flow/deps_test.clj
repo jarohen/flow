@@ -1,10 +1,10 @@
 (ns flow.deps-test
   (:require [flow.deps :as fd :refer :all]
-            [flow.lenses :as fl]
+            [flow.cursors :as fc]
             [clojure.test :refer :all]))
 
 (defn mock-lens [!atom path]
-  (reify fl/Lens
+  (reify fc/Cursor
     (-!state [_] !atom)
     (-path [_] path)))
 
@@ -15,7 +15,7 @@
 (deftest marking-deps-in-the-tree
   (let [!atom (atom nested-map)]
     (is (= (mark-dep {} !atom nested-map)
-           {!atom {:flow.deps/value nested-map}}))
+           {!atom {::fd/value nested-map}}))
 
     (is (= (mark-dep {} (mock-lens !atom [:a :b]) 45)
            {!atom {:a {:b {::fd/value 45}}}}))
@@ -24,8 +24,8 @@
                (mark-dep (mock-lens !atom [:a :b]) 45)
                (mark-dep (mock-lens !atom [:c :d]) 54)
                (mark-dep (mock-lens !atom [:a]) {:b 45 :e 15}))
-           {!atom {:c {:d {:flow.deps/value 54}},
-                   :a {:flow.deps/value {:e 15, :b 45}}}}))))
+           {!atom {:c {:d {::fd/value 54}},
+                   :a {::fd/value {:e 15, :b 45}}}}))))
 
 (deftest deps-unchanged-test
   (let [!atom (atom nested-map)

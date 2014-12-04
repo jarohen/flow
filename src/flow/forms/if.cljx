@@ -11,10 +11,10 @@
             (update-if [old-test-value update-current-branch!]
               (let [new-test-value (boolean (test-fn))
                     
-                    new-branch (if (or (nil? old-test-value)
-                                       (not= old-test-value new-test-value))
-                                 (build-branch new-test-value)
-                                 update-current-branch!)
+                    new-branch (if (and update-current-branch!
+                                        (= old-test-value new-test-value))
+                                 update-current-branch!
+                                 (build-branch new-test-value))
                      
                     [$branch-el update-branch!] (new-branch)]
                 

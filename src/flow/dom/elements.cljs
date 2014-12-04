@@ -61,7 +61,7 @@
   (cond
     (map? el-ish) (->el (pr-str el-ish))
     
-    (coll? el-ish) (map ->el el-ish)
+    (coll? el-ish) (flatten (map ->el el-ish))
 
     (or (nil? el-ish)
         (and (seq? el-ish)

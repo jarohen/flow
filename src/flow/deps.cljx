@@ -1,5 +1,5 @@
 (ns flow.deps
-  (:require [flow.lenses :as fl]))
+  (:require [flow.cursors :as fc]))
 
 (defprotocol Context
   (-read-dep [_ dep])
@@ -8,12 +8,12 @@
 (def ^:dynamic *ctx*
   (reify Context
     (-read-dep [_ dep]
-      (fl/->lens @dep dep []))
+      (fc/->cursor @dep dep []))
     (-mark-deps! [_ _])))
 
 (defn mark-dep [dep-tree dep value]
-  (let [state+path (if (satisfies? fl/Lens dep)
-                     (cons (fl/-!state dep) (fl/-path dep))
+  (let [state+path (if (satisfies? fc/Cursor dep)
+                     (cons (fc/-!state dep) (fc/-path dep))
                      [dep])]
     (letfn [(dep-marked? [dep-tree path]
               (or (boolean (::value dep-tree))
@@ -21,8 +21,8 @@
                     (dep-marked? (get dep-tree p) more))))]
       (if (dep-marked? dep-tree state+path)
         dep-tree
-        (assoc-in dep-tree state+path {::value (if (fl/lens? value)
-                                                 (fl/-value value)
+        (assoc-in dep-tree state+path {::value (if (fc/cursor? value)
+                                                 (fc/-value value)
                                                  value)})))))
 
 (defn merge-deps [deps-1 deps-2]
@@ -39,7 +39,7 @@
     (= (::value tree) new-value)
 
     (every? (fn [[path sub-tree]]
-              (tree-unchanged? (fl/get-at-path new-value [path]) sub-tree))
+              (tree-unchanged? (fc/get-at-path new-value [path]) sub-tree))
             tree)))
 
 (defn deps-unchanged? [deps]

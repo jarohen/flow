@@ -43,4 +43,4 @@
 
           (go
             (a/<! (a/timeout 1000))
-            (run-benchmark! !todos)))))
+            #_(run-benchmark! !todos)))))

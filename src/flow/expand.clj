@@ -37,10 +37,10 @@
 (def leave-call-alone?
   (set (->> (concat (for [fn-ns ['clojure.core 'cljs.core]
                           :when (find-ns fn-ns)
-                          fn-name ['case 'for 'let]]
+                          fn-name ['case 'for 'let 'list]]
                       (ns-resolve fn-ns fn-name))
                     [(ns-resolve (doto 'flow.core create-ns) 'el)]
-                    ['let 'if 'for 'case])
+                    ['let 'if 'for 'case 'list])
             
             (remove nil?))))
 

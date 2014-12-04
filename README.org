@@ -5,7 +5,7 @@ declarative style, without worrying how/when the DOM needs to be
 updated.
 
 #+BEGIN_SRC clojure
-  [jarohen/flow "0.3.0-SNAPSHOT"]
+  [jarohen/flow "0.3.0-alpha1"]
 
   (:require [flow.core :as f :include-macros true]) 
 #+END_SRC
@@ -250,6 +250,28 @@ collection, and provide an extra key to find the corresponding value:
 
 Here, we can't wrap 'caption', because it's a string, so we tell
 =!<<= that it needs to wrap the ':caption' key of 'todo'.
+
+*** Collection keys - =f/keyed-by=
+
+We can also specify the key of a collection, using =f/keyed-by=. This
+helps Flow with calculating the difference between one state and the
+next - it means that Flow can track individual elements in the
+collection in the presence of insertions, deletes and shuffles.
+
+#+BEGIN_SRC clojure
+  (defn render-todo-item [!todo]
+    (f/el
+      (let [{:keys [caption]} (<< !todo)]
+        [:li caption])))
+
+    (defn render-todo-list [!todos]
+      (f/el
+        (for [todo (->> (<< !todos)
+                        (f/keyed-by :todo-id))]
+          [render-todo-item (!<< todo)])))
+#+END_SRC
+
+=f/keyed-by= takes a key function, and a collection cursor.
 
 ** Current Limitations
 
