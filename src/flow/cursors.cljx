@@ -14,7 +14,7 @@
   (->atom [_ extra-path]))
 
 (defprotocol Keyable
-  (keyed-by [_ f]))
+  (-keyed-by [_ f]))
 
 (defn cursor? [v]
   (satisfies? Cursor v))
@@ -254,7 +254,7 @@
         (cursor->atom !state (vec (concat path extra-path))))
 
       Keyable
-      (keyed-by [_ f]
+      (-keyed-by [_ f]
         (vec-cursor value !state path f))
     
       clojure.lang.Sequential
@@ -285,8 +285,10 @@
 
       clojure.lang.Seqable
       (seq [this]
-        (when (pos? (count value))
-          (map (fn [v i] (->cursor v !state (conj path i))) value (range))))
+        (when (not-empty value)
+          (map-indexed (fn [i v]
+                         (->cursor v !state (conj path (pk v i))))
+                       value)))
 
       clojure.lang.Associative
       (assoc [this n v]
@@ -307,7 +309,7 @@
         (cursor->atom !state (vec (concat path extra-path))))
 
       Keyable
-      (keyed-by [_ f]
+      (-keyed-by [_ f]
         (vec-cursor value !state path f))
       
       ISequential
@@ -356,11 +358,10 @@
 
       ISeqable
       (-seq [this]
-        (when (pos? (count value))
-          (map (fn [v i]
-                 (->cursor v !state (conj path (pk v i))))
-               value
-               (range))))
+        (when (not-empty value)
+          (map-indexed (fn [i v]
+                         (->cursor v !state (conj path (pk v i))))
+                       value)))
 
       IAssociative
       (-contains-key? [_ k]
@@ -412,15 +413,19 @@
 
     :else value))
 
-(extend-protocol Keyable
-  #+clj clojure.lang.LazySeq
-  #+cljs cljs.core.LazySeq
+(defn keyed-by [f coll]
+  (cond
+    (satisfies? Keyable coll) (-keyed-by coll f)
 
-  (keyed-by [coll f]
+    (or (sequential? coll)
+        #+cljs (seqable? coll))
     (map (fn [el]
            (if (cursor? el)
              (->cursor (-value el)
                        (-!state el)
                        (concat (butlast (-path el)) [[::pk f (f el)]]))
              el))
-         coll)))
+         coll)
+    
+    (nil? coll) nil))
+
