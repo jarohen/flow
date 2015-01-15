@@ -50,7 +50,8 @@
                      (reset! !deps deps))
 
                    $container))))]
-      
+
+      (fde/clear! $container)
       (update-root!))))
 
 (defn render-el [build-el]
