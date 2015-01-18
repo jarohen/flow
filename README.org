@@ -5,7 +5,7 @@ declarative style, without worrying how/when the DOM needs to be
 updated.
 
 #+BEGIN_SRC clojure
-  [jarohen/flow "0.3.0-alpha2"]
+  [jarohen/flow "0.3.0-alpha3"]
 
   (:require [flow.core :as f :include-macros true]) 
 #+END_SRC
@@ -184,6 +184,23 @@ value of an HTML input to a dynamic value or atom:
     (f/el
       [:input {:type :text
                ::f/on {:keyup (f/bind-value! !textbox-value)}}]))
+#+END_SRC
+
+*** Lifecycle callbacks
+
+Lifecycle callbacks can also be added to the =::f/on= attribute. Flow
+only supports one lifecycle callback at the moment, =::f/mount=, which
+is called once whenever the element is first mounted.
+
+It expects a function of one argument - the DOM element that is about
+to be mounted:
+
+#+BEGIN_SRC clojure
+  (f/el
+    [:p {::f/on {::f/mount (fn [$p-element]
+                             ;; ...
+                             )}}
+     "Hello world!"])
 #+END_SRC
 
 *** Subcomponents

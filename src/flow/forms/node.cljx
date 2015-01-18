@@ -78,28 +78,33 @@
   
   listeners)
 
-(defn build-node [{:keys [tag id] :as node}]
+(defn build-node [{:keys [tag id lifecycle-callbacks] :as node}]
   (fn []
     (let [$el (fde/new-element tag)]
       (when id
         (fda/set-id! $el id))
 
-      (letfn [(update-node! [{:keys [attrs styles children classes listeners]}]
-                (let [updated-children (update-children! children)
-                      updated-attrs (update-attrs! $el attrs)
-                      updated-styles (update-styles! $el styles)
-                      updated-classes (update-classes! $el classes)
-                      updated-listeners (update-listeners! listeners)]
-                  
-                  [$el #(update-node! {:attrs updated-attrs
-                                       :styles updated-styles
-                                       :children updated-children
-                                       :classes updated-classes
-                                       :listeners updated-listeners})]))]
-        
-        (update-node! (-> node
-                          (update-in [:children] #(with-child-holders $el %))
-                          (update-in [:listeners] #(build-listeners! $el %))))))))
+      (let [compiled-node (letfn [(update-node! [{:keys [attrs styles children classes listeners]}]
+                                    (let [updated-children (update-children! children)
+                                          updated-attrs (update-attrs! $el attrs)
+                                          updated-styles (update-styles! $el styles)
+                                          updated-classes (update-classes! $el classes)
+                                          updated-listeners (update-listeners! listeners)]
+                                      
+                                      [$el #(update-node! {:attrs updated-attrs
+                                                           :styles updated-styles
+                                                           :children updated-children
+                                                           :classes updated-classes
+                                                           :listeners updated-listeners})]))]
+                            
+                            (update-node! (-> node
+                                              (update-in [:children] #(with-child-holders $el %))
+                                              (update-in [:listeners] #(build-listeners! $el %)))))]
+
+        (when-let [on-mount (get lifecycle-callbacks :mount)]
+          (on-mount $el))
+
+        compiled-node))))
 
 #+clj
 (defn parse-node [[tagish possible-attrs & body]]
@@ -124,14 +129,21 @@
 
      :styles (:flow.core/style attrs)
 
-     :listeners (:flow.core/on attrs)
+     :listeners (->> (:flow.core/on attrs)
+                     (remove (comp #{"flow.core"} namespace key))
+                     (into {}))
+
+     :lifecycle-callbacks (->> (:flow.core/on attrs)
+                               (filter (comp #{"flow.core"} namespace key))
+                               (map #(update-in % [0] (comp keyword name)))
+                               (into {}))
      
      :attrs (dissoc attrs :flow.core/classes :flow.core/style :flow.core/on)
      
      :children children}))
 
 #+clj
-(defn compile-node [{:keys [tag id attrs styles classes listeners children]} opts]
+(defn compile-node [{:keys [tag id attrs styles classes listeners lifecycle-callbacks children]} opts]
   `(build-node ~{:tag tag
 
                  :id id
@@ -154,6 +166,8 @@
                                    {:event event
                                     :build-listener `(fn []
                                                        ~(fc/compile-value-form listener opts))}))
+
+                 :lifecycle-callbacks lifecycle-callbacks
                  
                  :children (vec (map #(fc/compile-el-form % opts) children))}))
 

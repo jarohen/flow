@@ -24,20 +24,15 @@
 
   :frodo/config-resource "counter-config.edn"
 
+  :source-paths ["src" "../../src" "../../target/generated/clj"]
+  
   :resource-paths ["resources" "target/resources"]
 
   :cljsbuild {:builds {:dev
-                       {:source-paths ["ui-src"]
+                       {:source-paths ["ui-src" "../../src" "../../target/generated/cljs"]
                         :compiler {:output-to "target/resources/js/counter.js"
                                    :output-dir "target/resources/js/"
                                    :optimizations :none
-                                   :pretty-print true}}
-
-                       :prod
-                       {:source-paths ["ui-src"]
-                        :compiler {:output-to "target/resources/js/counter.js"
-                                   :optimizations :advanced
-
                                    :pretty-print true}}}}
 
   :aliases {"dev" ["do"

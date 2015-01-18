@@ -4,6 +4,10 @@
 Moving to 0.3.0 due to the amount of change between 0.2.0-beta2 and
 0.2.0-beta3.
 
+*** 0.3.0-alpha3
+
+Adding 'on-mount' lifecycle callback
+
 *** 0.3.0-alpha2
 
 Couple of bugfixes - =f/root= now clears the container, and
