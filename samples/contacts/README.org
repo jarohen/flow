@@ -1,0 +1,62 @@
+* Flow - Contacts Tutorial
+
+In this tutorial, we're going to make a simple contacts list using
+Flow.
+
+** Getting set up:
+
+You can make a 'Hello World' Flow application using the 'SPLAT'
+Leiningen template:
+
+#+BEGIN_SRC sh
+  lein new splat flow-contacts
+  cd flow-contacts
+  lein dev
+#+END_SRC
+
+When you run =lein dev=, you'll see the template compile the
+ClojureScript for the first time, start an nREPL server on port 7888,
+and start the web server on port 3000. Also, when you make any changes
+to the ClojureScript files, they will be auto-recompiled - all you
+have to do is refresh your browser.
+
+Open up http://localhost:3000 in a browser, and you should see the
+default SPLAT screen.
+
+When you've done that, open up =ui-src/flow_contacts/ui/app.cljs= in
+your favourite editor. At this point, you can connect to the nREPL
+(port 7888) and/or set up a browser REPL (by running =(simple-brepl)=
+in your REPL) - neither of these are required for this tutorial.
+
+There should be a line in =app.cljs= that says something like 'delete
+below this line when you want to start developing your app' - feel
+free to do this once you've finished perusing the template code.
+
+** A plan:
+
+I tend to develop ClojureScript webapps in a similar way to the
+'[[http://facebook.github.io/react/docs/thinking-in-react.html][Thinking in React]]' tutorial:
+
+1. Break the UI into a component hierarchy
+2. Build a static version
+3. Identify the minimal (but complete) representation of UI state
+4. Identify where your state should live
+5. Add inverse data flow
+
+We'll be using a Model/Widgets architecture for this application, as
+described in [[https://raw.githubusercontent.com/james-henderson/flow/0.3.0-branch/slides/clojurex-2014-presentation.pdf][my ClojureX talk]] (slide 5 onwards). Essentially, there
+are two parts to this architecture, linked by atoms and channels: 
+
+- the Model: which reacts to the messages on the channels, and updates
+  the atoms. Models have no DOM-related code - they're purely
+  concerned with the business logic.
+- the Widgets: which react to changes in the atom (updating the DOM),
+  and put events onto the channels.
+
+If you've run =lein dev= and deleted the SPLAT example code, let's
+begin!
+
+** 1. Break the UI into a component hierarchy
+
+
+
