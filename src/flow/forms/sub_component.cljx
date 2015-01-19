@@ -6,13 +6,6 @@
   (or (and (satisfies? fcu/Cursor old-value)
            (satisfies? fcu/Cursor new-value)
 
-           (satisfies? #+clj clojure.lang.IDeref
-                       #+cljs IDeref
-                       old-value)
-           (satisfies? #+clj clojure.lang.IDeref
-                       #+cljs IDeref
-                       new-value)
-           
            (= (fcu/-!state old-value) (fcu/-!state new-value))
            (= (fcu/-path old-value) (fcu/-path new-value)))
       
