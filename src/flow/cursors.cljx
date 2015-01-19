@@ -419,13 +419,14 @@
 
     (or (sequential? coll)
         #+cljs (seqable? coll))
-    (map (fn [el]
-           (if (cursor? el)
-             (->cursor (-value el)
-                       (-!state el)
-                       (concat (butlast (-path el)) [[::pk f (f el)]]))
-             el))
-         coll)
+    (into (empty coll)
+          (map (fn [el]
+                 (if (cursor? el)
+                   (->cursor (-value el)
+                             (-!state el)
+                             (concat (butlast (-path el)) [[::pk f (f el)]]))
+                   el))
+               coll))
     
-    (nil? coll) nil))
+    :else coll))
 
