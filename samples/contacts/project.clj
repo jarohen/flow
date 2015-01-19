@@ -12,14 +12,14 @@
                  [jarohen/flow "0.3.0-SNAPSHOT"]
                  
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
-                 [org.clojure/clojurescript "0.0-2371"]]
+                 [org.clojure/clojurescript "0.0-2665"]]
 
   :plugins [[jarohen/lein-frodo "0.4.1"]
-            [jarohen/simple-brepl "0.1.2"]
+            [jarohen/simple-brepl "0.2.1"]
             [lein-cljsbuild "1.0.3"]
             [lein-pdo "0.1.1"]
 
-            [com.keminglabs/cljx "0.4.0"]
+            [com.keminglabs/cljx "0.5.0"]
             [lein-shell "0.4.0"]]
 
   :frodo/config-resource "contacts-config.edn"
@@ -27,6 +27,9 @@
   :source-paths ["src" "target/generated/clj"]
 
   :resource-paths ["resources" "target/resources"]
+
+  :prep-tasks [["cljx" "once"]
+               ["shell" "mkdir" "-p" "target/resources"]]
 
   :cljx {:builds [{:source-paths ["common-src"]
                    :output-path "target/generated/clj"
@@ -50,16 +53,10 @@
 
                                    :pretty-print true}}}}
 
-  :aliases {"dev" ["do"
-                   ["shell" "mkdir" "-p"
-                    "target/generated/clj"
-                    "target/generated/cljs"
-                    "target/resources"]
-                   ["cljx" "once"]
-                   ["pdo"
-                    ["cljx" "auto"]
-                    ["cljsbuild" "auto" "dev"]
-                    "frodo"]]
+  :aliases {"dev" ["pdo"
+                   ["cljx" "auto"]
+                   ["cljsbuild" "auto" "dev"]
+                   "frodo"]
             
             "start" ["do"
                      ["cljx" "once"]

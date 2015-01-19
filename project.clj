@@ -1,4 +1,4 @@
-(defproject jarohen/flow "0.3.0-alpha3"
+(defproject jarohen/flow "0.3.0-SNAPSHOT"
   :description "Lightweight library to help you write dynamic CLJS webapps"
 
   :url "https://github.com/james-henderson/flow"
@@ -10,12 +10,12 @@
 
   :exclusions [org.clojure/clojure]
 
-  :plugins [[com.keminglabs/cljx "0.4.0"]]
+  :plugins [[com.keminglabs/cljx "0.5.0"]]
 
   :source-paths ["src" "target/generated/clj"]
-  
-  :hooks [cljx.hooks]
 
+  :prep-tasks [["cljx" "once"]]
+  
   :filespecs [{:type :path
                :path "target/generated/cljs"}]
 
