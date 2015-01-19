@@ -36,4 +36,4 @@
 
 (defn keyed-by [f coll]
   (when coll
-    (fcu/keyed-by coll f)))
+    (fcu/keyed-by f coll)))
