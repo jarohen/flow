@@ -285,7 +285,7 @@ collection in the presence of insertions, deletes and shuffles.
       (f/el
         (for [todo (->> (<< !todos)
                         (f/keyed-by :todo-id))]
-          [render-todo-item (!<< todo)])))
+          [render-todo-item todo])))
 #+END_SRC
 
 =f/keyed-by= takes a key function, and a collection cursor.
