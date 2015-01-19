@@ -385,6 +385,119 @@
       (-pr-writer [_ writer opts]
         (-write writer (pr-str value))))))
 
+#+clj
+(defn set-cursor [value !state path key-fn]
+  (letfn [(pk [v]
+            (if key-fn
+              [::pk key-fn (key-fn v)]
+              v))]
+    (reify
+      Cursor
+      (-value [_] value)
+      (-!state [_] !state)
+      (-path [_] path)
+      (->atom [_ extra-path]
+        (cursor->atom !state (vec (concat path extra-path))))
+
+      Keyable
+      (-keyed-by [_ f]
+        (vec-cursor value !state path f))
+    
+      clojure.lang.Sequential
+
+      clojure.lang.IPersistentCollection
+      (count [_]
+        (count value))
+
+      clojure.lang.IFn
+      (invoke [this k]
+        (get this k))
+      (invoke [this k not-found]
+        (get this k not-found))
+
+      clojure.lang.Seqable
+      (seq [this]
+        (when (not-empty value)
+          (map (fn [v]
+                 (->cursor v !state (conj path (pk v))))
+               value))))))
+
+#+cljs
+(defn set-cursor [value !state path key-fn]
+  (letfn [(pk [v]
+            (if key-fn
+              [::pk key-fn (key-fn v)]
+              v))]
+    (reify
+      Cursor
+      (-value [_] value)
+      (-!state [_] !state)
+      (-path [_] path)
+      (->atom [_ extra-path]
+        (cursor->atom !state (vec (concat path extra-path))))
+
+      Keyable
+      (-keyed-by [_ f]
+        (set-cursor value !state path f))
+      
+      IWithMeta
+      (-with-meta [_ new-meta]
+        (set-cursor (with-meta value new-meta) !state path key-fn))
+      
+      IMeta
+      (-meta [_]
+        (meta value))
+
+      ICloneable
+      (-clone [_]
+        (set-cursor value !state path key-fn))
+
+      ICounted
+      (-count [_]
+        (count value))
+      ICollection
+      (-conj [_ o]
+        (set-cursor (conj value o) !state path key-fn))
+
+      IEmptyableCollection
+      (-empty [coll] (with-meta #{} meta))
+
+      ILookup
+      (-lookup [this v]
+        (-lookup this v nil))
+      
+      (-lookup [this v not-found]
+        (if (-lookup value v)
+          (->cursor v !state (conj path (pk v)))
+          not-found))
+
+      ISet
+      (-disjoin [this v]
+        (set-cursor (-disjoin value v) !state path key-fn))
+      
+      IFn
+      (-invoke [this k]
+        (-lookup this k))
+      (-invoke [this k not-found]
+        (-lookup this k not-found))
+
+      ISeqable
+      (-seq [this]
+        (when (not-empty value)
+          (map (fn [v]
+                 (->cursor v !state (conj path (pk v))))
+               value)))
+
+      IEquiv
+      (-equiv [_ other]
+        (if (cursor? other)
+          (= value (-value other))
+          (= value other)))
+      
+      IPrintWithWriter
+      (-pr-writer [_ writer opts]
+        (-write writer (pr-str value))))))
+
 #+cljs
 (defn cloneable->cursor [value !state path]
   (specify value
@@ -406,6 +519,7 @@
     (cursor? value) value
 
     (map? value) (map-cursor value !state path)
+    (set? value) (set-cursor value !state path nil)
     (or (coll? value) (seq? value)) (vec-cursor value !state path nil)
 
     #+cljs (satisfies? ICloneable value)
