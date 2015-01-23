@@ -23,7 +23,8 @@
   (if (and m (seq path))
     (cond
       (and (vector? p) (= (first p) ::pk))
-      (let [[_ key-fn key-value] p]
+      (let [[_ key-value] p
+            {key-fn ::key-fn} (meta p)]
         (get-at-path (first (filter (comp #(= key-value %) key-fn) m)) more-path))
 
       (or #+clj (instance? clojure.lang.ILookup m)
@@ -41,7 +42,8 @@
   (if (seq path)
     (cond
       (and (vector? p) (= (first p) ::pk))
-      (let [[_ key-fn key-value] p]
+      (let [[_ key-value] p
+            {key-fn ::key-fn} (meta p)]
         (into (empty m) (for [el m]
                           (if (= key-value (key-fn el))
                             (assoc-at-path el more-path v)
@@ -243,7 +245,8 @@
 (defn vec-cursor [value !state path key-fn]
   (letfn [(pk [v i]
             (if key-fn
-              [::pk key-fn (key-fn v)]
+              (with-meta [::pk (key-fn v)]
+                {::key-fn key-fn})
               i))]
     (reify
       Cursor
@@ -298,7 +301,8 @@
 (defn vec-cursor [value !state path key-fn]
   (letfn [(pk [v i]
             (if key-fn
-              [::pk key-fn (key-fn v)]
+              (with-meta [::pk (key-fn v)]
+                {::key-fn key-fn})
               i))]
     (reify
       Cursor
@@ -389,7 +393,8 @@
 (defn set-cursor [value !state path key-fn]
   (letfn [(pk [v]
             (if key-fn
-              [::pk key-fn (key-fn v)]
+              (with-meta [::pk (key-fn v)]
+                {::key-fn key-fn})
               v))]
     (reify
       Cursor
@@ -426,7 +431,8 @@
 (defn set-cursor [value !state path key-fn]
   (letfn [(pk [v]
             (if key-fn
-              [::pk key-fn (key-fn v)]
+              (with-meta [::pk (key-fn v)]
+                {::key-fn key-fn})
               v))]
     (reify
       Cursor
@@ -538,7 +544,8 @@
                  (if (cursor? el)
                    (->cursor (-value el)
                              (-!state el)
-                             (concat (butlast (-path el)) [[::pk f (f el)]]))
+                             (concat (butlast (-path el)) [(with-meta [::pk (f el)]
+                                                             {::key-fn f})]))
                    el))
                coll))
     
