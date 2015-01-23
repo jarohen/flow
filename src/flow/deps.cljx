@@ -11,6 +11,11 @@
       (fc/->cursor @dep dep []))
     (-mark-deps! [_ _])))
 
+(defn cursor-value [value]
+  (if (fc/cursor? value)
+    (fc/-value value)
+    value))
+
 (defn mark-dep [dep-tree dep value]
   (let [state+path (if (satisfies? fc/Cursor dep)
                      (cons (fc/-!state dep) (fc/-path dep))
@@ -21,9 +26,7 @@
                     (dep-marked? (get dep-tree p) more))))]
       (if (dep-marked? dep-tree state+path)
         dep-tree
-        (assoc-in dep-tree state+path {::value (if (fc/cursor? value)
-                                                 (fc/-value value)
-                                                 value)})))))
+        (assoc-in dep-tree state+path {::value (cursor-value value)})))))
 
 (defn merge-deps [deps-1 deps-2]
   (merge-with (fn [v1 v2]
@@ -36,7 +39,7 @@
 (defn tree-unchanged? [new-value tree]
   (if (and (map? tree)
            (contains? tree ::value))
-    (= (::value tree) new-value)
+    (identical? (::value tree) (cursor-value new-value))
 
     (every? (fn [[path sub-tree]]
               (tree-unchanged? (fc/get-at-path new-value [path]) sub-tree))
