@@ -10,7 +10,7 @@
          (let [new-value (value-fn)]
            (if-not (= new-value (get attr :previous-value ::nil))
              (do
-               (fda/set-attr! $el attr-key new-value)
+               (fds/schedule-dom-change #(fda/set-attr! $el attr-key new-value))
                (assoc attr :previous-value new-value))
                 
              attr)))
@@ -23,7 +23,7 @@
              style
                 
              (do
-               (fda/set-style! $el style-key new-value)
+               (fds/schedule-dom-change #(fda/set-style! $el style-key new-value))
                (assoc style :previous-value new-value)))))
        doall))
 
@@ -42,9 +42,7 @@
                            :class-fns class-fns}]
       
       (when-not (= new-classes classes)
-        (fds/schedule-dom-change
-         (fn []
-           (fda/set-classes! $el new-classes))))
+        (fds/schedule-dom-change #(fda/set-classes! $el new-classes)))
       
       new-class-state)))
 
@@ -67,9 +65,9 @@
   (->> (for [{:keys [event build-listener]} listeners]
          (let [initial-listener (build-listener)
                !listener (atom initial-listener)]
-           (fde/add-event-listener! $el event (fn [e]
-                                                (when-let [listener @!listener]
-                                                  (listener e))))
+           (fds/schedule-dom-change #(fde/add-event-listener! $el event (fn [e]
+                                                                          (when-let [listener @!listener]
+                                                                            (listener e)))))
            {:!listener !listener
             :build-listener build-listener}))
        doall))
