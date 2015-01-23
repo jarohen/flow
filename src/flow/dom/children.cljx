@@ -15,7 +15,8 @@
   (let [$last-elem (last old-els)
         $next-sibling (fde/next-sibling $parent $last-elem)
 
-        diff (fdd/vector-diff old-els new-els)]
+        diff (doall (fdd/vector-diff old-els new-els))]
+
     (fds/schedule-dom-change
      (fn []
        (doseq [[action $el] diff]
