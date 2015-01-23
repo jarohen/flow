@@ -16,11 +16,6 @@
     :clj clojure.core/macroexpand-1
     :cljs (eval #((ns-resolve 'cljs.analyzer 'macroexpand-1) *macro-env* %))))
 
-(defn expand [form]
-  (let [call (first form)]
-    (and (symbol? call)
-         (= (name call) "el"))))
-
 (defn prewalk-with-meta [f form]
   (w/walk (fn [form]
             (let [walked-form (prewalk-with-meta f form)]
