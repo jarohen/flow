@@ -1,6 +1,7 @@
 (ns flow.dom.children
   (:require [flow.dom.elements :as fde]
-            [flow.dom.diff :as fdd]))
+            [flow.dom.diff :as fdd]
+            [flow.dom.scheduler :as fds]))
 
 (defn with-lock [obj f]
   #+clj (locking obj (f))
@@ -15,37 +16,41 @@
         $next-sibling (fde/next-sibling $parent $last-elem)
 
         diff (fdd/vector-diff old-els new-els)]
-    (doseq [[action $el] diff]
-      (when (= action :moved-out)
-        (fde/remove-child! $parent $el)))
+    (fds/schedule-dom-change
+     (fn []
+       (doseq [[action $el] diff]
+         (when (= action :moved-out)
+           (fde/remove-child! $parent $el)))
 
-    (reduce (fn [$next-sibling [action $new-el]]
-              (case action
-                :kept $new-el
-                :moved-in (do
-                            (if $next-sibling
-                              (fde/insert-before! $parent $next-sibling $new-el)
-                              (fde/append-child! $parent $new-el))
-                            $new-el)
-                :moved-out $next-sibling))
-            
-            $next-sibling
-            (reverse diff))
-
-    new-els))
+       (reduce (fn [$next-sibling [action $new-el]]
+                 (case action
+                   :kept $new-el
+                   :moved-in (do
+                               (if $next-sibling
+                                 (fde/insert-before! $parent $next-sibling $new-el)
+                                 (fde/append-child! $parent $new-el))
+                               $new-el)
+                   :moved-out $next-sibling))
+               
+               $next-sibling
+               (reverse diff))))))
 
 (defn swap-child-el! [$parent $old-el $new-el]
   (case [(coll? $old-el) (coll? $new-el)]
     [false false] (when-not (identical? $old-el $new-el)
-                    (fde/replace-child! $parent $old-el $new-el))
-    [false true] (do
-                   (doseq [$el $new-el]
-                     (fde/insert-before! $parent $old-el $el))
-                   (fde/remove-child! $parent $old-el))
-    [true false] (do
-                   (fde/insert-before! $parent (first $old-el) $new-el)
-                   (doseq [$el $old-el]
-                     (fde/remove-child! $parent $el)))
+                    (fds/schedule-dom-change
+                     (fn []
+                       (fde/replace-child! $parent $old-el $new-el))))
+    [false true] (fds/schedule-dom-change
+                  (fn []
+                    (doseq [$el $new-el]
+                      (fde/insert-before! $parent $old-el $el))
+                    (fde/remove-child! $parent $old-el)))
+    [true false] (fds/schedule-dom-change
+                  (fn []
+                    (fde/insert-before! $parent (first $old-el) $new-el)
+                    (doseq [$el $old-el]
+                      (fde/remove-child! $parent $el))))
     [true true] (swap-child-seqs! $parent $old-el $new-el)))
 
 (defn replace-child! [!child-holder new-el-ish]

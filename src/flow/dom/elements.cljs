@@ -1,5 +1,6 @@
 (ns flow.dom.elements
-  (:require [flow.dom.attributes :as fda]))
+  (:require [flow.dom.attributes :as fda]
+            [flow.dom.scheduler :as fds]))
 
 (defn text-el [s]
   (js/document.createTextNode s))
@@ -39,9 +40,9 @@
   (.-nextSibling $child))
 
 (defn add-event-listener! [$el event listener]
-  (if (exists? js/window.jQuery)
-    (.. (js/$ $el) (on (name event) listener))
-    (.addEventListener $el (name event) listener)))
+  (fds/schedule-dom-change #(if (exists? js/window.jQuery)
+                              (.. (js/$ $el) (on (name event) listener))
+                              (.addEventListener $el (name event) listener))))
 
 (defn value [$el]
   (case (.-type $el)

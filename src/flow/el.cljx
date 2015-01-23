@@ -1,10 +1,9 @@
 (ns flow.el
-  (:require [flow.dom.children :as fdc]
+  (:require [flow.deps :as fd]
+            [flow.dom.children :as fdc]
             [flow.dom.elements :as fde]
-            [flow.deps :as fd]
-            [flow.cursors :as fc]
-            [flow.state :as fs]
-            [flow.render :as fr]
+            [flow.dom.scheduler :as fds]
+            [flow.dom.render :as fdr]
             [clojure.set :as set]))
 
 (defn update-watches! [{:keys [old-deps new-deps on-change watch-id]}]
@@ -26,30 +25,32 @@
         !dirty? (atom true)
         watch-id (gensym "watch")]
     (letfn [(update-root! []
-              (fr/schedule-rendering-frame
+              (fdr/asynchronously
                (fn []
-                 (reset! !dirty? false)
-                 
-                 (let [{:keys [result deps]} (fd/with-watch-context
-                                               (fn []
-                                                 (@!child)))]
-                   
-                   (let [[$child update-child!] result]
-                     (reset! !child update-child!)
-                     (fdc/replace-child! el-holder $child))
+                 (fds/combine-dom-changes
+                  (fn []
+                    (reset! !dirty? false)
+                    
+                    (let [{:keys [result deps]} (fd/with-watch-context
+                                                  (fn []
+                                                    (@!child)))]
+                      
+                      (let [[$child update-child!] result]
+                        (reset! !child update-child!)
+                        (fdc/replace-child! el-holder $child))
 
-                   (let [old-deps @!deps]
-                     (update-watches! {:old-deps old-deps
-                                       :new-deps deps
-                                       :watch-id watch-id
-                                       :on-change (fn []
-                                                    (when (compare-and-set! !dirty?
-                                                                            false
-                                                                            true)
-                                                      (update-root!)))})
-                     (reset! !deps deps))
+                      (let [old-deps @!deps]
+                        (update-watches! {:old-deps old-deps
+                                          :new-deps deps
+                                          :watch-id watch-id
+                                          :on-change (fn []
+                                                       (when (compare-and-set! !dirty?
+                                                                               false
+                                                                               true)
+                                                         (update-root!)))})
+                        (reset! !deps deps))
 
-                   $container))))]
+                      $container))))))]
 
       (fde/clear! $container)
       (update-root!))))

@@ -1,5 +1,5 @@
 (ns flow.render-harness
-  (:require [flow.render :refer [schedule-rendering-frame]]))
+  (:require [flow.dom.render :refer [schedule-rendering-frame]]))
 
 (def ^:dynamic *!render-queue* nil)
 
