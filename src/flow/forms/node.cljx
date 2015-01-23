@@ -2,7 +2,8 @@
   (:require #+clj [flow.compiler :as fc]
             [flow.dom.attributes :as fda]
             [flow.dom.children :as fdc]
-            [flow.dom.elements :as fde]))
+            [flow.dom.elements :as fde]
+            [flow.dom.scheduler :as fds]))
 
 (defn update-attrs! [$el attrs]
   (->> (for [{:keys [attr-key value-fn] :as attr} attrs]
@@ -26,25 +27,26 @@
                (assoc style :previous-value new-value)))))
        doall))
 
-(defn update-classes! [$el classes]
-  (when (seq classes)
-    (let [new-classes (for [{:keys [class-value-fn] :as class} classes]
-                        {:previous-values (let [new-value (class-value-fn)]
-                                            (if (coll? new-value)
-                                              new-value
-                                              [new-value]))
-                         :class-value-fn class-value-fn})
-          new-classes-set (->> (mapcat :previous-values new-classes)
-                               (remove nil?)
-                               set)]
-      (if (= new-classes-set (->> (mapcat :previous-values classes)
-                                  (remove nil?)
-                                  set))
-        classes
+(defn update-classes! [$el {:keys [classes class-fns] :as class-state}]
+  (when (seq class-fns)
+    (let [new-classes (->> (for [class-fn class-fns]
+                             (let [new-value (class-fn)]
+                               (if (coll? new-value)
+                                 new-value
+                                 [new-value])))
+                           (apply concat)
+                           (remove nil?)
+                           set)
 
-        (do
-          (fda/set-classes! $el new-classes-set)
-          new-classes)))))
+          new-class-state {:classes classes
+                           :class-fns class-fns}]
+      
+      (when-not (= new-classes classes)
+        (fds/schedule-dom-change
+         (fn []
+           (fda/set-classes! $el new-classes))))
+      
+      new-class-state)))
 
 (defn with-child-holders [$parent children]
   (for [child children]
@@ -148,9 +150,9 @@
 
                  :id id
 
-                 :classes (vec (for [class-form classes]
-                                 {:class-value-fn `(fn []
-                                                     ~(fc/compile-value-form class-form opts))}))
+                 :classes {:class-fns (vec (for [class-form classes]
+                                             `(fn []
+                                                ~(fc/compile-value-form class-form opts))))}
 
                  :attrs (vec (for [[k v] attrs]
                                {:attr-key k
