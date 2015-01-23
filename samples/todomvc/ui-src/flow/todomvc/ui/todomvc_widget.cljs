@@ -80,8 +80,8 @@
   (f/el
     [:ul#todo-list
      (for [[id todo] (->> (<< !todos)
-                          (filter (comp (filter-todos (<< !todo-filter)) val))
-                          (f/keyed-by key))]
+                          (sort-by key)
+                          (filter (comp (filter-todos (<< !todo-filter)) val)))]
        [todo-item-widget (!<< todo) events-ch])]))
 
 (defn stats-widget [!todos]
