@@ -6,9 +6,17 @@
             [flow.state :as fs]))
 
 (defn value-pk [value]
-  (if (fcu/cursor? value)
-    [::cursor (fcu/-!state value) (fcu/-path value)]
-    value))
+  (cond
+    (fcu/cursor? value) [::cursor (fcu/-!state value) (fcu/-path value)]
+
+    (and (vector? value)
+         (= 2 (count value))
+         (let [[k v] value]
+           (and (fcu/cursor? v)
+                (= k (last (fcu/-path v))))))
+    (value-pk (second value))
+
+    :otherwise value))
 
 (defn for-values [compiled-bindings]
   (reduce (fn [acc {:keys [value-fn destructure-fn]}]
