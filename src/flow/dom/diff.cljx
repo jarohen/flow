@@ -41,12 +41,11 @@
          [new-el & more-news :as news] news]
 
     (cond
-      (and (empty? olds)
-           (empty? news))
+      (or (empty? olds) (empty? news))
       (concat res
-              (for [displaced-new displaced-news]
+              (for [displaced-new (concat displaced-news news)]
                 [:moved-in displaced-new])
-              (for [displaced-old displaced-olds]
+              (for [displaced-old (concat displaced-olds olds)]
                 [:moved-out displaced-old]))
 
       (= old-el new-el)
@@ -106,5 +105,3 @@
               [:moved-out old-el])
             (for [new-el news]
               [:moved-in new-el]))))
-
-
