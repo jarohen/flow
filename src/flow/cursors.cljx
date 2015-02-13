@@ -130,6 +130,14 @@
     (-hash [this]
       (goog/getUid this))))
 
+#+cljs
+(extend-protocol Cursor
+  cljs.core.Atom
+  (-value [a] (deref a))
+  (-!state [a] a)
+  (-path [a] [])
+  (->atom [a extra-path] (cursor->atom a extra-path)))
+
 (declare ->cursor)
 
 #+clj
